@@ -12,4 +12,5 @@ struct ArticleContent {
     let thumbnailURL: URL?
     let description: String?
     let content: String
+    let publishedDate: Date?
 }

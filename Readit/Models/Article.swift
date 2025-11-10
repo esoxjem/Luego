@@ -16,18 +16,20 @@ class Article {
     var content: String?
     var savedDate: Date
     var thumbnailURL: URL?
+    var publishedDate: Date?
 
     var domain: String {
         url.host() ?? url.absoluteString
     }
 
-    init(id: UUID = UUID(), url: URL, title: String, content: String? = nil, savedDate: Date = Date(), thumbnailURL: URL? = nil) {
+    init(id: UUID = UUID(), url: URL, title: String, content: String? = nil, savedDate: Date = Date(), thumbnailURL: URL? = nil, publishedDate: Date? = nil) {
         self.id = id
         self.url = url
         self.title = title
         self.content = content
         self.savedDate = savedDate
         self.thumbnailURL = thumbnailURL
+        self.publishedDate = publishedDate
     }
 }
 
@@ -37,20 +39,23 @@ extension Article {
             url: URL(string: "https://www.example.com/article1")!,
             title: "Understanding SwiftUI State Management",
             content: "Sample content about SwiftUI state...",
-            savedDate: Date().addingTimeInterval(-86400), // 1 day ago
-            thumbnailURL: URL(string: "https://www.example.com/image1.jpg")
+            savedDate: Date().addingTimeInterval(-86400),
+            thumbnailURL: URL(string: "https://www.example.com/image1.jpg"),
+            publishedDate: Date().addingTimeInterval(-172800)
         ),
         Article(
             url: URL(string: "https://www.medium.com/article2")!,
             title: "Building iOS Apps in 2025",
             content: "Sample content about iOS development...",
-            savedDate: Date().addingTimeInterval(-3600), // 1 hour ago
-            thumbnailURL: URL(string: "https://www.medium.com/image2.jpg")
+            savedDate: Date().addingTimeInterval(-3600),
+            thumbnailURL: URL(string: "https://www.medium.com/image2.jpg"),
+            publishedDate: Date().addingTimeInterval(-7200)
         ),
         Article(
             url: URL(string: "https://www.blog.com/article3")!,
             title: "The Future of Mobile Development",
-            savedDate: Date()
+            savedDate: Date(),
+            publishedDate: Date().addingTimeInterval(-604800)
         )
     ]
 }

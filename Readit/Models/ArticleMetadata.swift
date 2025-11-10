@@ -11,4 +11,5 @@ struct ArticleMetadata {
     let title: String
     let thumbnailURL: URL?
     let description: String?
+    let publishedDate: Date?
 }

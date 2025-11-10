@@ -34,6 +34,7 @@ class ArticleMetadataService {
 
         let (ogTitle, ogImage, ogDescription) = extractOpenGraphMetadata(from: document)
         let (htmlTitle, metaDescription) = extractStandardMetadata(from: document)
+        let publishedDate = extractPublishedDate(from: document)
 
         let title = ogTitle ?? htmlTitle ?? url.host() ?? url.absoluteString
         let thumbnailURL = buildThumbnailURL(from: ogImage, baseURL: url)
@@ -42,7 +43,8 @@ class ArticleMetadataService {
         return ArticleMetadata(
             title: title,
             thumbnailURL: thumbnailURL,
-            description: description
+            description: description,
+            publishedDate: publishedDate
         )
     }
 
@@ -68,6 +70,7 @@ class ArticleMetadataService {
 
         let (ogTitle, ogImage, ogDescription) = extractOpenGraphMetadata(from: document)
         let (htmlTitle, metaDescription) = extractStandardMetadata(from: document)
+        let publishedDate = extractPublishedDate(from: document)
 
         let title = ogTitle ?? htmlTitle ?? url.host() ?? url.absoluteString
         let thumbnailURL = buildThumbnailURL(from: ogImage, baseURL: url)
@@ -78,7 +81,8 @@ class ArticleMetadataService {
             title: title,
             thumbnailURL: thumbnailURL,
             description: description,
-            content: content
+            content: content,
+            publishedDate: publishedDate
         )
     }
 
@@ -119,6 +123,83 @@ class ArticleMetadataService {
         let htmlTitle = try? document.select("title").first()?.text()
         let metaDescription = try? document.select("meta[name=description]").first()?.attr("content")
         return (htmlTitle, metaDescription)
+    }
+
+    private func extractPublishedDate(from document: Document) -> Date? {
+        let dateSelectors = [
+            "meta[property='article:published_time']",
+            "meta[name='article:published_time']",
+            "meta[property='og:published_time']",
+            "meta[name='published_time']",
+            "meta[name='datePublished']",
+            "meta[itemprop='datePublished']",
+            "time[datetime]",
+            "meta[property='article:published']"
+        ]
+
+        for selector in dateSelectors {
+            if let dateString = try? document.select(selector).first()?.attr("content").trimmingCharacters(in: .whitespaces),
+               !dateString.isEmpty,
+               let date = parseDateString(dateString) {
+                return date
+            }
+
+            if selector == "time[datetime]",
+               let dateString = try? document.select(selector).first()?.attr("datetime").trimmingCharacters(in: .whitespaces),
+               !dateString.isEmpty,
+               let date = parseDateString(dateString) {
+                return date
+            }
+        }
+
+        return nil
+    }
+
+    private func parseDateString(_ dateString: String) -> Date? {
+        let formatters: [ISO8601DateFormatter] = [
+            {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                return formatter
+            }(),
+            {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime]
+                return formatter
+            }(),
+            {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withFullDate]
+                return formatter
+            }()
+        ]
+
+        for formatter in formatters {
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        let dateFormats = [
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd",
+            "MMM dd, yyyy",
+            "MMMM dd, yyyy"
+        ]
+
+        for format in dateFormats {
+            dateFormatter.dateFormat = format
+            if let date = dateFormatter.date(from: dateString) {
+                return date
+            }
+        }
+
+        return nil
     }
 
     private func buildThumbnailURL(from imageURLString: String?, baseURL: URL) -> URL? {

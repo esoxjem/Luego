@@ -49,7 +49,8 @@ class ArticleListViewModel {
             let article = Article(
                 url: url,
                 title: metadata.title,
-                thumbnailURL: metadata.thumbnailURL
+                thumbnailURL: metadata.thumbnailURL,
+                publishedDate: metadata.publishedDate
             )
 
             modelContext.insert(article)
@@ -100,6 +101,9 @@ class ArticleListViewModel {
         let articleContent = try await metadataService.fetchFullContent(from: article.url)
 
         article.content = articleContent.content
+        if article.publishedDate == nil, let publishedDate = articleContent.publishedDate {
+            article.publishedDate = publishedDate
+        }
 
         do {
             try modelContext.save()

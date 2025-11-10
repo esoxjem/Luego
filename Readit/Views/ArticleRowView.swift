@@ -4,24 +4,10 @@ struct ArticleRowView: View {
     let article: Article
 
     private var formattedDate: String {
-        let calendar = Calendar.current
-        let now = Date()
-
-        if calendar.isDateInToday(article.savedDate) {
-            return "Today"
-        } else if calendar.isDateInYesterday(article.savedDate) {
-            return "Yesterday"
-        } else if calendar.isDate(article.savedDate, equalTo: now, toGranularity: .weekOfYear) {
-            return "This Week"
-        } else if let oneWeekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: now),
-                  calendar.isDate(article.savedDate, equalTo: oneWeekAgo, toGranularity: .weekOfYear) {
-            return "Last Week"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .none
-            return formatter.string(from: article.savedDate)
-        }
+        let displayDate = article.publishedDate ?? article.savedDate
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd-MMM-yy"
+        return formatter.string(from: displayDate)
     }
 
     var body: some View {
