@@ -154,11 +154,16 @@ class ArticleMetadataService {
         let elements = try extractContentElements(from: container)
         let formattedText = formatContentElements(elements)
 
-        guard formattedText.count > 200 else {
+        if formattedText.count > 200 {
+            return formattedText
+        }
+
+        let plainTextContent = try extractPlainTextContent(from: container)
+        guard plainTextContent.count > 200 else {
             throw ArticleMetadataError.noMetadata
         }
 
-        return formattedText
+        return plainTextContent
     }
 
     private func findMainContentContainer(in document: Document) throws -> Element {
@@ -241,5 +246,72 @@ class ArticleMetadataService {
         items.append("")
 
         return items.joined(separator: "\n")
+    }
+
+    private func extractPlainTextContent(from container: Element) throws -> String {
+        guard let html = try? container.html() else {
+            throw ArticleMetadataError.noMetadata
+        }
+
+        let htmlWithBreaks = html
+            .replacingOccurrences(of: "<br>", with: "|||BREAK|||", options: .caseInsensitive)
+            .replacingOccurrences(of: "<br/>", with: "|||BREAK|||", options: .caseInsensitive)
+            .replacingOccurrences(of: "<br />", with: "|||BREAK|||", options: .caseInsensitive)
+
+        let modifiedDocument = try SwiftSoup.parse(htmlWithBreaks)
+        guard let text = try? modifiedDocument.body()?.text() else {
+            throw ArticleMetadataError.noMetadata
+        }
+
+        let textWithNewlines = text.replacingOccurrences(of: "|||BREAK|||", with: "\n")
+        let paragraphs = splitIntoParagraphs(textWithNewlines)
+        let cleanedParagraphs = filterAndCleanParagraphs(paragraphs)
+
+        return cleanedParagraphs.joined(separator: "\n\n")
+    }
+
+    private func splitIntoParagraphs(_ text: String) -> [String] {
+        let lines = text.components(separatedBy: .newlines)
+        var paragraphs: [String] = []
+        var currentParagraph: [String] = []
+
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmedLine.isEmpty {
+                if !currentParagraph.isEmpty {
+                    paragraphs.append(currentParagraph.joined(separator: " "))
+                    currentParagraph = []
+                }
+            } else {
+                currentParagraph.append(trimmedLine)
+            }
+        }
+
+        if !currentParagraph.isEmpty {
+            paragraphs.append(currentParagraph.joined(separator: " "))
+        }
+
+        return paragraphs
+    }
+
+    private func filterAndCleanParagraphs(_ paragraphs: [String]) -> [String] {
+        return paragraphs
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { paragraph in
+                paragraph.count > 30 &&
+                !isNavigationOrMetadata(paragraph)
+            }
+    }
+
+    private func isNavigationOrMetadata(_ text: String) -> Bool {
+        let lowercased = text.lowercased()
+        let navigationKeywords = [
+            "cookie", "privacy policy", "terms of service",
+            "subscribe", "newsletter", "share this",
+            "follow us", "copyright ©", "all rights reserved"
+        ]
+
+        return navigationKeywords.contains { lowercased.contains($0) }
     }
 }
