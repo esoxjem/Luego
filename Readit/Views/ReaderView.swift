@@ -2,6 +2,13 @@ import SwiftUI
 import SwiftData
 import WebKit
 
+struct ViewOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct ReaderView: View {
     let article: Article
     @Bindable var viewModel: ArticleListViewModel
@@ -10,6 +17,10 @@ struct ReaderView: View {
     @State private var isLoading = true
     @State private var showWebView = false
     @State private var errorMessage: String?
+    @State private var scrollPosition: CGFloat = 0
+    @State private var contentHeight: CGFloat = 0
+    @State private var viewHeight: CGFloat = 0
+    @State private var saveTask: Task<Void, Never>?
 
     private var formattedDate: String {
         let displayDate = article.publishedDate ?? article.savedDate
@@ -68,43 +79,87 @@ struct ReaderView: View {
     }
 
     private func readerModeView(content: String) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(article.title)
-                        .font(.system(.title, design: .serif, weight: .bold))
+        GeometryReader { outerGeo in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Color.clear
+                        .frame(height: 1)
+                        .id("top")
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(article.title)
+                            .font(.system(.title, design: .serif, weight: .bold))
+                            .foregroundColor(.primary)
+
+                        HStack {
+                            Text(article.domain)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+
+                            Spacer()
+
+                            Text(formattedDate)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if article.content != nil {
+                            Text(article.estimatedReadingTime)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.bottom, 8)
+
+                    Divider()
+
+                    Text(content)
+                        .font(.system(.body, design: .serif))
+                        .lineSpacing(8)
                         .foregroundColor(.primary)
-
-                    HStack {
-                        Text(article.domain)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
-                        Text(formattedDate)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if article.content != nil {
-                        Text(article.estimatedReadingTime)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
                 }
-                .padding(.bottom, 8)
-
-                Divider()
-
-                Text(content)
-                    .font(.system(.body, design: .serif))
-                    .lineSpacing(8)
-                    .foregroundColor(.primary)
+                .padding()
+                .frame(maxWidth: 700)
+                .frame(maxWidth: .infinity)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .onChange(of: geo.frame(in: .global).minY) { oldValue, newValue in
+                                contentHeight = geo.size.height
+                                viewHeight = outerGeo.size.height
+                                scrollPosition = max(0, -newValue)
+                                updateReadPosition()
+                            }
+                            .onAppear {
+                                contentHeight = geo.size.height
+                                viewHeight = outerGeo.size.height
+                            }
+                    }
+                )
             }
-            .padding()
-            .frame(maxWidth: 700)
-            .frame(maxWidth: .infinity)
+            .onDisappear {
+                saveTask?.cancel()
+                let maxScroll = max(1, contentHeight - viewHeight)
+                let position = min(1.0, max(0.0, scrollPosition / maxScroll))
+                viewModel.updateReadPosition(for: article, position: position)
+            }
+        }
+    }
+
+    private func updateReadPosition() {
+        saveTask?.cancel()
+
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+
+            guard !Task.isCancelled else { return }
+
+            let maxScroll = max(1, contentHeight - viewHeight)
+            let position = min(1.0, max(0.0, scrollPosition / maxScroll))
+
+            await MainActor.run {
+                viewModel.updateReadPosition(for: article, position: position)
+            }
         }
     }
 

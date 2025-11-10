@@ -17,6 +17,7 @@ class Article {
     var savedDate: Date
     var thumbnailURL: URL?
     var publishedDate: Date?
+    var readPosition: Double = 0.0
 
     var domain: String {
         url.host() ?? url.absoluteString
@@ -36,7 +37,7 @@ class Article {
         return "\(minutes) min"
     }
 
-    init(id: UUID = UUID(), url: URL, title: String, content: String? = nil, savedDate: Date = Date(), thumbnailURL: URL? = nil, publishedDate: Date? = nil) {
+    init(id: UUID = UUID(), url: URL, title: String, content: String? = nil, savedDate: Date = Date(), thumbnailURL: URL? = nil, publishedDate: Date? = nil, readPosition: Double = 0.0) {
         self.id = id
         self.url = url
         self.title = title
@@ -44,6 +45,7 @@ class Article {
         self.savedDate = savedDate
         self.thumbnailURL = thumbnailURL
         self.publishedDate = publishedDate
+        self.readPosition = readPosition
     }
 }
 

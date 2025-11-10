@@ -10,6 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Article.savedDate, order: .reverse) private var articles: [Article]
     @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
 
@@ -17,7 +18,7 @@ struct ContentView: View {
         NavigationStack {
             Group {
                 if let viewModel {
-                    if viewModel.articles.isEmpty {
+                    if articles.isEmpty {
                         emptyState
                     } else {
                         articleList(viewModel: viewModel)
@@ -51,12 +52,13 @@ struct ContentView: View {
 
     private func articleList(viewModel: ArticleListViewModel) -> some View {
         List {
-            ForEach(viewModel.articles) { article in
+            ForEach(articles) { article in
                 NavigationLink {
                     ReaderView(article: article, viewModel: viewModel)
                 } label: {
                     ArticleRowView(article: article)
                 }
+                .id(article.id.uuidString + String(article.readPosition))
             }
             .onDelete { indexSet in
                 viewModel.deleteArticle(at: indexSet)

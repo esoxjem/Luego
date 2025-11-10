@@ -114,4 +114,15 @@ class ArticleListViewModel {
 
         return articleContent.content
     }
+
+    func updateReadPosition(for article: Article, position: Double) {
+        let clampedPosition = max(0.0, min(1.0, position))
+        article.readPosition = clampedPosition
+
+        do {
+            try modelContext.save()
+        } catch {
+            errorMessage = "Failed to save read position: \(error.localizedDescription)"
+        }
+    }
 }

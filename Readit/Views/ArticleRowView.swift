@@ -1,13 +1,17 @@
 import SwiftUI
 
 struct ArticleRowView: View {
-    let article: Article
+    @Bindable var article: Article
 
     private var formattedDate: String {
         let displayDate = article.publishedDate ?? article.savedDate
         let formatter = DateFormatter()
         formatter.dateFormat = "dd-MMM-yy"
         return formatter.string(from: displayDate)
+    }
+
+    private var readPercentage: Int {
+        Int(article.readPosition * 100)
     }
 
     var body: some View {
@@ -44,6 +48,10 @@ struct ArticleRowView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+
+                Text("Read \(readPercentage)%")
+                    .font(.caption)
+                    .foregroundStyle(.blue)
 
                 HStack {
                     Text(formattedDate)
