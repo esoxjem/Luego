@@ -45,9 +45,19 @@ struct ArticleRowView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                Text(formattedDate)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                HStack {
+                    Text(formattedDate)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+
+                    Spacer()
+
+                    if article.content != nil {
+                        Text(article.estimatedReadingTime)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
             }
         }
         .padding(.vertical, 4)

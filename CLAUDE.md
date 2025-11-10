@@ -31,13 +31,17 @@ open Readit.xcodeproj
 - **Clean**: ⌘⇧K in Xcode, or `xcodebuild clean -project Readit.xcodeproj -scheme Readit`
 
 ### Running on Specific Simulators
-```bash
-# List available simulators
-xcrun simctl list devices
+**IMPORTANT: Always check available simulators before building**
 
-# Build and run on specific simulator
-xcodebuild -project Readit.xcodeproj -scheme Readit -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build
+```bash
+# List available iPhone simulators
+xcrun simctl list devices available | grep "iPhone"
+
+# Build and run on specific simulator (use a simulator from the list above)
+xcodebuild -project Readit.xcodeproj -scheme Readit -destination 'platform=iOS Simulator,name=iPhone 17' build
 ```
+
+**Note:** Simulator names vary by Xcode version. Always check available simulators first and use an exact name from the list.
 
 ## Project Structure
 
@@ -213,7 +217,8 @@ for selector in contentSelectors {
 Currently, no test targets are configured. When adding tests:
 1. Create a test target via Xcode: File → New → Target → Unit Testing Bundle
 2. Add test files with `XCTestCase` subclasses
-3. Run tests with ⌘U or `xcodebuild test -project Readit.xcodeproj -scheme Readit -destination 'platform=iOS Simulator,name=iPhone 15 Pro'`
+3. Run tests with ⌘U or `xcodebuild test -project Readit.xcodeproj -scheme Readit -destination 'platform=iOS Simulator,name=<SIMULATOR_NAME>'`
+   (Check available simulators first using `xcrun simctl list devices available | grep "iPhone"`)
 
 **Recommended Test Coverage:**
 - ArticleMetadataService: URL validation, HTML parsing, error handling

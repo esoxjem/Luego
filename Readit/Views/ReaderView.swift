@@ -86,6 +86,12 @@ struct ReaderView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
+
+                    if article.content != nil {
+                        Text(article.estimatedReadingTime)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .padding(.bottom, 8)
 
