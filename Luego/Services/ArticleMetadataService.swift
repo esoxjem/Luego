@@ -284,18 +284,27 @@ class ArticleMetadataService {
         var contentParts: [String] = []
 
         for element in elements {
-            guard let text = try? element.text().trimmingCharacters(in: .whitespacesAndNewlines),
-                  text.count > 20 else {
+            guard let rawText = try? element.text(),
+                  rawText.count > 20 else {
                 continue
             }
 
-            let formatted = formatElement(element, text: text)
+            let normalizedText = normalizeWhitespace(rawText)
+            let formatted = formatElement(element, text: normalizedText)
             if !formatted.isEmpty {
                 contentParts.append(formatted)
             }
         }
 
         return contentParts.joined(separator: "\n\n")
+    }
+
+    private func normalizeWhitespace(_ text: String) -> String {
+        return text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespaces)
     }
 
     private func formatElement(_ element: Element, text: String) -> String {
@@ -361,7 +370,8 @@ class ArticleMetadataService {
 
             if trimmedLine.isEmpty {
                 if !currentParagraph.isEmpty {
-                    paragraphs.append(currentParagraph.joined(separator: " "))
+                    let joined = currentParagraph.joined(separator: " ")
+                    paragraphs.append(normalizeWhitespace(joined))
                     currentParagraph = []
                 }
             } else {
@@ -370,7 +380,8 @@ class ArticleMetadataService {
         }
 
         if !currentParagraph.isEmpty {
-            paragraphs.append(currentParagraph.joined(separator: " "))
+            let joined = currentParagraph.joined(separator: " ")
+            paragraphs.append(normalizeWhitespace(joined))
         }
 
         return paragraphs

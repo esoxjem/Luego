@@ -79,27 +79,47 @@ struct ReaderView: View {
         }
     }
 
-    private func splitContentIntoSections(_ content: String) -> [String] {
-        let characters = Array(content)
-        let sectionSize = characters.count / 100
-        var sections: [String] = []
+    private struct ContentParagraph: Identifiable {
+        let id = UUID()
+        let text: String
+        let markers: [Int]
+    }
 
-        for i in 0..<101 {
-            if i == 100 {
-                let startIndex = i * sectionSize
-                sections.append(String(characters[startIndex...]))
-            } else {
-                let startIndex = i * sectionSize
-                let endIndex = min((i + 1) * sectionSize, characters.count) - 1
-                if startIndex < characters.count {
-                    sections.append(String(characters[startIndex...endIndex]))
+    private func splitContentIntoSections(_ content: String) -> [ContentParagraph] {
+        let paragraphs = content.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+        let targetMarkerCount = 101
+        var result: [ContentParagraph] = []
+
+        let totalLength = content.count
+        let markerInterval = Double(totalLength) / Double(targetMarkerCount - 1)
+
+        var currentLength = 0
+        var nextMarkerIndex = 0
+
+        for paragraph in paragraphs {
+            var markersForParagraph: [Int] = []
+            let paragraphEndLength = currentLength + paragraph.count
+
+            while nextMarkerIndex < targetMarkerCount {
+                let markerPosition = Double(nextMarkerIndex) * markerInterval
+                if markerPosition <= Double(paragraphEndLength) {
+                    markersForParagraph.append(nextMarkerIndex)
+                    nextMarkerIndex += 1
                 } else {
-                    sections.append("")
+                    break
                 }
             }
+
+            result.append(ContentParagraph(text: paragraph, markers: markersForParagraph))
+            currentLength = paragraphEndLength + 2
         }
 
-        return sections
+        while nextMarkerIndex < targetMarkerCount {
+            result.append(ContentParagraph(text: "", markers: [nextMarkerIndex]))
+            nextMarkerIndex += 1
+        }
+
+        return result
     }
 
     private func restoreScrollPosition(proxy: ScrollViewProxy) {
@@ -155,16 +175,21 @@ struct ReaderView: View {
                         Divider()
 
                         VStack(alignment: .leading, spacing: 0) {
-                            ForEach(Array(splitContentIntoSections(content).enumerated()), id: \.offset) { index, section in
+                            ForEach(splitContentIntoSections(content)) { paragraph in
                                 VStack(alignment: .leading, spacing: 0) {
-                                    Color.clear
-                                        .frame(height: 1)
-                                        .id("marker_\(index)")
+                                    ForEach(paragraph.markers, id: \.self) { markerIndex in
+                                        Color.clear
+                                            .frame(height: 1)
+                                            .id("marker_\(markerIndex)")
+                                    }
 
-                                    Text(section)
-                                        .font(.system(.body, design: .serif))
-                                        .lineSpacing(8)
-                                        .foregroundColor(.primary)
+                                    if !paragraph.text.isEmpty {
+                                        Text(paragraph.text)
+                                            .font(.system(.body, design: .serif))
+                                            .lineSpacing(8)
+                                            .foregroundColor(.primary)
+                                            .padding(.bottom, 16)
+                                    }
                                 }
                             }
                         }
