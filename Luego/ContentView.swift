@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Readit
+//  Luego
 //
 //  Created by Arun Sasidharan on 10/11/25.
 //
@@ -27,7 +27,7 @@ struct ContentView: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("Readit")
+            .navigationTitle("Luego")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
