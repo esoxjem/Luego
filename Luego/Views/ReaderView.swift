@@ -81,11 +81,11 @@ struct ReaderView: View {
 
     private func splitContentIntoSections(_ content: String) -> [String] {
         let characters = Array(content)
-        let sectionSize = characters.count / 10
+        let sectionSize = characters.count / 100
         var sections: [String] = []
 
-        for i in 0..<11 {
-            if i == 10 {
+        for i in 0..<101 {
+            if i == 100 {
                 let startIndex = i * sectionSize
                 sections.append(String(characters[startIndex...]))
             } else {
@@ -109,8 +109,8 @@ struct ReaderView: View {
         let targetPosition = article.readPosition
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let markerIndex = Int(targetPosition * 10)
-            let clampedIndex = min(markerIndex, 10)
+            let markerIndex = Int(targetPosition * 100)
+            let clampedIndex = min(markerIndex, 100)
 
             withAnimation(.easeOut(duration: 0.5)) {
                 proxy.scrollTo("marker_\(clampedIndex)", anchor: .top)
