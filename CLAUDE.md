@@ -74,9 +74,11 @@ Luego/
 │   │   └── SharedStorageRepository.swift
 │   ├── DataSources/                         # Framework wrappers
 │   │   ├── Local/
-│   │   │   └── UserDefaultsDataSource.swift
+│   │   │   ├── UserDefaultsDataSource.swift
+│   │   │   └── SharedStorage.swift          # Singleton for app group storage
 │   │   └── Remote/
-│   │       └── HTMLParserDataSource.swift
+│   │       ├── HTMLParserDataSource.swift
+│   │       └── ArticleMetadataService.swift # Singleton for HTML parsing
 │   └── DTOs/                                # Data mappers
 │       ├── ArticleMapper.swift
 │       └── MetadataMapper.swift
@@ -100,10 +102,6 @@ Luego/
 │   ├── Article.swift                        # @Model for SwiftData
 │   ├── ArticleMetadata.swift
 │   └── ArticleContent.swift
-│
-├── Services/                                # Legacy services (wrapped by data layer)
-│   ├── ArticleMetadataService.swift
-│   └── SharedStorage.swift
 │
 ├── LuegoApp.swift                           # App entry point with DI setup
 ├── ContentView.swift                        # Main list view

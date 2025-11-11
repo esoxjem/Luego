@@ -53,9 +53,11 @@ Luego/
 │   │   └── SharedStorageRepository.swift
 │   ├── DataSources/
 │   │   ├── Local/
-│   │   │   └── UserDefaultsDataSource.swift
+│   │   │   ├── UserDefaultsDataSource.swift
+│   │   │   └── SharedStorage.swift
 │   │   └── Remote/
-│   │       └── HTMLParserDataSource.swift
+│   │       ├── HTMLParserDataSource.swift
+│   │       └── ArticleMetadataService.swift
 │   └── DTOs/                   # Data transfer objects & mappers
 │       ├── ArticleMapper.swift
 │       └── MetadataMapper.swift
@@ -75,14 +77,10 @@ Luego/
 │   └── Configuration/
 │       └── AppConfiguration.swift
 │
-├── Models/                     # SwiftData persistence models
-│   ├── Article.swift           # @Model for SwiftData
-│   ├── ArticleMetadata.swift
-│   └── ArticleContent.swift
-│
-└── Services/                   # Legacy services (wrapped by data layer)
-    ├── ArticleMetadataService.swift
-    └── SharedStorage.swift
+└── Models/                     # SwiftData persistence models
+    ├── Article.swift           # @Model for SwiftData
+    ├── ArticleMetadata.swift
+    └── ArticleContent.swift
 ```
 
 ## Layer Responsibilities
