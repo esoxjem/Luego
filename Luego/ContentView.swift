@@ -39,7 +39,7 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingAddArticle) {
                 if let viewModel {
-                    AddArticleViewNew(viewModel: viewModel)
+                    AddArticleView(viewModel: viewModel)
                 }
             }
             .task {
@@ -64,10 +64,10 @@ struct ContentView: View {
                 NavigationLink {
                     if let container = diContainer {
                         let readerViewModel = container.makeReaderViewModel(article: article)
-                        ReaderViewNew(viewModel: readerViewModel)
+                        ReaderView(viewModel: readerViewModel)
                     }
                 } label: {
-                    ArticleRowViewNew(article: article)
+                    ArticleRowView(article: article)
                 }
                 .id(article.id.uuidString + String(article.readPosition))
             }

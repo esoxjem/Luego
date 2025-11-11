@@ -86,11 +86,11 @@ Luego/
 ├── Presentation/                            # UI layer
 │   ├── ArticleList/
 │   │   ├── ArticleListViewModel.swift       # Observable state with use cases
-│   │   ├── ArticleRowViewNew.swift          # List row component
-│   │   └── AddArticleViewNew.swift          # URL input sheet
+│   │   ├── ArticleRowView.swift             # List row component
+│   │   └── AddArticleView.swift             # URL input sheet
 │   └── Reader/
 │       ├── ReaderViewModel.swift            # Reader state management
-│       └── ReaderViewNew.swift              # Reader view with markdown
+│       └── ReaderView.swift                 # Reader view with markdown
 │
 ├── Core/                                    # Infrastructure
 │   ├── DI/
@@ -230,7 +230,7 @@ The FEATURES.md file tracks:
 4. Data/Repositories/: Implement `toggleFavorite` in ArticleRepository
 5. Core/DI/: Add toggleFavoriteUseCase to DIContainer
 6. Presentation/: Use case in ArticleListViewModel
-7. Presentation/: Add favorite button to ArticleRowViewNew
+7. Presentation/: Add favorite button to ArticleRowView
 ```
 
 ### Coding Guidelines

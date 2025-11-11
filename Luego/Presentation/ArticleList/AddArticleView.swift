@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AddArticleViewNew: View {
+struct AddArticleView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var urlText = ""
     @Bindable var viewModel: ArticleListViewModel

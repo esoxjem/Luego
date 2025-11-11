@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ArticleRowViewNew: View {
+struct ArticleRowView: View {
     let article: Domain.Article
 
     private var formattedDate: String {

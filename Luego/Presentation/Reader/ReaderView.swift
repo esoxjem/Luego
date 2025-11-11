@@ -22,7 +22,7 @@ extension Theme {
         }
 }
 
-struct ReaderViewNew: View {
+struct ReaderView: View {
     @Bindable var viewModel: ReaderViewModel
 
     @State private var showWebView = false

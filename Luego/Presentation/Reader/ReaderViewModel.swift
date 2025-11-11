@@ -6,7 +6,7 @@ import Observation
 final class ReaderViewModel {
     var article: Domain.Article
     var articleContent: String?
-    var isLoading = false
+    var isLoading: Bool
     var errorMessage: String?
 
     private let fetchContentUseCase: FetchArticleContentUseCase
@@ -18,6 +18,8 @@ final class ReaderViewModel {
         updateReadPositionUseCase: UpdateArticleReadPositionUseCase
     ) {
         self.article = article
+        self.articleContent = article.content
+        self.isLoading = article.content == nil
         self.fetchContentUseCase = fetchContentUseCase
         self.updateReadPositionUseCase = updateReadPositionUseCase
     }

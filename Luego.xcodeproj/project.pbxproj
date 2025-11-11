@@ -37,6 +37,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		601505C22EC3650D00CADAFB /* ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ARCHITECTURE.md; sourceTree = "<group>"; };
 		6075988F2EC1FC8D00BEE86E /* Luego.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luego.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		607598CF2EC2220900BEE86E /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		607598D02EC2220900BEE86E /* FEATURES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FEATURES.md; sourceTree = "<group>"; };
@@ -44,17 +45,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		601505C82EC3665900CADAFB /* Exceptions for "Luego" folder in "LuegoShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Data/DataSources/Local/SharedStorage.swift,
+				Data/DataSources/Local/UserDefaultsDataSource.swift,
+			);
+			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
+		};
 		608D75742EC33EA6002DD532 /* Exceptions for "LuegoShareExtension" folder in "LuegoShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-			);
-			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
-		};
-		608D757A2EC340CF002DD532 /* Exceptions for "Luego" folder in "LuegoShareExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Services/SharedStorage.swift,
 			);
 			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
 		};
@@ -64,7 +66,7 @@
 		607598912EC1FC8D00BEE86E /* Luego */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				608D757A2EC340CF002DD532 /* Exceptions for "Luego" folder in "LuegoShareExtension" target */,
+				601505C82EC3665900CADAFB /* Exceptions for "Luego" folder in "LuegoShareExtension" target */,
 			);
 			path = Luego;
 			sourceTree = "<group>";
@@ -102,6 +104,7 @@
 		607598862EC1FC8D00BEE86E = {
 			isa = PBXGroup;
 			children = (
+				601505C22EC3650D00CADAFB /* ARCHITECTURE.md */,
 				607598CF2EC2220900BEE86E /* CLAUDE.md */,
 				607598D02EC2220900BEE86E /* FEATURES.md */,
 				607598912EC1FC8D00BEE86E /* Luego */,

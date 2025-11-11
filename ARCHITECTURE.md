@@ -65,11 +65,11 @@ Luego/
 ├── Presentation/               # UI layer
 │   ├── ArticleList/
 │   │   ├── ArticleListViewModel.swift
-│   │   ├── ArticleRowViewNew.swift
-│   │   └── AddArticleViewNew.swift
+│   │   ├── ArticleRowView.swift
+│   │   └── AddArticleView.swift
 │   └── Reader/
 │       ├── ReaderViewModel.swift
-│       └── ReaderViewNew.swift
+│       └── ReaderView.swift
 │
 ├── Core/                       # Infrastructure
 │   ├── DI/
