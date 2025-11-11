@@ -88,7 +88,7 @@ struct ReaderView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         VStack(alignment: .leading, spacing: 12) {
                             Text(article.title)
-                                .font(.system(.title, design: .serif, weight: .bold))
+                                .font(.title.weight(.bold))
                                 .foregroundColor(.primary)
 
                             HStack {
@@ -114,11 +114,11 @@ struct ReaderView: View {
                         Divider()
 
                         Markdown(content)
-                            .markdownTheme(.gitHub)
-                            .font(.system(.body, design: .serif))
-                            .foregroundColor(.primary)
+                            .markdownTheme(.reader)
                     }
-                    .padding()
+                    .fontDesign(.serif)
+                    .padding(.vertical)
+                    .padding(.horizontal, 20)
                     .frame(maxWidth: 700)
                     .frame(maxWidth: .infinity)
                     .id("articleContent")
@@ -258,6 +258,13 @@ struct WebViewRepresentable: UIViewRepresentable {
 
     func updateUIView(_ uiView: WKWebView, context: Context) {
     }
+}
+
+extension Theme {
+    static let reader = Theme.gitHub
+        .text {
+            FontSize(18)
+        }
 }
 
 #Preview {
