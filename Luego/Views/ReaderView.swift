@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import WebKit
+import MarkdownUI
 
 struct ViewOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -79,124 +80,42 @@ struct ReaderView: View {
         }
     }
 
-    private struct ContentElementWithMarkers: Identifiable {
-        let id = UUID()
-        let element: ContentElement
-        let markers: [Int]
-    }
-
-    private func parseContentIntoElements(_ content: String) -> [ContentElementWithMarkers] {
-        let elements = ContentElement.parse(content)
-        let targetMarkerCount = 101
-        var result: [ContentElementWithMarkers] = []
-
-        let totalLength = content.count
-        let markerInterval = Double(totalLength) / Double(targetMarkerCount - 1)
-
-        var currentLength = 0
-        var nextMarkerIndex = 0
-
-        for element in elements {
-            let elementText = getElementText(element)
-            var markersForElement: [Int] = []
-            let elementEndLength = currentLength + elementText.count
-
-            while nextMarkerIndex < targetMarkerCount {
-                let markerPosition = Double(nextMarkerIndex) * markerInterval
-                if markerPosition <= Double(elementEndLength) {
-                    markersForElement.append(nextMarkerIndex)
-                    nextMarkerIndex += 1
-                } else {
-                    break
-                }
-            }
-
-            result.append(ContentElementWithMarkers(element: element, markers: markersForElement))
-            currentLength = elementEndLength + 2
-        }
-
-        while nextMarkerIndex < targetMarkerCount {
-            result.append(ContentElementWithMarkers(element: .paragraph(""), markers: [nextMarkerIndex]))
-            nextMarkerIndex += 1
-        }
-
-        return result
-    }
-
-    private func getElementText(_ element: ContentElement) -> String {
-        switch element {
-        case .heading1(let text), .heading2(let text), .heading3(let text),
-             .heading4(let text), .heading5(let text), .heading6(let text),
-             .blockquote(let text), .listItem(let text), .paragraph(let text):
-            return text
-        }
-    }
-
-    private func restoreScrollPosition(proxy: ScrollViewProxy) {
-        guard !hasRestoredPosition && article.readPosition > 0 else { return }
-
-        hasRestoredPosition = true
-        let targetPosition = article.readPosition
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let markerIndex = Int(targetPosition * 100)
-            let clampedIndex = min(markerIndex, 100)
-
-            withAnimation(.easeOut(duration: 0.5)) {
-                proxy.scrollTo("marker_\(clampedIndex)", anchor: .top)
-            }
-        }
-    }
 
     private func readerModeView(content: String) -> some View {
         GeometryReader { outerGeo in
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        Color.clear
-                            .frame(height: 1)
-                            .id("top")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(article.title)
+                            .font(.system(.title, design: .serif, weight: .bold))
+                            .foregroundColor(.primary)
 
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(article.title)
-                                .font(.system(.title, design: .serif, weight: .bold))
-                                .foregroundColor(.primary)
+                        HStack {
+                            Text(article.domain)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
 
-                            HStack {
-                                Text(article.domain)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                            Spacer()
 
-                                Spacer()
-
-                                Text(formattedDate)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            if article.content != nil {
-                                Text(article.estimatedReadingTime)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
+                            Text(formattedDate)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.bottom, 8)
 
-                        Divider()
+                        if article.content != nil {
+                            Text(article.estimatedReadingTime)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.bottom, 8)
 
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(parseContentIntoElements(content)) { elementWithMarkers in
-                                ContentElementView(
-                                    element: elementWithMarkers.element,
-                                    markers: elementWithMarkers.markers
-                                )
-                            }
-                        }
-                        .onAppear {
-                            if !hasRestoredPosition {
-                                restoreScrollPosition(proxy: proxy)
-                            }
-                        }
+                    Divider()
+
+                    Markdown(content)
+                        .markdownTheme(.gitHub)
+                        .font(.system(.body, design: .serif))
+                        .foregroundColor(.primary)
                 }
                 .padding()
                 .frame(maxWidth: 700)
@@ -216,13 +135,12 @@ struct ReaderView: View {
                             }
                     }
                 )
-                }
-                .onDisappear {
-                    saveTask?.cancel()
-                    let maxScroll = max(1, contentHeight - viewHeight)
-                    let position = min(1.0, max(0.0, scrollPosition / maxScroll))
-                    viewModel.updateReadPosition(for: article, position: position)
-                }
+            }
+            .onDisappear {
+                saveTask?.cancel()
+                let maxScroll = max(1, contentHeight - viewHeight)
+                let position = min(1.0, max(0.0, scrollPosition / maxScroll))
+                viewModel.updateReadPosition(for: article, position: position)
             }
         }
     }

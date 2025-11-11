@@ -314,23 +314,55 @@ class ArticleMetadataService {
         var contentParts: [String] = []
 
         for element in elements {
-            guard let rawText = try? element.text() else {
-                continue
-            }
+            let markdownText = convertElementToMarkdown(element)
 
             let minLength = isHeadingElement(element) ? 3 : 20
-            guard rawText.count > minLength else {
+            guard markdownText.count > minLength else {
                 continue
             }
 
-            let normalizedText = normalizeWhitespace(rawText)
-            let formatted = formatElement(element, text: normalizedText)
+            let formatted = formatElement(element, text: markdownText)
             if !formatted.isEmpty {
                 contentParts.append(formatted)
             }
         }
 
         return contentParts.joined(separator: "\n\n")
+    }
+
+    private func convertElementToMarkdown(_ element: Element) -> String {
+        guard let html = try? element.html() else {
+            return ""
+        }
+
+        var markdown = html
+
+        markdown = markdown.replacingOccurrences(of: "<li>", with: "\n- ", options: .caseInsensitive)
+        markdown = markdown.replacingOccurrences(of: "</li>", with: "", options: .caseInsensitive)
+        markdown = markdown.replacingOccurrences(of: "</?ul>", with: "\n", options: [.regularExpression, .caseInsensitive])
+        markdown = markdown.replacingOccurrences(of: "</?ol>", with: "\n", options: [.regularExpression, .caseInsensitive])
+
+        markdown = markdown.replacingOccurrences(of: "<strong>(.*?)</strong>", with: "**$1**", options: .regularExpression)
+        markdown = markdown.replacingOccurrences(of: "<b>(.*?)</b>", with: "**$1**", options: .regularExpression)
+        markdown = markdown.replacingOccurrences(of: "<em>(.*?)</em>", with: "*$1*", options: .regularExpression)
+        markdown = markdown.replacingOccurrences(of: "<i>(.*?)</i>", with: "*$1*", options: .regularExpression)
+        markdown = markdown.replacingOccurrences(of: "<code>(.*?)</code>", with: "`$1`", options: .regularExpression)
+
+        markdown = markdown.replacingOccurrences(of: "<a[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", with: "[$2]($1)", options: .regularExpression)
+
+        markdown = markdown.replacingOccurrences(of: "<br\\s*/?>", with: " ", options: .regularExpression)
+        markdown = markdown.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+
+        markdown = markdown.replacingOccurrences(of: "&amp;", with: "&")
+        markdown = markdown.replacingOccurrences(of: "&lt;", with: "<")
+        markdown = markdown.replacingOccurrences(of: "&gt;", with: ">")
+        markdown = markdown.replacingOccurrences(of: "&quot;", with: "\"")
+        markdown = markdown.replacingOccurrences(of: "&#39;", with: "'")
+        markdown = markdown.replacingOccurrences(of: "&nbsp;", with: " ")
+
+        markdown = markdown.replacingOccurrences(of: "\\n{3,}", with: "\n\n", options: .regularExpression)
+
+        return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func isHeadingElement(_ element: Element) -> Bool {
@@ -350,10 +382,20 @@ class ArticleMetadataService {
         let tagName = element.tagName()
 
         switch tagName {
-        case "h1", "h2", "h3", "h4", "h5", "h6":
-            return "\n# \(text)\n"
+        case "h1":
+            return "# \(text)"
+        case "h2":
+            return "## \(text)"
+        case "h3":
+            return "### \(text)"
+        case "h4":
+            return "#### \(text)"
+        case "h5":
+            return "##### \(text)"
+        case "h6":
+            return "###### \(text)"
         case "blockquote":
-            return "\n> \(text)\n"
+            return "> \(text)"
         case "ul", "ol":
             return formatListElement(element)
         default:
@@ -368,11 +410,11 @@ class ArticleMetadataService {
 
         var items: [String] = []
         for item in listItems {
-            if let itemText = try? item.text() {
-                items.append("• \(itemText)")
+            let markdownText = convertElementToMarkdown(item)
+            if !markdownText.isEmpty {
+                items.append("- \(markdownText)")
             }
         }
-        items.append("")
 
         return items.joined(separator: "\n")
     }

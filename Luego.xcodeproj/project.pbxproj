@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		607598B42EC20CB100BEE86E /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 607598A02EC2015800BEE86E /* SwiftSoup */; };
+		607598D12EC2300000BEE86E /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 607598D02EC2300000BEE86E /* MarkdownUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				607598B42EC20CB100BEE86E /* SwiftSoup in Frameworks */,
+				607598D12EC2300000BEE86E /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,6 +77,7 @@
 			name = Luego;
 			packageProductDependencies = (
 				607598A02EC2015800BEE86E /* SwiftSoup */,
+				607598D02EC2300000BEE86E /* MarkdownUI */,
 			);
 			productName = Luego;
 			productReference = 6075988F2EC1FC8D00BEE86E /* Luego.app */;
@@ -106,6 +109,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				6075989F2EC2015800BEE86E /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 607598902EC1FC8D00BEE86E /* Products */;
@@ -355,6 +359,14 @@
 				minimumVersion = 2.7.5;
 			};
 		};
+		607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -362,6 +374,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6075989F2EC2015800BEE86E /* XCRemoteSwiftPackageReference "SwiftSoup" */;
 			productName = SwiftSoup;
+		};
+		607598D02EC2300000BEE86E /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
