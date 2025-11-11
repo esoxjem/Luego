@@ -9,9 +9,8 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.diContainer) private var diContainer
     @Environment(\.scenePhase) private var scenePhase
-    @Query(sort: \Article.savedDate, order: .reverse) private var articles: [Article]
     @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
 
@@ -19,7 +18,7 @@ struct ContentView: View {
         NavigationStack {
             Group {
                 if let viewModel {
-                    if articles.isEmpty {
+                    if viewModel.articles.isEmpty {
                         emptyState
                     } else {
                         articleList(viewModel: viewModel)
@@ -40,18 +39,19 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingAddArticle) {
                 if let viewModel {
-                    AddArticleView(viewModel: viewModel)
+                    AddArticleViewNew(viewModel: viewModel)
                 }
             }
             .task {
-                if viewModel == nil {
-                    viewModel = ArticleListViewModel(modelContext: modelContext)
+                if viewModel == nil, let container = diContainer {
+                    viewModel = container.makeArticleListViewModel()
+                    await viewModel?.loadArticles()
                 }
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active, let viewModel {
                     Task {
-                        await viewModel.processSharedURLs()
+                        await viewModel.syncSharedArticles()
                     }
                 }
             }
@@ -60,16 +60,18 @@ struct ContentView: View {
 
     private func articleList(viewModel: ArticleListViewModel) -> some View {
         List {
-            ForEach(articles) { article in
+            ForEach(viewModel.articles) { article in
                 NavigationLink {
-                    ReaderView(article: article, viewModel: viewModel)
+                    ReaderViewWrapper(article: article)
                 } label: {
-                    ArticleRowView(article: article)
+                    ArticleRowViewWrapper(article: article)
                 }
                 .id(article.id.uuidString + String(article.readPosition))
             }
             .onDelete { indexSet in
-                viewModel.deleteArticle(at: indexSet)
+                Task {
+                    await viewModel.deleteArticle(at: indexSet)
+                }
             }
         }
     }
@@ -85,6 +87,30 @@ struct ContentView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+    }
+}
+
+struct ReaderViewWrapper: View {
+    let article: Domain.Article
+    @Environment(\.diContainer) private var diContainer
+
+    var body: some View {
+        Group {
+            if let container = diContainer {
+                let readerViewModel = container.makeReaderViewModel(article: article)
+                ReaderViewNew(viewModel: readerViewModel)
+            } else {
+                Text("Error: DI Container not available")
+            }
+        }
+    }
+}
+
+struct ArticleRowViewWrapper: View {
+    let article: Domain.Article
+
+    var body: some View {
+        ArticleRowViewNew(article: article)
     }
 }
 

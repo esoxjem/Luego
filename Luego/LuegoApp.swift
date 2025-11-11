@@ -23,10 +23,28 @@ struct LuegoApp: App {
         }
     }()
 
+    @MainActor
+    private var diContainer: DIContainer {
+        DIContainer(modelContext: sharedModelContainer.mainContext)
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.diContainer, diContainer)
         }
         .modelContainer(sharedModelContainer)
+    }
+}
+
+private struct DIContainerKey: EnvironmentKey {
+    @MainActor
+    static let defaultValue: DIContainer? = nil
+}
+
+extension EnvironmentValues {
+    var diContainer: DIContainer? {
+        get { self[DIContainerKey.self] }
+        set { self[DIContainerKey.self] = newValue }
     }
 }

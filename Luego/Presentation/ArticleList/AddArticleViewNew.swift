@@ -1,17 +1,9 @@
-//
-//  AddArticleView.swift
-//  Luego
-//
-//  Created by Claude on 2025-11-10.
-//
-
 import SwiftUI
-import SwiftData
 
-struct AddArticleView: View {
+struct AddArticleViewNew: View {
     @Environment(\.dismiss) private var dismiss
     @State private var urlText = ""
-    @Bindable var viewModel: ArticleListViewModelOld
+    @Bindable var viewModel: ArticleListViewModel
 
     var body: some View {
         NavigationStack {
@@ -53,7 +45,6 @@ struct AddArticleView: View {
                         Task {
                             await viewModel.addArticle(from: urlText)
 
-                            // Dismiss if successful (no error)
                             if viewModel.errorMessage == nil {
                                 dismiss()
                             }
@@ -73,12 +64,4 @@ struct AddArticleView: View {
             }
         }
     }
-}
-
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Article.self, configurations: config)
-    let viewModel = ArticleListViewModelOld(modelContext: container.mainContext)
-
-    AddArticleView(viewModel: viewModel)
 }

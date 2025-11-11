@@ -5,7 +5,7 @@ import Observation
 
 @Observable
 @MainActor
-class ArticleListViewModel {
+class ArticleListViewModelOld {
     var articles: [Article] = []
     var isLoading = false
     var errorMessage: String?
