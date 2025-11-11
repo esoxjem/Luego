@@ -2,6 +2,26 @@ import SwiftUI
 import WebKit
 import MarkdownUI
 
+struct WebViewRepresentable: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.load(URLRequest(url: url))
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+    }
+}
+
+extension Theme {
+    static let reader = Theme.gitHub
+        .text {
+            FontSize(18)
+        }
+}
+
 struct ReaderViewNew: View {
     @Bindable var viewModel: ReaderViewModel
 

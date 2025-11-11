@@ -62,9 +62,12 @@ struct ContentView: View {
         List {
             ForEach(viewModel.articles) { article in
                 NavigationLink {
-                    ReaderViewWrapper(article: article)
+                    if let container = diContainer {
+                        let readerViewModel = container.makeReaderViewModel(article: article)
+                        ReaderViewNew(viewModel: readerViewModel)
+                    }
                 } label: {
-                    ArticleRowViewWrapper(article: article)
+                    ArticleRowViewNew(article: article)
                 }
                 .id(article.id.uuidString + String(article.readPosition))
             }
@@ -90,43 +93,3 @@ struct ContentView: View {
     }
 }
 
-struct ReaderViewWrapper: View {
-    let article: Domain.Article
-    @Environment(\.diContainer) private var diContainer
-
-    var body: some View {
-        Group {
-            if let container = diContainer {
-                let readerViewModel = container.makeReaderViewModel(article: article)
-                ReaderViewNew(viewModel: readerViewModel)
-            } else {
-                Text("Error: DI Container not available")
-            }
-        }
-    }
-}
-
-struct ArticleRowViewWrapper: View {
-    let article: Domain.Article
-
-    var body: some View {
-        ArticleRowViewNew(article: article)
-    }
-}
-
-#Preview {
-    ContentView()
-        .modelContainer(for: Article.self, inMemory: true)
-}
-
-#Preview("With Articles") {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Article.self, configurations: config)
-
-    for article in Article.sampleArticles {
-        container.mainContext.insert(article)
-    }
-
-    return ContentView()
-        .modelContainer(container)
-}
