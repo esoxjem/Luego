@@ -79,16 +79,16 @@ struct ReaderView: View {
         }
     }
 
-    private struct ContentParagraph: Identifiable {
+    private struct ContentElementWithMarkers: Identifiable {
         let id = UUID()
-        let text: String
+        let element: ContentElement
         let markers: [Int]
     }
 
-    private func splitContentIntoSections(_ content: String) -> [ContentParagraph] {
-        let paragraphs = content.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+    private func parseContentIntoElements(_ content: String) -> [ContentElementWithMarkers] {
+        let elements = ContentElement.parse(content)
         let targetMarkerCount = 101
-        var result: [ContentParagraph] = []
+        var result: [ContentElementWithMarkers] = []
 
         let totalLength = content.count
         let markerInterval = Double(totalLength) / Double(targetMarkerCount - 1)
@@ -96,30 +96,40 @@ struct ReaderView: View {
         var currentLength = 0
         var nextMarkerIndex = 0
 
-        for paragraph in paragraphs {
-            var markersForParagraph: [Int] = []
-            let paragraphEndLength = currentLength + paragraph.count
+        for element in elements {
+            let elementText = getElementText(element)
+            var markersForElement: [Int] = []
+            let elementEndLength = currentLength + elementText.count
 
             while nextMarkerIndex < targetMarkerCount {
                 let markerPosition = Double(nextMarkerIndex) * markerInterval
-                if markerPosition <= Double(paragraphEndLength) {
-                    markersForParagraph.append(nextMarkerIndex)
+                if markerPosition <= Double(elementEndLength) {
+                    markersForElement.append(nextMarkerIndex)
                     nextMarkerIndex += 1
                 } else {
                     break
                 }
             }
 
-            result.append(ContentParagraph(text: paragraph, markers: markersForParagraph))
-            currentLength = paragraphEndLength + 2
+            result.append(ContentElementWithMarkers(element: element, markers: markersForElement))
+            currentLength = elementEndLength + 2
         }
 
         while nextMarkerIndex < targetMarkerCount {
-            result.append(ContentParagraph(text: "", markers: [nextMarkerIndex]))
+            result.append(ContentElementWithMarkers(element: .paragraph(""), markers: [nextMarkerIndex]))
             nextMarkerIndex += 1
         }
 
         return result
+    }
+
+    private func getElementText(_ element: ContentElement) -> String {
+        switch element {
+        case .heading1(let text), .heading2(let text), .heading3(let text),
+             .heading4(let text), .heading5(let text), .heading6(let text),
+             .blockquote(let text), .listItem(let text), .paragraph(let text):
+            return text
+        }
     }
 
     private func restoreScrollPosition(proxy: ScrollViewProxy) {
@@ -175,22 +185,11 @@ struct ReaderView: View {
                         Divider()
 
                         VStack(alignment: .leading, spacing: 0) {
-                            ForEach(splitContentIntoSections(content)) { paragraph in
-                                VStack(alignment: .leading, spacing: 0) {
-                                    ForEach(paragraph.markers, id: \.self) { markerIndex in
-                                        Color.clear
-                                            .frame(height: 1)
-                                            .id("marker_\(markerIndex)")
-                                    }
-
-                                    if !paragraph.text.isEmpty {
-                                        Text(paragraph.text)
-                                            .font(.system(.body, design: .serif))
-                                            .lineSpacing(8)
-                                            .foregroundColor(.primary)
-                                            .padding(.bottom, 16)
-                                    }
-                                }
+                            ForEach(parseContentIntoElements(content)) { elementWithMarkers in
+                                ContentElementView(
+                                    element: elementWithMarkers.element,
+                                    markers: elementWithMarkers.markers
+                                )
                             }
                         }
                         .onAppear {
