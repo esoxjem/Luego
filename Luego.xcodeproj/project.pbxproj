@@ -11,15 +11,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		6075988F2EC1FC8D00BEE86E /* Readit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Readit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6075988F2EC1FC8D00BEE86E /* Luego.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luego.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		607598CF2EC2220900BEE86E /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		607598D02EC2220900BEE86E /* FEATURES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FEATURES.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		607598912EC1FC8D00BEE86E /* Readit */ = {
+		607598912EC1FC8D00BEE86E /* Luego */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Readit;
+			path = Luego;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -41,7 +41,7 @@
 			children = (
 				607598CF2EC2220900BEE86E /* CLAUDE.md */,
 				607598D02EC2220900BEE86E /* FEATURES.md */,
-				607598912EC1FC8D00BEE86E /* Readit */,
+				607598912EC1FC8D00BEE86E /* Luego */,
 				607598902EC1FC8D00BEE86E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -49,7 +49,7 @@
 		607598902EC1FC8D00BEE86E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				6075988F2EC1FC8D00BEE86E /* Readit.app */,
+				6075988F2EC1FC8D00BEE86E /* Luego.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -57,9 +57,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		6075988E2EC1FC8D00BEE86E /* Readit */ = {
+		6075988E2EC1FC8D00BEE86E /* Luego */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6075989A2EC1FC8E00BEE86E /* Build configuration list for PBXNativeTarget "Readit" */;
+			buildConfigurationList = 6075989A2EC1FC8E00BEE86E /* Build configuration list for PBXNativeTarget "Luego" */;
 			buildPhases = (
 				6075988B2EC1FC8D00BEE86E /* Sources */,
 				6075988C2EC1FC8D00BEE86E /* Frameworks */,
@@ -70,14 +70,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				607598912EC1FC8D00BEE86E /* Readit */,
+				607598912EC1FC8D00BEE86E /* Luego */,
 			);
-			name = Readit;
+			name = Luego;
 			packageProductDependencies = (
 				607598A02EC2015800BEE86E /* SwiftSoup */,
 			);
-			productName = Readit;
-			productReference = 6075988F2EC1FC8D00BEE86E /* Readit.app */;
+			productName = Luego;
+			productReference = 6075988F2EC1FC8D00BEE86E /* Luego.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -95,7 +95,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 6075988A2EC1FC8D00BEE86E /* Build configuration list for PBXProject "Readit" */;
+			buildConfigurationList = 6075988A2EC1FC8D00BEE86E /* Build configuration list for PBXProject "Luego" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -112,7 +112,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				6075988E2EC1FC8D00BEE86E /* Readit */,
+				6075988E2EC1FC8D00BEE86E /* Luego */,
 			);
 		};
 /* End PBXProject section */
@@ -279,7 +279,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Readit;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -311,7 +311,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Readit;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -326,7 +326,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		6075988A2EC1FC8D00BEE86E /* Build configuration list for PBXProject "Readit" */ = {
+		6075988A2EC1FC8D00BEE86E /* Build configuration list for PBXProject "Luego" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				607598982EC1FC8E00BEE86E /* Debug */,
@@ -335,7 +335,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6075989A2EC1FC8E00BEE86E /* Build configuration list for PBXNativeTarget "Readit" */ = {
+		6075989A2EC1FC8E00BEE86E /* Build configuration list for PBXNativeTarget "Luego" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6075989B2EC1FC8E00BEE86E /* Debug */,

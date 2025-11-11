@@ -1,6 +1,6 @@
 //
-//  ReaditApp.swift
-//  Readit
+//  LuegoApp.swift
+//  Luego
 //
 //  Created by Arun Sasidharan on 10/11/25.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct ReaditApp: App {
+struct LuegoApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Article.self,

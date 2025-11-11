@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Readit** is a minimal read-it-later iOS application that allows users to save articles from URLs, fetch metadata automatically, and manage a reading list. Built with SwiftUI and Swift 5.0, targeting iOS 26.0+.
+**Luego** is a minimal read-it-later iOS application that allows users to save articles from URLs, fetch metadata automatically, and manage a reading list. Built with SwiftUI and Swift 5.0, targeting iOS 26.0+.
 
-- **Bundle ID**: com.esoxjem.Readit
+- **Bundle ID**: com.esoxjem.Luego
 - **Development Team**: QTZUF46V7A
 - **Supported Devices**: iPhone and iPad (Universal)
 - **Current Version**: 1.0 (Build 1) - v0.1.0 Alpha (in active development)
@@ -20,15 +20,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Opening the Project
 ```bash
-open Readit.xcodeproj
+open Luego.xcodeproj
 ```
 
 ## Development Commands
 
 ### Building
-- **Build**: ⌘B in Xcode, or `xcodebuild -project Readit.xcodeproj -scheme Readit -configuration Debug build`
+- **Build**: ⌘B in Xcode, or `xcodebuild -project Luego.xcodeproj -scheme Luego -configuration Debug build`
 - **Run**: ⌘R in Xcode to build and run on simulator or connected device
-- **Clean**: ⌘⇧K in Xcode, or `xcodebuild clean -project Readit.xcodeproj -scheme Readit`
+- **Clean**: ⌘⇧K in Xcode, or `xcodebuild clean -project Luego.xcodeproj -scheme Luego`
 
 ### Running on Specific Simulators
 **IMPORTANT: Always check available simulators before building**
@@ -38,7 +38,7 @@ open Readit.xcodeproj
 xcrun simctl list devices available | grep "iPhone"
 
 # Build and run on specific simulator (use a simulator from the list above)
-xcodebuild -project Readit.xcodeproj -scheme Readit -destination 'platform=iOS Simulator,name=iPhone 17' build
+xcodebuild -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=iPhone 17' build
 ```
 
 **Note:** Simulator names vary by Xcode version. Always check available simulators first and use an exact name from the list.
@@ -46,9 +46,9 @@ xcodebuild -project Readit.xcodeproj -scheme Readit -destination 'platform=iOS S
 ## Project Structure
 
 ```
-Readit/
-├── Readit/
-│   ├── ReaditApp.swift                      # App entry point (@main)
+Luego/
+├── Luego/
+│   ├── LuegoApp.swift                       # App entry point (@main)
 │   ├── ContentView.swift                    # Main article list view with navigation
 │   ├── Models/
 │   │   ├── Article.swift                    # Core data model (Identifiable, Codable)
@@ -65,11 +65,11 @@ Readit/
 │   ├── Assets.xcassets/                     # App icons and assets
 │   ├── FEATURES.md                          # Feature tracking document
 │   └── CLAUDE.md                            # This file
-└── Readit.xcodeproj/
+└── Luego.xcodeproj/
 ```
 
 ### Key Files
-- **ReaditApp.swift**: SwiftUI app entry point with `@main` attribute
+- **LuegoApp.swift**: SwiftUI app entry point with `@main` attribute
 - **ContentView.swift**: Main list view with NavigationStack, NavigationLink to reader, empty states, and toolbar
 - **Article.swift**: Core data model with id, url, title, content, savedDate, thumbnailURL, and computed `domain` property
 - **ArticleMetadata.swift**: Metadata struct for basic article info (title, thumbnail, description)
@@ -125,7 +125,7 @@ The project uses SwiftSPM for dependency management. Dependencies are declared i
   - Used in ArticleMetadataService for parsing fetched HTML content
 
 **Package Resolution:**
-- `Package.resolved` location: `Readit.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- `Package.resolved` location: `Luego.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
 - Xcode handles dependency resolution automatically
 - No manual package commands needed
 
@@ -217,7 +217,7 @@ for selector in contentSelectors {
 Currently, no test targets are configured. When adding tests:
 1. Create a test target via Xcode: File → New → Target → Unit Testing Bundle
 2. Add test files with `XCTestCase` subclasses
-3. Run tests with ⌘U or `xcodebuild test -project Readit.xcodeproj -scheme Readit -destination 'platform=iOS Simulator,name=<SIMULATOR_NAME>'`
+3. Run tests with ⌘U or `xcodebuild test -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=<SIMULATOR_NAME>'`
    (Check available simulators first using `xcrun simctl list devices available | grep "iPhone"`)
 
 **Recommended Test Coverage:**

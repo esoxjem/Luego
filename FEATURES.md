@@ -1,7 +1,7 @@
-# Readit - MVP Features
+# Luego - MVP Features
 
 ## Overview
-Readit is a minimal read-it-later iOS app that lets users save articles, read them in a clean reader mode, and manage a simple reading list.
+Luego is a minimal read-it-later iOS app that lets users save articles, read them in a clean reader mode, and manage a simple reading list.
 
 ## Implementation Status
 **Last Updated:** 2025-11-10
@@ -16,7 +16,7 @@ Readit is a minimal read-it-later iOS app that lets users save articles, read th
 **Priority: Critical**
 
 Users can save articles through two methods:
-- ⏳ **Share Extension**: Share URLs from Safari or other apps directly into Readit *(Deferred to v1.1)*
+- ⏳ **Share Extension**: Share URLs from Safari or other apps directly into Luego *(Deferred to v1.1)*
 - ✅ **In-App URL Entry**: Paste or type URLs directly within the app
 
 **Technical Implementation:**
@@ -78,7 +78,7 @@ On-device data persistence:
 **Technical Implementation:**
 - ✅ Article model: @Model class with SwiftData persistence
 - ✅ ArticleMetadata and ArticleContent models (one struct per file)
-- ✅ SwiftData ModelContainer configured in ReaditApp
+- ✅ SwiftData ModelContainer configured in LuegoApp
 - ✅ ModelContext injected into ArticleListViewModel
 - ✅ Content fetched lazily when article is opened in reader
 - ✅ Data persists between app launches
@@ -123,8 +123,8 @@ These features are explicitly excluded from the initial MVP:
 
 1. **First Launch**: User sees empty state with prompt to add first article
 2. **Save Article**:
-   - Option A: User shares URL from Safari → Readit appears in share sheet → Article saved
-   - Option B: User opens Readit → Taps "Add Article" → Pastes URL → Article saved
+   - Option A: User shares URL from Safari → Luego appears in share sheet → Article saved
+   - Option B: User opens Luego → Taps "Add Article" → Pastes URL → Article saved
 3. **View List**: User sees saved articles in a clean list
 4. **Read Article**: User taps article → Reader mode opens with clean, parsed content
 5. **Manage**: User swipes to delete articles they've finished reading
@@ -179,7 +179,7 @@ A successful MVP delivers:
    - ✅ Loading and error states
 9. ✅ **Persistent Storage with SwiftData**
    - ✅ Migrate Article model from struct to @Model class
-   - ✅ Configure ModelContainer in ReaditApp
+   - ✅ Configure ModelContainer in LuegoApp
    - ✅ Update ArticleListViewModel to use ModelContext
    - ✅ Inject ModelContext via SwiftUI environment
    - ✅ Update all views and previews to work with SwiftData
@@ -217,7 +217,7 @@ A successful MVP delivers:
 
 ### Project Structure
 ```
-Readit/
+Luego/
 ├── Models/
 │   ├── Article.swift ✅
 │   ├── ArticleMetadata.swift ✅
@@ -231,5 +231,5 @@ Readit/
 │   ├── ArticleRowView.swift ✅
 │   └── ReaderView.swift ✅
 ├── ContentView.swift ✅
-└── ReaditApp.swift ✅
+└── LuegoApp.swift ✅
 ```
