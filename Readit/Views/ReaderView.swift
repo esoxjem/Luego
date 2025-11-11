@@ -10,7 +10,7 @@ struct ViewOffsetKey: PreferenceKey {
 }
 
 struct ReaderView: View {
-    let article: Article
+    @Bindable var article: Article
     @Bindable var viewModel: ArticleListViewModel
 
     @State private var articleContent: String?
@@ -21,6 +21,7 @@ struct ReaderView: View {
     @State private var contentHeight: CGFloat = 0
     @State private var viewHeight: CGFloat = 0
     @State private var saveTask: Task<Void, Never>?
+    @State private var hasRestoredPosition = false
 
     private var formattedDate: String {
         let displayDate = article.publishedDate ?? article.savedDate
@@ -78,45 +79,100 @@ struct ReaderView: View {
         }
     }
 
+    private func splitContentIntoSections(_ content: String) -> [String] {
+        let characters = Array(content)
+        let sectionSize = characters.count / 10
+        var sections: [String] = []
+
+        for i in 0..<11 {
+            if i == 10 {
+                let startIndex = i * sectionSize
+                sections.append(String(characters[startIndex...]))
+            } else {
+                let startIndex = i * sectionSize
+                let endIndex = min((i + 1) * sectionSize, characters.count) - 1
+                if startIndex < characters.count {
+                    sections.append(String(characters[startIndex...endIndex]))
+                } else {
+                    sections.append("")
+                }
+            }
+        }
+
+        return sections
+    }
+
+    private func restoreScrollPosition(proxy: ScrollViewProxy) {
+        guard !hasRestoredPosition && article.readPosition > 0 else { return }
+
+        hasRestoredPosition = true
+        let targetPosition = article.readPosition
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            let markerIndex = Int(targetPosition * 10)
+            let clampedIndex = min(markerIndex, 10)
+
+            withAnimation(.easeOut(duration: 0.5)) {
+                proxy.scrollTo("marker_\(clampedIndex)", anchor: .top)
+            }
+        }
+    }
+
     private func readerModeView(content: String) -> some View {
         GeometryReader { outerGeo in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Color.clear
-                        .frame(height: 1)
-                        .id("top")
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Color.clear
+                            .frame(height: 1)
+                            .id("top")
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(article.title)
-                            .font(.system(.title, design: .serif, weight: .bold))
-                            .foregroundColor(.primary)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(article.title)
+                                .font(.system(.title, design: .serif, weight: .bold))
+                                .foregroundColor(.primary)
 
-                        HStack {
-                            Text(article.domain)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            HStack {
+                                Text(article.domain)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
 
-                            Spacer()
+                                Spacer()
 
-                            Text(formattedDate)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                Text(formattedDate)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            if article.content != nil {
+                                Text(article.estimatedReadingTime)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .padding(.bottom, 8)
 
-                        if article.content != nil {
-                            Text(article.estimatedReadingTime)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(splitContentIntoSections(content).enumerated()), id: \.offset) { index, section in
+                                VStack(alignment: .leading, spacing: 0) {
+                                    Color.clear
+                                        .frame(height: 1)
+                                        .id("marker_\(index)")
+
+                                    Text(section)
+                                        .font(.system(.body, design: .serif))
+                                        .lineSpacing(8)
+                                        .foregroundColor(.primary)
+                                }
+                            }
                         }
-                    }
-                    .padding(.bottom, 8)
-
-                    Divider()
-
-                    Text(content)
-                        .font(.system(.body, design: .serif))
-                        .lineSpacing(8)
-                        .foregroundColor(.primary)
+                        .onAppear {
+                            if !hasRestoredPosition {
+                                restoreScrollPosition(proxy: proxy)
+                            }
+                        }
                 }
                 .padding()
                 .frame(maxWidth: 700)
@@ -136,12 +192,13 @@ struct ReaderView: View {
                             }
                     }
                 )
-            }
-            .onDisappear {
-                saveTask?.cancel()
-                let maxScroll = max(1, contentHeight - viewHeight)
-                let position = min(1.0, max(0.0, scrollPosition / maxScroll))
-                viewModel.updateReadPosition(for: article, position: position)
+                }
+                .onDisappear {
+                    saveTask?.cancel()
+                    let maxScroll = max(1, contentHeight - viewHeight)
+                    let position = min(1.0, max(0.0, scrollPosition / maxScroll))
+                    viewModel.updateReadPosition(for: article, position: position)
+                }
             }
         }
     }
