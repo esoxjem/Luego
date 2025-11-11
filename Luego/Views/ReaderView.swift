@@ -83,64 +83,68 @@ struct ReaderView: View {
 
     private func readerModeView(content: String) -> some View {
         GeometryReader { outerGeo in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(article.title)
-                            .font(.system(.title, design: .serif, weight: .bold))
+            ScrollViewReader { scrollProxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(article.title)
+                                .font(.system(.title, design: .serif, weight: .bold))
+                                .foregroundColor(.primary)
+
+                            HStack {
+                                Text(article.domain)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+
+                                Spacer()
+
+                                Text(formattedDate)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            if article.content != nil {
+                                Text(article.estimatedReadingTime)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.bottom, 8)
+
+                        Divider()
+
+                        Markdown(content)
+                            .markdownTheme(.gitHub)
+                            .font(.system(.body, design: .serif))
                             .foregroundColor(.primary)
-
-                        HStack {
-                            Text(article.domain)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-
-                            Spacer()
-
-                            Text(formattedDate)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        if article.content != nil {
-                            Text(article.estimatedReadingTime)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
                     }
-                    .padding(.bottom, 8)
-
-                    Divider()
-
-                    Markdown(content)
-                        .markdownTheme(.gitHub)
-                        .font(.system(.body, design: .serif))
-                        .foregroundColor(.primary)
+                    .padding()
+                    .frame(maxWidth: 700)
+                    .frame(maxWidth: .infinity)
+                    .id("articleContent")
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .onChange(of: geo.frame(in: .global).minY) { oldValue, newValue in
+                                    contentHeight = geo.size.height
+                                    viewHeight = outerGeo.size.height
+                                    scrollPosition = max(0, -newValue)
+                                    updateReadPosition()
+                                }
+                                .onAppear {
+                                    contentHeight = geo.size.height
+                                    viewHeight = outerGeo.size.height
+                                    restoreScrollPosition(scrollProxy: scrollProxy)
+                                }
+                        }
+                    )
                 }
-                .padding()
-                .frame(maxWidth: 700)
-                .frame(maxWidth: .infinity)
-                .background(
-                    GeometryReader { geo in
-                        Color.clear
-                            .onChange(of: geo.frame(in: .global).minY) { oldValue, newValue in
-                                contentHeight = geo.size.height
-                                viewHeight = outerGeo.size.height
-                                scrollPosition = max(0, -newValue)
-                                updateReadPosition()
-                            }
-                            .onAppear {
-                                contentHeight = geo.size.height
-                                viewHeight = outerGeo.size.height
-                            }
-                    }
-                )
-            }
-            .onDisappear {
-                saveTask?.cancel()
-                let maxScroll = max(1, contentHeight - viewHeight)
-                let position = min(1.0, max(0.0, scrollPosition / maxScroll))
-                viewModel.updateReadPosition(for: article, position: position)
+                .onDisappear {
+                    saveTask?.cancel()
+                    let maxScroll = max(1, contentHeight - viewHeight)
+                    let position = min(1.0, max(0.0, scrollPosition / maxScroll))
+                    viewModel.updateReadPosition(for: article, position: position)
+                }
             }
         }
     }
@@ -158,6 +162,31 @@ struct ReaderView: View {
 
             await MainActor.run {
                 viewModel.updateReadPosition(for: article, position: position)
+            }
+        }
+    }
+
+    private func restoreScrollPosition(scrollProxy: ScrollViewProxy) {
+        guard !hasRestoredPosition else { return }
+        guard article.readPosition > 0 else { return }
+        guard contentHeight > 0 && viewHeight > 0 else { return }
+
+        Task {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+
+            await MainActor.run {
+                let topAnchor = UnitPoint(x: 0, y: 0)
+                let bottomAnchor = UnitPoint(x: 0, y: 1)
+
+                let interpolatedAnchor = UnitPoint(
+                    x: 0,
+                    y: topAnchor.y + (bottomAnchor.y - topAnchor.y) * article.readPosition
+                )
+
+                withAnimation(.easeOut(duration: 0.3)) {
+                    scrollProxy.scrollTo("articleContent", anchor: interpolatedAnchor)
+                }
+                hasRestoredPosition = true
             }
         }
     }
@@ -190,6 +219,7 @@ struct ReaderView: View {
     private func loadArticleContent() async {
         isLoading = true
         errorMessage = nil
+        hasRestoredPosition = false
 
         do {
             let content = try await viewModel.fetchArticleContent(for: article)
