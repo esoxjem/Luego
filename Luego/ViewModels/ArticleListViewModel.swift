@@ -125,4 +125,16 @@ class ArticleListViewModel {
             errorMessage = "Failed to save read position: \(error.localizedDescription)"
         }
     }
+
+    func processSharedURLs() async {
+        let sharedURLs = SharedStorage.shared.getSharedURLs()
+
+        guard !sharedURLs.isEmpty else { return }
+
+        for sharedURL in sharedURLs {
+            await addArticle(from: sharedURL.url.absoluteString)
+        }
+
+        SharedStorage.shared.clearSharedURLs()
+    }
 }

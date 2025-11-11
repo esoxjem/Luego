@@ -9,18 +9,72 @@
 /* Begin PBXBuildFile section */
 		607598B42EC20CB100BEE86E /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 607598A02EC2015800BEE86E /* SwiftSoup */; };
 		607598D12EC2300000BEE86E /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 607598D02EC2300000BEE86E /* MarkdownUI */; };
+		608D75732EC33EA6002DD532 /* LuegoShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		608D75712EC33EA6002DD532 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 607598872EC1FC8D00BEE86E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 608D75682EC33EA6002DD532;
+			remoteInfo = LuegoShareExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		608D727E2EC323A4002DD532 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				608D75732EC33EA6002DD532 /* LuegoShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		6075988F2EC1FC8D00BEE86E /* Luego.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luego.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		607598CF2EC2220900BEE86E /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		607598D02EC2220900BEE86E /* FEATURES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FEATURES.md; sourceTree = "<group>"; };
+		608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LuegoShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		608D75742EC33EA6002DD532 /* Exceptions for "LuegoShareExtension" folder in "LuegoShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
+		};
+		608D757A2EC340CF002DD532 /* Exceptions for "Luego" folder in "LuegoShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Services/SharedStorage.swift,
+			);
+			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		607598912EC1FC8D00BEE86E /* Luego */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				608D757A2EC340CF002DD532 /* Exceptions for "Luego" folder in "LuegoShareExtension" target */,
+			);
 			path = Luego;
+			sourceTree = "<group>";
+		};
+		608D756A2EC33EA6002DD532 /* LuegoShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				608D75742EC33EA6002DD532 /* Exceptions for "LuegoShareExtension" folder in "LuegoShareExtension" target */,
+			);
+			path = LuegoShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -35,6 +89,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		608D75662EC33EA6002DD532 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -44,6 +105,7 @@
 				607598CF2EC2220900BEE86E /* CLAUDE.md */,
 				607598D02EC2220900BEE86E /* FEATURES.md */,
 				607598912EC1FC8D00BEE86E /* Luego */,
+				608D756A2EC33EA6002DD532 /* LuegoShareExtension */,
 				607598902EC1FC8D00BEE86E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -52,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				6075988F2EC1FC8D00BEE86E /* Luego.app */,
+				608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,10 +129,12 @@
 				6075988B2EC1FC8D00BEE86E /* Sources */,
 				6075988C2EC1FC8D00BEE86E /* Frameworks */,
 				6075988D2EC1FC8D00BEE86E /* Resources */,
+				608D727E2EC323A4002DD532 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				608D75722EC33EA6002DD532 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				607598912EC1FC8D00BEE86E /* Luego */,
@@ -83,6 +148,28 @@
 			productReference = 6075988F2EC1FC8D00BEE86E /* Luego.app */;
 			productType = "com.apple.product-type.application";
 		};
+		608D75682EC33EA6002DD532 /* LuegoShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 608D75752EC33EA6002DD532 /* Build configuration list for PBXNativeTarget "LuegoShareExtension" */;
+			buildPhases = (
+				608D75652EC33EA6002DD532 /* Sources */,
+				608D75662EC33EA6002DD532 /* Frameworks */,
+				608D75672EC33EA6002DD532 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				608D756A2EC33EA6002DD532 /* LuegoShareExtension */,
+			);
+			name = LuegoShareExtension;
+			packageProductDependencies = (
+			);
+			productName = LuegoShareExtension;
+			productReference = 608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -94,6 +181,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					6075988E2EC1FC8D00BEE86E = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					608D75682EC33EA6002DD532 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -117,12 +207,20 @@
 			projectRoot = "";
 			targets = (
 				6075988E2EC1FC8D00BEE86E /* Luego */,
+				608D75682EC33EA6002DD532 /* LuegoShareExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		6075988D2EC1FC8D00BEE86E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		608D75672EC33EA6002DD532 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -139,7 +237,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		608D75652EC33EA6002DD532 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		608D75722EC33EA6002DD532 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
+			targetProxy = 608D75712EC33EA6002DD532 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		607598982EC1FC8E00BEE86E /* Debug */ = {
@@ -268,6 +381,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Luego/Luego.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
@@ -300,6 +414,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Luego/Luego.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
@@ -327,6 +442,64 @@
 			};
 			name = Release;
 		};
+		608D75762EC33EA6002DD532 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = LuegoShareExtension/LuegoShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QTZUF46V7A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LuegoShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LuegoShareExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		608D75772EC33EA6002DD532 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = LuegoShareExtension/LuegoShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QTZUF46V7A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LuegoShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LuegoShareExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -344,6 +517,15 @@
 			buildConfigurations = (
 				6075989B2EC1FC8E00BEE86E /* Debug */,
 				6075989C2EC1FC8E00BEE86E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		608D75752EC33EA6002DD532 /* Build configuration list for PBXNativeTarget "LuegoShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				608D75762EC33EA6002DD532 /* Debug */,
+				608D75772EC33EA6002DD532 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

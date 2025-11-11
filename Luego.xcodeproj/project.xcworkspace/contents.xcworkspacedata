@@ -4,4 +4,10 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:LuegoInfo.plist">
+   </FileRef>
+   <FileRef
+      location = "group:Info.plist">
+   </FileRef>
 </Workspace>

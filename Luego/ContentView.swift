@@ -10,6 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \Article.savedDate, order: .reverse) private var articles: [Article]
     @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
@@ -45,6 +46,13 @@ struct ContentView: View {
             .task {
                 if viewModel == nil {
                     viewModel = ArticleListViewModel(modelContext: modelContext)
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active, let viewModel {
+                    Task {
+                        await viewModel.processSharedURLs()
+                    }
                 }
             }
         }
