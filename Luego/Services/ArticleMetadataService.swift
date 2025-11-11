@@ -277,15 +277,49 @@ class ArticleMetadataService {
     }
 
     private func extractContentElements(from container: Element) throws -> [Element] {
-        return try container.select("p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol").array()
+        let allElements = try container.select("p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol").array()
+        return removeDescendantDuplicates(from: allElements)
+    }
+
+    private func removeDescendantDuplicates(from elements: [Element]) -> [Element] {
+        var result: [Element] = []
+
+        for element in elements {
+            let isDescendant = result.contains { potentialAncestor in
+                isDescendantOf(element, ancestor: potentialAncestor)
+            }
+
+            if !isDescendant {
+                result.append(element)
+            }
+        }
+
+        return result
+    }
+
+    private func isDescendantOf(_ element: Element, ancestor: Element) -> Bool {
+        var current = element.parent()
+
+        while let parent = current {
+            if parent === ancestor {
+                return true
+            }
+            current = parent.parent()
+        }
+
+        return false
     }
 
     private func formatContentElements(_ elements: [Element]) -> String {
         var contentParts: [String] = []
 
         for element in elements {
-            guard let rawText = try? element.text(),
-                  rawText.count > 20 else {
+            guard let rawText = try? element.text() else {
+                continue
+            }
+
+            let minLength = isHeadingElement(element) ? 3 : 20
+            guard rawText.count > minLength else {
                 continue
             }
 
@@ -297,6 +331,11 @@ class ArticleMetadataService {
         }
 
         return contentParts.joined(separator: "\n\n")
+    }
+
+    private func isHeadingElement(_ element: Element) -> Bool {
+        let tagName = element.tagName()
+        return ["h1", "h2", "h3", "h4", "h5", "h6"].contains(tagName)
     }
 
     private func normalizeWhitespace(_ text: String) -> String {
