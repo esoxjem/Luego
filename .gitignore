@@ -60,3 +60,15 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Luego specific
+#
+# Build directory
+build/
+
+# Claude Code settings (personal configuration)
+.claude/settings.local.json
+.claude/*.local.*
+
+# Xcode user state (explicit)
+*.xcuserstate
