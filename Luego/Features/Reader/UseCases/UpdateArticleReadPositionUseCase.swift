@@ -1,10 +1,10 @@
 import Foundation
 
-protocol UpdateArticleReadPositionUseCase: Sendable {
+protocol UpdateArticleReadPositionUseCaseProtocol: Sendable {
     func execute(articleId: UUID, position: Double) async throws
 }
 
-final class DefaultUpdateArticleReadPositionUseCase: UpdateArticleReadPositionUseCase {
+final class UpdateArticleReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
 
     init(articleRepository: ArticleRepositoryProtocol) {

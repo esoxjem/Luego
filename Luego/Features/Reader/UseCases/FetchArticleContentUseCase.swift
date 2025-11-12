@@ -1,10 +1,10 @@
 import Foundation
 
-protocol FetchArticleContentUseCase: Sendable {
+protocol FetchArticleContentUseCaseProtocol: Sendable {
     func execute(article: Article) async throws -> Article
 }
 
-final class DefaultFetchArticleContentUseCase: FetchArticleContentUseCase {
+final class FetchArticleContentUseCase: FetchArticleContentUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
     private let metadataRepository: MetadataRepositoryProtocol
 

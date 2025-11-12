@@ -25,34 +25,34 @@ final class DIContainer {
         SharedStorageRepository(userDefaultsDataSource: userDefaultsDataSource)
     }()
 
-    private lazy var addArticleUseCase: AddArticleUseCase = {
-        DefaultAddArticleUseCase(
+    private lazy var addArticleUseCase: AddArticleUseCaseProtocol = {
+        AddArticleUseCase(
             articleRepository: articleRepository,
             metadataRepository: metadataRepository
         )
     }()
 
-    private lazy var getArticlesUseCase: GetArticlesUseCase = {
-        DefaultGetArticlesUseCase(articleRepository: articleRepository)
+    private lazy var getArticlesUseCase: GetArticlesUseCaseProtocol = {
+        GetArticlesUseCase(articleRepository: articleRepository)
     }()
 
-    private lazy var deleteArticleUseCase: DeleteArticleUseCase = {
-        DefaultDeleteArticleUseCase(articleRepository: articleRepository)
+    private lazy var deleteArticleUseCase: DeleteArticleUseCaseProtocol = {
+        DeleteArticleUseCase(articleRepository: articleRepository)
     }()
 
-    private lazy var fetchArticleContentUseCase: FetchArticleContentUseCase = {
-        DefaultFetchArticleContentUseCase(
+    private lazy var fetchArticleContentUseCase: FetchArticleContentUseCaseProtocol = {
+        FetchArticleContentUseCase(
             articleRepository: articleRepository,
             metadataRepository: metadataRepository
         )
     }()
 
-    private lazy var updateArticleReadPositionUseCase: UpdateArticleReadPositionUseCase = {
-        DefaultUpdateArticleReadPositionUseCase(articleRepository: articleRepository)
+    private lazy var updateArticleReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol = {
+        UpdateArticleReadPositionUseCase(articleRepository: articleRepository)
     }()
 
-    private lazy var syncSharedArticlesUseCase: SyncSharedArticlesUseCase = {
-        DefaultSyncSharedArticlesUseCase(
+    private lazy var syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol = {
+        SyncSharedArticlesUseCase(
             sharedStorageRepository: sharedStorageRepository,
             articleRepository: articleRepository,
             metadataRepository: metadataRepository

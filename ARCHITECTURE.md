@@ -130,7 +130,11 @@ Luego/
 
 **Example - Use Case**:
 ```swift
-final class DefaultAddArticleUseCase: AddArticleUseCase {
+protocol AddArticleUseCaseProtocol: Sendable {
+    func execute(url: URL) async throws -> Article
+}
+
+final class AddArticleUseCase: AddArticleUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
     private let metadataRepository: MetadataRepositoryProtocol
 
@@ -273,8 +277,8 @@ final class DIContainer {
         ArticleRepository(modelContext: modelContext)
     }()
 
-    private lazy var addArticleUseCase: AddArticleUseCase = {
-        DefaultAddArticleUseCase(
+    private lazy var addArticleUseCase: AddArticleUseCaseProtocol = {
+        AddArticleUseCase(
             articleRepository: articleRepository,
             metadataRepository: metadataRepository
         )
@@ -370,7 +374,7 @@ struct LuegoApp: App {
 class AddArticleUseCaseTests: XCTestCase {
     func testAddArticle_success() async throws {
         let mockRepo = MockArticleRepository()
-        let useCase = DefaultAddArticleUseCase(
+        let useCase = AddArticleUseCase(
             articleRepository: mockRepo,
             metadataRepository: MockMetadataRepository()
         )

@@ -1,10 +1,10 @@
 import Foundation
 
-protocol DeleteArticleUseCase: Sendable {
+protocol DeleteArticleUseCaseProtocol: Sendable {
     func execute(articleId: UUID) async throws
 }
 
-final class DefaultDeleteArticleUseCase: DeleteArticleUseCase {
+final class DeleteArticleUseCase: DeleteArticleUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
 
     init(articleRepository: ArticleRepositoryProtocol) {

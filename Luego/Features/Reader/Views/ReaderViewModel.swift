@@ -9,13 +9,13 @@ final class ReaderViewModel {
     var isLoading: Bool
     var errorMessage: String?
 
-    private let fetchContentUseCase: FetchArticleContentUseCase
-    private let updateReadPositionUseCase: UpdateArticleReadPositionUseCase
+    private let fetchContentUseCase: FetchArticleContentUseCaseProtocol
+    private let updateReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol
 
     init(
         article: Article,
-        fetchContentUseCase: FetchArticleContentUseCase,
-        updateReadPositionUseCase: UpdateArticleReadPositionUseCase
+        fetchContentUseCase: FetchArticleContentUseCaseProtocol,
+        updateReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol
     ) {
         self.article = article
         self.articleContent = article.content

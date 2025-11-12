@@ -1,10 +1,10 @@
 import Foundation
 
-protocol SyncSharedArticlesUseCase: Sendable {
+protocol SyncSharedArticlesUseCaseProtocol: Sendable {
     func execute() async throws -> [Article]
 }
 
-final class DefaultSyncSharedArticlesUseCase: SyncSharedArticlesUseCase {
+final class SyncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol {
     private let sharedStorageRepository: SharedStorageRepositoryProtocol
     private let articleRepository: ArticleRepositoryProtocol
     private let metadataRepository: MetadataRepositoryProtocol

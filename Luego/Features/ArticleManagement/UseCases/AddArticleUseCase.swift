@@ -1,10 +1,10 @@
 import Foundation
 
-protocol AddArticleUseCase: Sendable {
+protocol AddArticleUseCaseProtocol: Sendable {
     func execute(url: URL) async throws -> Article
 }
 
-final class DefaultAddArticleUseCase: AddArticleUseCase {
+final class AddArticleUseCase: AddArticleUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
     private let metadataRepository: MetadataRepositoryProtocol
 

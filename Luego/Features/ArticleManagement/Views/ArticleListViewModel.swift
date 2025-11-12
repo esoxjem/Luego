@@ -9,16 +9,16 @@ final class ArticleListViewModel {
     var isLoading = false
     var errorMessage: String?
 
-    private let getArticlesUseCase: GetArticlesUseCase
-    private let addArticleUseCase: AddArticleUseCase
-    private let deleteArticleUseCase: DeleteArticleUseCase
-    private let syncSharedArticlesUseCase: SyncSharedArticlesUseCase
+    private let getArticlesUseCase: GetArticlesUseCaseProtocol
+    private let addArticleUseCase: AddArticleUseCaseProtocol
+    private let deleteArticleUseCase: DeleteArticleUseCaseProtocol
+    private let syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol
 
     init(
-        getArticlesUseCase: GetArticlesUseCase,
-        addArticleUseCase: AddArticleUseCase,
-        deleteArticleUseCase: DeleteArticleUseCase,
-        syncSharedArticlesUseCase: SyncSharedArticlesUseCase
+        getArticlesUseCase: GetArticlesUseCaseProtocol,
+        addArticleUseCase: AddArticleUseCaseProtocol,
+        deleteArticleUseCase: DeleteArticleUseCaseProtocol,
+        syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol
     ) {
         self.getArticlesUseCase = getArticlesUseCase
         self.addArticleUseCase = addArticleUseCase
