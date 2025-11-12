@@ -1,12 +1,12 @@
 # Luego Architecture
 
-Luego follows a **pragmatic architecture** organized by feature with shared infrastructure for maintainability and scalability.
+Luego follows a **pragmatic architecture** organized by feature with shared infrastructure for maintainability and simplicity.
 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  Feature Modules                        │
+┌────────────────────────────────────────────────────────┐
+│                  Feature Modules                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │  Article     │  │    Reader    │  │   Sharing    │  │
 │  │ Management   │  │              │  │              │  │
@@ -15,21 +15,19 @@ Luego follows a **pragmatic architecture** organized by feature with shared infr
 │  │ • Views      │  │ • Views      │  │ • Views      │  │
 │  │ • ViewModels │  │ • ViewModels │  │ • Repos*     │  │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
-│         │                 │                 │           │
-└─────────┼─────────────────┼─────────────────┼───────────┘
+│         │                 │                 │          │
+└─────────┼─────────────────┼─────────────────┼──────────┘
           │                 │                 │
           └─────────────────┼─────────────────┘
                             ↓
-┌─────────────────────────────────────────────────────────┐
-│              Shared Infrastructure                      │
+┌────────────────────────────────────────────────────────┐
+│              Core (Shared Infrastructure)              │
 │  ┌─────────────────────────────────────────────────┐   │
-│  │ Models: SwiftData @Model classes & DTOs         │   │
-│  │ Article, ArticleMetadata, ArticleContent        │   │
+│  │ Models: SwiftData @Model classes                │   │
 │  ├─────────────────────────────────────────────────┤   │
-│  │ DataSources: Framework wrappers                 │   │
-│  │ HTMLParser, ArticleMetadataService              │   │
+│  │ DI Container, App Configuration                 │   │
 │  └─────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────┘
 ```
 
 **Organization Strategy:**
@@ -77,9 +75,6 @@ Luego/
 │   │   ├── Article.swift              # @Model class (persistence)
 │   │   ├── ArticleMetadata.swift      # DTO struct
 │   │   └── ArticleContent.swift       # DTO struct
-│   ├── DataSources/                   # Framework wrappers (if needed)
-│   │   ├── HTMLParserDataSource.swift
-│   │   └── ArticleMetadataService.swift
 │   ├── DI/
 │   │   └── DIContainer.swift
 │   └── Configuration/
@@ -314,164 +309,3 @@ struct LuegoApp: App {
     }
 }
 ```
-
-## Benefits of This Architecture
-
-### 🔧 Maintainability
-- **Clear Organization**: Feature-based structure with shared models
-- **Easy to Navigate**: Predictable structure
-- **Reduced Boilerplate**: No domain mapping layers
-
-### 🧪 Testability
-- **Use Cases**: Test with mock repositories
-- **ViewModels**: Test with mock use cases
-- **Repositories**: Integration test with in-memory SwiftData
-
-### 📈 Scalability
-- **Add Features**: Create new use cases without modifying existing code
-- **Parallel Development**: Teams can work on different features independently
-- **Clear Contracts**: Repository protocols define clear interfaces
-
-### ⚡ Simplicity
-- **Direct Model Usage**: SwiftData models used throughout the app
-- **Less Code**: No mapping between domain and persistence layers
-- **Pragmatic**: Right level of abstraction for the app's complexity
-
-## Design Principles
-
-### SOLID Principles
-
-**Single Responsibility**:
-- Each class has one reason to change
-- Use cases do one thing well
-
-**Open/Closed**:
-- Open for extension (add new use cases)
-- Closed for modification (don't change existing)
-
-**Liskov Substitution**:
-- Repositories can be swapped with any implementation
-- Views work with any ViewModel conforming to protocol
-
-**Interface Segregation**:
-- Small, focused protocols
-- Repository protocols define only what's needed
-
-**Dependency Inversion**:
-- High-level domain doesn't depend on low-level data
-- Both depend on abstractions (protocols)
-
-### Clean Code Practices
-
-- **No Comments**: Self-documenting code with clear function names
-- **Minimal Side Effects**: Logic is as pure as practical
-- **Explicit Dependencies**: Constructor injection, no singletons in new code
-
-## Testing Strategy
-
-### Unit Tests (Domain Layer)
-```swift
-class AddArticleUseCaseTests: XCTestCase {
-    func testAddArticle_success() async throws {
-        let mockRepo = MockArticleRepository()
-        let useCase = AddArticleUseCase(
-            articleRepository: mockRepo,
-            metadataRepository: MockMetadataRepository()
-        )
-
-        let article = try await useCase.execute(url: testURL)
-
-        XCTAssertEqual(mockRepo.savedArticles.count, 1)
-    }
-}
-```
-
-### Integration Tests (Data Layer)
-```swift
-class ArticleRepositoryTests: XCTestCase {
-    func testSaveAndRetrieve() async throws {
-        let container = try ModelContainer(
-            for: Article.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
-        let repo = ArticleRepository(modelContext: container.mainContext)
-
-        let article = Domain.Article(/* ... */)
-        let saved = try await repo.save(article)
-        let retrieved = try await repo.getAll()
-
-        XCTAssertEqual(retrieved.first?.id, saved.id)
-    }
-}
-```
-
-### UI Tests (Presentation Layer)
-```swift
-class ArticleListViewModelTests: XCTestCase {
-    @MainActor
-    func testLoadArticles() async {
-        let mockUseCase = MockGetArticlesUseCase()
-        let viewModel = ArticleListViewModel(
-            getArticlesUseCase: mockUseCase,
-            // ...
-        )
-
-        await viewModel.loadArticles()
-
-        XCTAssertEqual(viewModel.articles.count, mockUseCase.articles.count)
-    }
-}
-```
-
-## Migration History
-
-- **Phase 1**: Foundation & Infrastructure (directories, DI container)
-- **Phase 2**: Domain Layer (entities, use cases, protocols)
-- **Phase 3**: Data Layer (repositories, data sources, mappers)
-- **Phase 4**: Presentation Layer (ViewModels, views with DI)
-- **Phase 5**: Cleanup (removed legacy code, documentation)
-- **Phase 6**: Feature-Based Restructuring (organized by feature with shared infrastructure)
-  - Reorganized from layer-based (Domain/Data/Presentation) to feature-based (Features/Core)
-  - Created Features/ with ArticleManagement, Reader, and Sharing modules
-  - Moved shared infrastructure to Core/ (Entities, Repositories, DataSources, Models)
-  - Moved app entry to App/ directory
-  - Maintained Clean Architecture principles within new structure
-  - All tests passing, build successful
-- **Phase 7**: Repository Consolidation (co-located protocols with implementations)
-  - Merged repository protocols into implementation files
-  - Removed separate RepositoryProtocols/ directory
-  - Moved repositories from Core/ to Features/*/Repositories/
-  - ArticleRepository and MetadataRepository → Features/ArticleManagement/Repositories/
-  - SharedStorageRepository remains in Features/Sharing/Repositories/
-  - Improved code locality and reduced file count
-  - Build successful
-- **Phase 8**: Mapper Consolidation (co-located mappings with models)
-  - Moved domain mapping extensions into model files
-  - Article, ArticleMetadata, ArticleContent now contain their own toDomain/fromDomain methods
-  - Removed separate DTOs/ directory with ArticleMapper and MetadataMapper files
-  - Improved code locality - models now fully self-contained
-  - Build successful
-- **Phase 9**: Architecture Simplification (removed domain layer)
-  - Eliminated separate Domain.Article, Domain.ArticleMetadata, Domain.ArticleContent entities
-  - Use SwiftData models directly throughout application
-  - Removed all toDomain/fromDomain mapping methods
-  - Deleted Core/Entities/ directory and Domain.swift namespace
-  - Updated all use cases, repositories, and ViewModels to work with models directly
-  - Simplified architecture: pragmatic approach for app's complexity
-  - Reduced boilerplate while maintaining testability
-  - Build successful
-- **Phase 10**: Directory Consolidation (merged Shared into Core)
-  - Consolidated Shared/ into Core/ to reduce top-level directories
-  - Moved Shared/Models/ → Core/Models/
-  - Updated all documentation to reflect Core as the single shared infrastructure directory
-  - Clearer semantics: Core contains all shared code (infrastructure + models)
-  - Build successful
-
-## Future Enhancements
-
-- [ ] Add unit tests for all use cases
-- [ ] Add integration tests for repositories
-- [ ] Add UI tests for critical user flows
-- [ ] Consider adding coordinator pattern for complex navigation
-- [ ] Implement offline-first architecture with sync
-- [ ] Add analytics layer following same principles
