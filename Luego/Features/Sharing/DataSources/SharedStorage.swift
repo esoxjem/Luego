@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 struct SharedURL: Codable {
     let url: URL
@@ -10,12 +11,13 @@ final class SharedStorage {
 
     private let appGroupIdentifier = "group.com.esoxjem.Luego"
     private let sharedURLsKey = "sharedURLs"
+    private let logger = Logger(subsystem: "com.esoxjem.Luego", category: "SharedStorage")
 
     private init() {}
 
     func saveSharedURL(_ url: URL) {
         guard let userDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
-            print("Failed to access shared UserDefaults")
+            logger.error("Failed to access shared UserDefaults with app group: \(self.appGroupIdentifier)")
             return
         }
 
