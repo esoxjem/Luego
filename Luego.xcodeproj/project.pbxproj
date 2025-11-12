@@ -38,10 +38,7 @@
 
 /* Begin PBXFileReference section */
 		601505C22EC3650D00CADAFB /* ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ARCHITECTURE.md; sourceTree = "<group>"; };
-		601507232EC4B31A00CADAFB /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
-		601507242EC4B31A00CADAFB /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		601507252EC4B31A00CADAFB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		601507262EC4B31A00CADAFB /* THIRD_PARTY_LICENSES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_LICENSES.md; sourceTree = "<group>"; };
 		6075988F2EC1FC8D00BEE86E /* Luego.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luego.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		607598CF2EC2220900BEE86E /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
 		607598D02EC2220900BEE86E /* FEATURES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FEATURES.md; sourceTree = "<group>"; };
@@ -108,10 +105,7 @@
 		607598862EC1FC8D00BEE86E = {
 			isa = PBXGroup;
 			children = (
-				601507232EC4B31A00CADAFB /* CONTRIBUTING.md */,
-				601507242EC4B31A00CADAFB /* LICENSE */,
 				601507252EC4B31A00CADAFB /* README.md */,
-				601507262EC4B31A00CADAFB /* THIRD_PARTY_LICENSES.md */,
 				601505C22EC3650D00CADAFB /* ARCHITECTURE.md */,
 				607598CF2EC2220900BEE86E /* CLAUDE.md */,
 				607598D02EC2220900BEE86E /* FEATURES.md */,

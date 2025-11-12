@@ -72,3 +72,6 @@ build/
 
 # Xcode user state (explicit)
 *.xcuserstate
+
+# Project documentation (local tracking only)
+FEATURES.md
