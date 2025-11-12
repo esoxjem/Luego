@@ -34,7 +34,7 @@ Luego follows a **pragmatic architecture** organized by feature with shared infr
 
 **Organization Strategy:**
 - **Vertical Slices** (Features/): Group related use cases and views by feature
-- **Horizontal Slice** (Shared/): Common models, repositories, and data sources
+- **Horizontal Slice** (Core/): Common models, infrastructure, and data sources
 - **Direct Model Usage**: Use SwiftData models throughout for simplicity
 
 ## Project Structure
@@ -72,16 +72,14 @@ Luego/
 │           ├── UserDefaultsDataSource.swift
 │           └── SharedStorage.swift
 │
-├── Shared/                            # Shared infrastructure (horizontal slice)
+├── Core/                              # Shared infrastructure (horizontal slice)
 │   ├── Models/                        # SwiftData models & DTOs
 │   │   ├── Article.swift              # @Model class (persistence)
 │   │   ├── ArticleMetadata.swift      # DTO struct
 │   │   └── ArticleContent.swift       # DTO struct
-│   └── DataSources/                   # Framework wrappers
-│       ├── HTMLParserDataSource.swift
-│       └── ArticleMetadataService.swift
-│
-├── Core/                              # Infrastructure
+│   ├── DataSources/                   # Framework wrappers (if needed)
+│   │   ├── HTMLParserDataSource.swift
+│   │   └── ArticleMetadataService.swift
 │   ├── DI/
 │   │   └── DIContainer.swift
 │   └── Configuration/
@@ -115,18 +113,20 @@ Luego/
 - Clear boundaries between features
 - Facilitates parallel development
 
-### 🟩 Shared (Horizontal Slice)
+### 🟩 Core (Horizontal Slice)
 
 **Purpose**: Contains shared infrastructure used by multiple features.
 
 **Rules**:
 - NO feature-specific logic
-- Common models and data sources
+- Common models, infrastructure, and data sources
 - Shared persistence and data transfer objects
 
 **Components**:
 - **Models**: SwiftData @Model classes and DTO structs (`Article`, `ArticleMetadata`, `ArticleContent`)
 - **DataSources**: Framework wrappers (HTML parsing, etc.)
+- **DI**: Dependency injection container
+- **Configuration**: App-wide configuration
 
 **Example - Use Case**:
 ```swift
@@ -427,16 +427,16 @@ class ArticleListViewModelTests: XCTestCase {
 - **Phase 4**: Presentation Layer (ViewModels, views with DI)
 - **Phase 5**: Cleanup (removed legacy code, documentation)
 - **Phase 6**: Feature-Based Restructuring (organized by feature with shared infrastructure)
-  - Reorganized from layer-based (Domain/Data/Presentation) to feature-based (Features/Shared)
+  - Reorganized from layer-based (Domain/Data/Presentation) to feature-based (Features/Core)
   - Created Features/ with ArticleManagement, Reader, and Sharing modules
-  - Moved shared infrastructure to Shared/ (Entities, Repositories, DataSources, Models)
+  - Moved shared infrastructure to Core/ (Entities, Repositories, DataSources, Models)
   - Moved app entry to App/ directory
   - Maintained Clean Architecture principles within new structure
   - All tests passing, build successful
 - **Phase 7**: Repository Consolidation (co-located protocols with implementations)
   - Merged repository protocols into implementation files
   - Removed separate RepositoryProtocols/ directory
-  - Moved repositories from Shared/ to Features/*/Repositories/
+  - Moved repositories from Core/ to Features/*/Repositories/
   - ArticleRepository and MetadataRepository → Features/ArticleManagement/Repositories/
   - SharedStorageRepository remains in Features/Sharing/Repositories/
   - Improved code locality and reduced file count
@@ -451,10 +451,16 @@ class ArticleListViewModelTests: XCTestCase {
   - Eliminated separate Domain.Article, Domain.ArticleMetadata, Domain.ArticleContent entities
   - Use SwiftData models directly throughout application
   - Removed all toDomain/fromDomain mapping methods
-  - Deleted Shared/Entities/ directory and Domain.swift namespace
+  - Deleted Core/Entities/ directory and Domain.swift namespace
   - Updated all use cases, repositories, and ViewModels to work with models directly
   - Simplified architecture: pragmatic approach for app's complexity
   - Reduced boilerplate while maintaining testability
+  - Build successful
+- **Phase 10**: Directory Consolidation (merged Shared into Core)
+  - Consolidated Shared/ into Core/ to reduce top-level directories
+  - Moved Shared/Models/ → Core/Models/
+  - Updated all documentation to reflect Core as the single shared infrastructure directory
+  - Clearer semantics: Core contains all shared code (infrastructure + models)
   - Build successful
 
 ## Future Enhancements

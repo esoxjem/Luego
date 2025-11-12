@@ -43,7 +43,7 @@ Claude Code includes an `ios-build-fixer` agent that:
 - **App/LuegoApp.swift**: App entry point with DIContainer initialization and environment injection
 - **App/ContentView.swift**: Main article list view using ArticleListViewModel from DI
 - **Core/DI/DIContainer.swift**: Manages all dependencies (repositories, use cases, ViewModels)
-- **Shared/Models/**: SwiftData models and DTOs
+- **Core/Models/**: SwiftData models and DTOs
 - **Features/*/UseCases/**: Business logic operations (testable, minimal framework dependencies)
 - **Features/*/Repositories/**: Repository protocols and implementations
 - **Features/*/Views/**: ViewModels and Views using models
@@ -55,15 +55,14 @@ The app follows a **pragmatic architecture** organized by feature with shared in
 
 **Organization Strategy:**
 - **Features/**: Vertical slices by feature (ArticleManagement, Reader, Sharing)
-- **Shared/**: Horizontal slice for shared models and data sources
-- **Core/**: Infrastructure (DI, Configuration)
+- **Core/**: Shared infrastructure (DI, Configuration, Models, DataSources)
 - **App/**: Application entry point
 
 **Dependency Flow**:
 ```
-Feature Views → Feature UseCases → Feature Repositories → Shared Models
+Feature Views → Feature UseCases → Feature Repositories → Core Models
                     ↓
-            Shared DataSources
+            Core DataSources
 ```
 
 **Architecture Principles:**
@@ -126,10 +125,10 @@ The project uses SwiftSPM for dependency management. Dependencies are declared i
 ## Development Patterns
 
 ### Adding New Features (Feature-Based Approach)
-1. **Update Model** in `/Shared/Models/` if needed (add properties to SwiftData model)
+1. **Update Model** in `/Core/Models/` if needed (add properties to SwiftData model)
 2. **Create/Update Repository** in `/Features/<FeatureName>/Repositories/` with protocol and implementation
 3. **Create Use Case** in `/Features/<FeatureName>/UseCases/` for business logic
-4. **Create Data Source** in `/Shared/DataSources/` or `/Features/<FeatureName>/DataSources/` if needed
+4. **Create Data Source** in `/Core/DataSources/` or `/Features/<FeatureName>/DataSources/` if needed
 5. **Create/Update ViewModel** in `/Features/<FeatureName>/Views/` with injected use cases
 6. **Create View** in `/Features/<FeatureName>/Views/` using models
 7. **Wire up in DIContainer** - add repository, use case, and ViewModel factory methods
@@ -137,7 +136,7 @@ The project uses SwiftSPM for dependency management. Dependencies are declared i
 
 **Example**: Adding "Favorite Articles" feature
 ```
-1. Shared/Models/: Add `isFavorite: Bool` to Article model
+1. Core/Models/: Add `isFavorite: Bool` to Article model
 2. Features/ArticleManagement/Repositories/: Add `toggleFavorite(id:)` to ArticleRepositoryProtocol
 3. Features/ArticleManagement/UseCases/: Create ToggleFavoriteUseCase.swift
 4. Features/ArticleManagement/Repositories/: Implement `toggleFavorite` in ArticleRepository
