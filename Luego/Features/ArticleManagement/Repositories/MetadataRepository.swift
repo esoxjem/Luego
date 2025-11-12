@@ -8,25 +8,25 @@ protocol MetadataRepositoryProtocol: Sendable {
 
 @MainActor
 final class MetadataRepository: MetadataRepositoryProtocol {
-    private let htmlParser: HTMLParserDataSource
+    private let metadataService: ArticleMetadataService
 
-    init(htmlParser: HTMLParserDataSource) {
-        self.htmlParser = htmlParser
+    init(metadataService: ArticleMetadataService = .shared) {
+        self.metadataService = metadataService
     }
 
     func validateURL(_ url: URL) async throws -> URL {
         let urlString = url.absoluteString
-        guard let validatedURL = htmlParser.validateURL(urlString) else {
+        guard let validatedURL = metadataService.validateURL(urlString) else {
             throw ArticleMetadataError.invalidURL
         }
         return validatedURL
     }
 
     func fetchMetadata(for url: URL) async throws -> ArticleMetadata {
-        try await htmlParser.fetchMetadata(from: url)
+        try await metadataService.fetchMetadata(from: url)
     }
 
     func fetchContent(for url: URL) async throws -> ArticleContent {
-        try await htmlParser.fetchFullContent(from: url)
+        try await metadataService.fetchFullContent(from: url)
     }
 }

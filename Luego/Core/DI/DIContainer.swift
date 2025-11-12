@@ -9,10 +9,6 @@ final class DIContainer {
         self.modelContext = modelContext
     }
 
-    private lazy var htmlParserDataSource: HTMLParserDataSource = {
-        HTMLParserDataSource()
-    }()
-
     private lazy var userDefaultsDataSource: UserDefaultsDataSource = {
         UserDefaultsDataSource()
     }()
@@ -22,7 +18,7 @@ final class DIContainer {
     }()
 
     private lazy var metadataRepository: MetadataRepositoryProtocol = {
-        MetadataRepository(htmlParser: htmlParserDataSource)
+        MetadataRepository()
     }()
 
     private lazy var sharedStorageRepository: SharedStorageRepositoryProtocol = {
