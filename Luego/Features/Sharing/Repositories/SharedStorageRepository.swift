@@ -1,5 +1,10 @@
 import Foundation
 
+protocol SharedStorageRepositoryProtocol: Sendable {
+    func getSharedURLs() async -> [URL]
+    func clearSharedURLs() async
+}
+
 final class SharedStorageRepository: SharedStorageRepositoryProtocol {
     private let userDefaultsDataSource: UserDefaultsDataSource
 

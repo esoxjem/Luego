@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Model
-class Article {
+final class Article {
     @Attribute(.unique) var id: UUID
     var url: URL
     var title: String
@@ -46,6 +46,12 @@ class Article {
         self.thumbnailURL = thumbnailURL
         self.publishedDate = publishedDate
         self.readPosition = readPosition
+    }
+}
+
+extension Article: Equatable {
+    static func == (lhs: Article, rhs: Article) -> Bool {
+        lhs.id == rhs.id
     }
 }
 

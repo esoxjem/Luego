@@ -45,112 +45,47 @@ xcodebuild -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Sim
 
 ## Project Structure
 
-**Luego follows Clean Architecture principles. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.**
-
-```
-Luego/
-├── Domain/                                  # Pure business logic (NO dependencies)
-│   ├── Domain.swift                         # Namespace enum
-│   ├── Entities/                            # Domain models (pure Swift)
-│   │   ├── DomainArticle.swift
-│   │   ├── DomainArticleMetadata.swift
-│   │   └── DomainArticleContent.swift
-│   ├── UseCases/                            # Business logic operations
-│   │   ├── AddArticleUseCase.swift
-│   │   ├── DeleteArticleUseCase.swift
-│   │   ├── FetchArticleContentUseCase.swift
-│   │   ├── GetArticlesUseCase.swift
-│   │   ├── UpdateArticleReadPositionUseCase.swift
-│   │   └── SyncSharedArticlesUseCase.swift
-│   └── RepositoryProtocols/                 # Data access contracts
-│       ├── ArticleRepositoryProtocol.swift
-│       ├── MetadataRepositoryProtocol.swift
-│       └── SharedStorageRepositoryProtocol.swift
-│
-├── Data/                                    # Data access layer
-│   ├── Repositories/                        # Protocol implementations
-│   │   ├── ArticleRepository.swift
-│   │   ├── MetadataRepository.swift
-│   │   └── SharedStorageRepository.swift
-│   ├── DataSources/                         # Framework wrappers
-│   │   ├── Local/
-│   │   │   ├── UserDefaultsDataSource.swift
-│   │   │   └── SharedStorage.swift          # Singleton for app group storage
-│   │   └── Remote/
-│   │       ├── HTMLParserDataSource.swift
-│   │       └── ArticleMetadataService.swift # Singleton for HTML parsing
-│   └── DTOs/                                # Data mappers
-│       ├── ArticleMapper.swift
-│       └── MetadataMapper.swift
-│
-├── Presentation/                            # UI layer
-│   ├── ArticleList/
-│   │   ├── ArticleListViewModel.swift       # Observable state with use cases
-│   │   ├── ArticleRowView.swift             # List row component
-│   │   └── AddArticleView.swift             # URL input sheet
-│   └── Reader/
-│       ├── ReaderViewModel.swift            # Reader state management
-│       └── ReaderView.swift                 # Reader view with markdown
-│
-├── Core/                                    # Infrastructure
-│   ├── DI/
-│   │   └── DIContainer.swift                # Dependency injection container
-│   └── Configuration/
-│       └── AppConfiguration.swift           # App-wide constants
-│
-├── Models/                                  # SwiftData persistence models
-│   ├── Article.swift                        # @Model for SwiftData
-│   ├── ArticleMetadata.swift
-│   └── ArticleContent.swift
-│
-├── LuegoApp.swift                           # App entry point with DI setup
-├── ContentView.swift                        # Main list view
-├── Assets.xcassets/                         # App icons and assets
-├── FEATURES.md                              # Feature tracking
-├── ARCHITECTURE.md                          # Architecture documentation
-└── CLAUDE.md                                # This file
-```
+**Luego follows Clean Architecture principles organized by feature. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.**
 
 ### Key Files
-- **LuegoApp.swift**: App entry point with DIContainer initialization and environment injection
-- **ContentView.swift**: Main article list view using ArticleListViewModel from DI
-- **DIContainer.swift**: Manages all dependencies (repositories, use cases, ViewModels)
-- **Domain/Entities/**: Pure Swift domain models (no framework dependencies)
-- **Domain/UseCases/**: Business logic operations (testable, framework-independent)
-- **Data/Repositories/**: Implement repository protocols, coordinate data sources
-- **Presentation/**: ViewModels and Views using domain entities
+- **App/LuegoApp.swift**: App entry point with DIContainer initialization and environment injection
+- **App/ContentView.swift**: Main article list view using ArticleListViewModel from DI
+- **Core/DI/DIContainer.swift**: Manages all dependencies (repositories, use cases, ViewModels)
+- **Shared/Models/**: SwiftData models and DTOs
+- **Features/*/UseCases/**: Business logic operations (testable, minimal framework dependencies)
+- **Features/*/Repositories/**: Repository protocols and implementations
+- **Features/*/Views/**: ViewModels and Views using models
 
 ## Architecture & Patterns
 
-### Clean Architecture
-The app follows **Clean Architecture** with clear separation of concerns:
+### Pragmatic Architecture
+The app follows a **pragmatic architecture** organized by feature with shared infrastructure:
 
-**Dependency Flow** (always inward):
+**Organization Strategy:**
+- **Features/**: Vertical slices by feature (ArticleManagement, Reader, Sharing)
+- **Shared/**: Horizontal slice for shared models and data sources
+- **Core/**: Infrastructure (DI, Configuration)
+- **App/**: Application entry point
+
+**Dependency Flow**:
 ```
-Presentation → Domain ← Data
+Feature Views → Feature UseCases → Feature Repositories → Shared Models
+                    ↓
+            Shared DataSources
 ```
 
-**Layers:**
-1. **Domain** (Pure Swift): Entities, Use Cases, Repository Protocols
-   - NO framework dependencies
-   - Contains all business logic
-   - Defines WHAT the app does
-
-2. **Data** (Implementation): Repositories, Data Sources, DTOs
-   - Implements domain protocols
-   - Wraps frameworks (SwiftData, URLSession)
-   - Handles HOW data is stored/fetched
-
-3. **Presentation** (UI): Views, ViewModels
-   - Depends only on domain
-   - Uses dependency injection
-   - Manages UI state
+**Architecture Principles:**
+1. **Feature Cohesion**: Related use cases and views grouped together
+2. **Shared Models**: SwiftData models used throughout the app
+3. **Direct Model Usage**: No mapping layer between persistence and domain
+4. **Repository Pattern**: Data access abstracted behind protocols
 
 **Key Benefits:**
-- **Testability**: Domain layer fully testable without mocking
+- **Feature Locality**: All feature code in one place (use cases + views)
+- **Testability**: Use cases testable with mock repositories
 - **Maintainability**: Clear boundaries, single responsibility
-- **Flexibility**: Swap frameworks without touching business logic
-- **Scalability**: Easy to add features, parallel development
+- **Simplicity**: No boilerplate mapping code
+- **Scalability**: Easy to add features, understand scope
 
 ### Modern Swift Features
 - **@Observable**: Modern observation framework (replaces ObservableObject)
@@ -162,7 +97,7 @@ Presentation → Domain ← Data
 ### State Management
 - **ViewModels** use @Observable for reactive state
 - **Dependency Injection**: ViewModels receive dependencies via constructor
-- **Domain Entities**: Views work with domain models, not persistence models
+- **Direct Models**: Views work with SwiftData models directly
 - **Use Cases**: Business logic encapsulated in single-purpose use cases
 - No singletons in presentation layer
 
@@ -187,11 +122,6 @@ let viewModel = diContainer.makeArticleListViewModel()
 ### Swift Package Manager
 The project uses SwiftSPM for dependency management. Dependencies are declared in the Xcode project and resolved automatically on first build.
 
-**Current Dependencies:**
-- **SwiftSoup 2.11.1** - HTML parsing for metadata extraction (Open Graph tags, title, description)
-  - Repository: https://github.com/scinfu/SwiftSoup.git
-  - Used in ArticleMetadataService for parsing fetched HTML content
-
 **Package Resolution:**
 - `Package.resolved` location: `Luego.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
 - Xcode handles dependency resolution automatically
@@ -201,36 +131,27 @@ The project uses SwiftSPM for dependency management. Dependencies are declared i
 
 **For detailed feature status, implementation progress, and roadmap, see [FEATURES.md](FEATURES.md)**
 
-The FEATURES.md file tracks:
-- MVP feature checklist with implementation status
-- Technical implementation details
-- Known limitations and current constraints
-- Next priority features
-- Build status and project structure
-- User journey flows
-
 ## Development Patterns
 
-### Adding New Features (Clean Architecture Approach)
-1. **Define Domain Entity** in `/Domain/Entities/` if needed (pure Swift struct)
-2. **Define Repository Protocol** in `/Domain/RepositoryProtocols/` for data access
-3. **Create Use Case** in `/Domain/UseCases/` for business logic
-4. **Implement Repository** in `/Data/Repositories/` (implement protocol)
-5. **Create Data Source** in `/Data/DataSources/` if needed (wrap framework)
-6. **Create/Update ViewModel** in `/Presentation/` with injected use cases
-7. **Create View** in `/Presentation/` using domain entities
-8. **Wire up in DIContainer** - add use case/ViewModel factory methods
-9. Update FEATURES.md to track implementation progress
+### Adding New Features (Feature-Based Approach)
+1. **Update Model** in `/Shared/Models/` if needed (add properties to SwiftData model)
+2. **Create/Update Repository** in `/Features/<FeatureName>/Repositories/` with protocol and implementation
+3. **Create Use Case** in `/Features/<FeatureName>/UseCases/` for business logic
+4. **Create Data Source** in `/Shared/DataSources/` or `/Features/<FeatureName>/DataSources/` if needed
+5. **Create/Update ViewModel** in `/Features/<FeatureName>/Views/` with injected use cases
+6. **Create View** in `/Features/<FeatureName>/Views/` using models
+7. **Wire up in DIContainer** - add repository, use case, and ViewModel factory methods
+8. Update FEATURES.md to track implementation progress
 
 **Example**: Adding "Favorite Articles" feature
 ```
-1. Domain/Entities/: Add `isFavorite: Bool` to Domain.Article
-2. Domain/RepositoryProtocols/: Add `toggleFavorite(id:)` to ArticleRepositoryProtocol
-3. Domain/UseCases/: Create ToggleFavoriteUseCase.swift
-4. Data/Repositories/: Implement `toggleFavorite` in ArticleRepository
+1. Shared/Models/: Add `isFavorite: Bool` to Article model
+2. Features/ArticleManagement/Repositories/: Add `toggleFavorite(id:)` to ArticleRepositoryProtocol
+3. Features/ArticleManagement/UseCases/: Create ToggleFavoriteUseCase.swift
+4. Features/ArticleManagement/Repositories/: Implement `toggleFavorite` in ArticleRepository
 5. Core/DI/: Add toggleFavoriteUseCase to DIContainer
-6. Presentation/: Use case in ArticleListViewModel
-7. Presentation/: Add favorite button to ArticleRowView
+6. Features/ArticleManagement/Views/: Use case in ArticleListViewModel
+7. Features/ArticleManagement/Views/: Add favorite button to ArticleRowView
 ```
 
 ### Coding Guidelines

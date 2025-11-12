@@ -1,6 +1,14 @@
 import Foundation
 import SwiftData
 
+protocol ArticleRepositoryProtocol: Sendable {
+    func getAll() async throws -> [Article]
+    func save(_ article: Article) async throws -> Article
+    func delete(id: UUID) async throws
+    func update(_ article: Article) async throws
+    func updateReadPosition(articleId: UUID, position: Double) async throws
+}
+
 @MainActor
 final class ArticleRepository: ArticleRepositoryProtocol {
     private let modelContext: ModelContext
@@ -9,19 +17,17 @@ final class ArticleRepository: ArticleRepositoryProtocol {
         self.modelContext = modelContext
     }
 
-    func getAll() async throws -> [Domain.Article] {
+    func getAll() async throws -> [Article] {
         let descriptor = FetchDescriptor<Article>(
             sortBy: [SortDescriptor(\.savedDate, order: .reverse)]
         )
-        let articles = try modelContext.fetch(descriptor)
-        return articles.map { $0.toDomain() }
+        return try modelContext.fetch(descriptor)
     }
 
-    func save(_ article: Domain.Article) async throws -> Domain.Article {
-        let modelArticle = Article.fromDomain(article)
-        modelContext.insert(modelArticle)
+    func save(_ article: Article) async throws -> Article {
+        modelContext.insert(article)
         try modelContext.save()
-        return modelArticle.toDomain()
+        return article
     }
 
     func delete(id: UUID) async throws {
@@ -36,21 +42,7 @@ final class ArticleRepository: ArticleRepositoryProtocol {
         try modelContext.save()
     }
 
-    func update(_ article: Domain.Article) async throws {
-        let articleId = article.id
-        let predicate = #Predicate<Article> { $0.id == articleId }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-
-        guard let existingArticle = try modelContext.fetch(descriptor).first else {
-            return
-        }
-
-        existingArticle.title = article.title
-        existingArticle.content = article.content
-        existingArticle.thumbnailURL = article.thumbnailURL
-        existingArticle.publishedDate = article.publishedDate
-        existingArticle.readPosition = article.readPosition
-
+    func update(_ article: Article) async throws {
         try modelContext.save()
     }
 

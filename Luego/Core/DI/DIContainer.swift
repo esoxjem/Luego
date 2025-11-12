@@ -72,7 +72,7 @@ final class DIContainer {
         )
     }
 
-    func makeReaderViewModel(article: Domain.Article) -> ReaderViewModel {
+    func makeReaderViewModel(article: Article) -> ReaderViewModel {
         ReaderViewModel(
             article: article,
             fetchContentUseCase: fetchArticleContentUseCase,

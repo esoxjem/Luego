@@ -1,7 +1,7 @@
 import Foundation
 
 protocol SyncSharedArticlesUseCase: Sendable {
-    func execute() async throws -> [Domain.Article]
+    func execute() async throws -> [Article]
 }
 
 final class DefaultSyncSharedArticlesUseCase: SyncSharedArticlesUseCase {
@@ -19,20 +19,20 @@ final class DefaultSyncSharedArticlesUseCase: SyncSharedArticlesUseCase {
         self.metadataRepository = metadataRepository
     }
 
-    func execute() async throws -> [Domain.Article] {
+    func execute() async throws -> [Article] {
         let sharedURLs = await sharedStorageRepository.getSharedURLs()
         guard !sharedURLs.isEmpty else {
             return []
         }
 
-        var newArticles: [Domain.Article] = []
+        var newArticles: [Article] = []
 
         for url in sharedURLs {
             do {
                 let validatedURL = try await metadataRepository.validateURL(url)
                 let metadata = try await metadataRepository.fetchMetadata(for: validatedURL)
 
-                let article = Domain.Article(
+                let article = Article(
                     id: UUID(),
                     url: validatedURL,
                     title: metadata.title,

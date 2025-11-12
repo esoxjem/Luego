@@ -1,103 +1,132 @@
 # Luego Architecture
 
-Luego follows **Clean Architecture** principles to ensure maintainability, testability, and scalability.
+Luego follows a **pragmatic architecture** organized by feature with shared infrastructure for maintainability and scalability.
 
 ## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Presentation Layer                    │
-│  (SwiftUI Views, ViewModels, UI State)                  │
-│  Dependencies: Domain interfaces only                    │
-└──────────────────┬──────────────────────────────────────┘
-                   │ (depends on)
-┌──────────────────▼──────────────────────────────────────┐
-│                     Domain Layer                         │
-│  (Entities, Use Cases, Repository Protocols)            │
-│  Dependencies: NONE (pure Swift)                        │
-└──────────────────▲──────────────────────────────────────┘
-                   │ (implements)
-┌──────────────────┴──────────────────────────────────────┐
-│                      Data Layer                          │
-│  (Repository Implementations, Data Sources, DTOs)       │
-│  Dependencies: Domain + Frameworks (SwiftData, Network) │
+│                  Feature Modules                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │  Article     │  │    Reader    │  │   Sharing    │  │
+│  │ Management   │  │              │  │              │  │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤  │
+│  │ • UseCases   │  │ • UseCases   │  │ • UseCases   │  │
+│  │ • Views      │  │ • Views      │  │ • Views      │  │
+│  │ • ViewModels │  │ • ViewModels │  │ • Repos*     │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
+│         │                 │                 │           │
+└─────────┼─────────────────┼─────────────────┼───────────┘
+          │                 │                 │
+          └─────────────────┼─────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────┐
+│              Shared Infrastructure                      │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │ Models: SwiftData @Model classes & DTOs         │   │
+│  │ Article, ArticleMetadata, ArticleContent        │   │
+│  ├─────────────────────────────────────────────────┤   │
+│  │ DataSources: Framework wrappers                 │   │
+│  │ HTMLParser, ArticleMetadataService              │   │
+│  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
+
+**Organization Strategy:**
+- **Vertical Slices** (Features/): Group related use cases and views by feature
+- **Horizontal Slice** (Shared/): Common models, repositories, and data sources
+- **Direct Model Usage**: Use SwiftData models throughout for simplicity
 
 ## Project Structure
 
 ```
 Luego/
-├── Domain/                     # Pure business logic (NO dependencies)
-│   ├── Domain.swift            # Namespace enum
-│   ├── Entities/               # Domain models
-│   │   ├── DomainArticle.swift
-│   │   ├── DomainArticleMetadata.swift
-│   │   └── DomainArticleContent.swift
-│   ├── UseCases/               # Business logic operations
-│   │   ├── AddArticleUseCase.swift
-│   │   ├── DeleteArticleUseCase.swift
-│   │   ├── FetchArticleContentUseCase.swift
-│   │   ├── GetArticlesUseCase.swift
-│   │   ├── UpdateArticleReadPositionUseCase.swift
-│   │   └── SyncSharedArticlesUseCase.swift
-│   └── RepositoryProtocols/    # Data access contracts
-│       ├── ArticleRepositoryProtocol.swift
-│       ├── MetadataRepositoryProtocol.swift
-│       └── SharedStorageRepositoryProtocol.swift
+├── Features/                          # Feature modules (vertical slices)
+│   ├── ArticleManagement/             # Save, list, and delete articles
+│   │   ├── UseCases/
+│   │   │   ├── AddArticleUseCase.swift
+│   │   │   ├── GetArticlesUseCase.swift
+│   │   │   └── DeleteArticleUseCase.swift
+│   │   ├── Repositories/
+│   │   │   ├── ArticleRepository.swift    # Protocol + implementation
+│   │   │   └── MetadataRepository.swift   # Protocol + implementation
+│   │   └── Views/
+│   │       ├── ArticleListViewModel.swift
+│   │       ├── ArticleRowView.swift
+│   │       └── AddArticleView.swift
+│   │
+│   ├── Reader/                        # Read articles with position tracking
+│   │   ├── UseCases/
+│   │   │   ├── FetchArticleContentUseCase.swift
+│   │   │   └── UpdateArticleReadPositionUseCase.swift
+│   │   └── Views/
+│   │       ├── ReaderViewModel.swift
+│   │       └── ReaderView.swift
+│   │
+│   └── Sharing/                       # Share extension integration
+│       ├── UseCases/
+│       │   └── SyncSharedArticlesUseCase.swift
+│       ├── Repositories/
+│       │   └── SharedStorageRepository.swift  # Protocol + implementation
+│       └── DataSources/
+│           ├── UserDefaultsDataSource.swift
+│           └── SharedStorage.swift
 │
-├── Data/                       # Data access implementations
-│   ├── Repositories/
-│   │   ├── ArticleRepository.swift
-│   │   ├── MetadataRepository.swift
-│   │   └── SharedStorageRepository.swift
-│   ├── DataSources/
-│   │   ├── Local/
-│   │   │   ├── UserDefaultsDataSource.swift
-│   │   │   └── SharedStorage.swift
-│   │   └── Remote/
-│   │       ├── HTMLParserDataSource.swift
-│   │       └── ArticleMetadataService.swift
-│   └── DTOs/                   # Data transfer objects & mappers
-│       ├── ArticleMapper.swift
-│       └── MetadataMapper.swift
+├── Shared/                            # Shared infrastructure (horizontal slice)
+│   ├── Models/                        # SwiftData models & DTOs
+│   │   ├── Article.swift              # @Model class (persistence)
+│   │   ├── ArticleMetadata.swift      # DTO struct
+│   │   └── ArticleContent.swift       # DTO struct
+│   └── DataSources/                   # Framework wrappers
+│       ├── HTMLParserDataSource.swift
+│       └── ArticleMetadataService.swift
 │
-├── Presentation/               # UI layer
-│   ├── ArticleList/
-│   │   ├── ArticleListViewModel.swift
-│   │   ├── ArticleRowView.swift
-│   │   └── AddArticleView.swift
-│   └── Reader/
-│       ├── ReaderViewModel.swift
-│       └── ReaderView.swift
-│
-├── Core/                       # Infrastructure
+├── Core/                              # Infrastructure
 │   ├── DI/
 │   │   └── DIContainer.swift
 │   └── Configuration/
 │       └── AppConfiguration.swift
 │
-└── Models/                     # SwiftData persistence models
-    ├── Article.swift           # @Model for SwiftData
-    ├── ArticleMetadata.swift
-    └── ArticleContent.swift
+└── App/                               # Application entry point
+    ├── LuegoApp.swift
+    └── ContentView.swift
 ```
 
-## Layer Responsibilities
+## Architecture Responsibilities
 
-### 🟦 Domain Layer (Pure Business Logic)
+### 🟪 Features (Vertical Slices)
 
-**Purpose**: Contains the core business logic, independent of any frameworks.
+**Purpose**: Group related functionality by feature for better cohesion and locality.
 
 **Rules**:
-- NO framework dependencies (no SwiftUI, SwiftData, etc.)
-- Pure Swift code only
-- Defines WHAT the app does, not HOW
+- Each feature is a self-contained module
+- Contains use cases specific to that feature
+- Contains views and view models for that feature
+- May contain feature-specific repositories (e.g., Sharing)
+
+**Current Features**:
+1. **ArticleManagement**: Add, list, and delete articles
+2. **Reader**: View article content, track reading position
+3. **Sharing**: Share extension integration, sync shared URLs
+
+**Benefits**:
+- All feature code in one place
+- Easy to understand feature scope
+- Clear boundaries between features
+- Facilitates parallel development
+
+### 🟩 Shared (Horizontal Slice)
+
+**Purpose**: Contains shared infrastructure used by multiple features.
+
+**Rules**:
+- NO feature-specific logic
+- Common models and data sources
+- Shared persistence and data transfer objects
 
 **Components**:
-- **Entities**: Core business models (`Domain.Article`, `Domain.ArticleMetadata`)
-- **Use Cases**: Business operations (e.g., `AddArticleUseCase`, `DeleteArticleUseCase`)
-- **Repository Protocols**: Interfaces for data access
+- **Models**: SwiftData @Model classes and DTO structs (`Article`, `ArticleMetadata`, `ArticleContent`)
+- **DataSources**: Framework wrappers (HTML parsing, etc.)
 
 **Example - Use Case**:
 ```swift
@@ -113,11 +142,11 @@ final class DefaultAddArticleUseCase: AddArticleUseCase {
         self.metadataRepository = metadataRepository
     }
 
-    func execute(url: URL) async throws -> Domain.Article {
+    func execute(url: URL) async throws -> Article {
         let validatedURL = try await metadataRepository.validateURL(url)
         let metadata = try await metadataRepository.fetchMetadata(for: validatedURL)
 
-        let article = Domain.Article(
+        let article = Article(
             id: UUID(),
             url: validatedURL,
             title: metadata.title,
@@ -129,19 +158,26 @@ final class DefaultAddArticleUseCase: AddArticleUseCase {
 }
 ```
 
-### 🟩 Data Layer (Implementation Details)
+### 🟦 Architecture Principles
 
-**Purpose**: Implements data access and persistence, hides framework details.
+The architecture maintains separation of concerns with a pragmatic approach:
 
-**Rules**:
-- Implements Domain layer protocols
-- Can depend on frameworks (SwiftData, URLSession, etc.)
-- Converts between framework types and domain types
+**Business Logic (Use Cases)**:
+- Located in Features/*/UseCases/
+- Minimal framework dependencies
+- Depend on repository protocols from Features/*/Repositories/
+- Coordinate operations between repositories
 
-**Components**:
-- **Repositories**: Implement repository protocols, coordinate data sources
-- **Data Sources**: Wrap specific frameworks (SwiftData, Network, UserDefaults)
-- **DTOs & Mappers**: Convert between persistence models and domain entities
+**Data Access (Repositories)**:
+- Located in Features/*/Repositories/
+- Each repository contains both protocol and implementation
+- Work directly with SwiftData models
+- Handle persistence and external data
+
+**Presentation (Views & ViewModels)**:
+- Located in Features/*/Views/
+- Depend on use cases and models
+- Use dependency injection for testability
 
 **Example - Repository**:
 ```swift
@@ -149,43 +185,27 @@ final class DefaultAddArticleUseCase: AddArticleUseCase {
 final class ArticleRepository: ArticleRepositoryProtocol {
     private let modelContext: ModelContext
 
-    func getAll() async throws -> [Domain.Article] {
+    func getAll() async throws -> [Article] {
         let descriptor = FetchDescriptor<Article>(
             sortBy: [SortDescriptor(\.savedDate, order: .reverse)]
         )
-        let articles = try modelContext.fetch(descriptor)
-        return articles.map { $0.toDomain() }  // Convert to domain
+        return try modelContext.fetch(descriptor)
     }
 
-    func save(_ article: Domain.Article) async throws -> Domain.Article {
-        let modelArticle = Article.fromDomain(article)  // Convert from domain
-        modelContext.insert(modelArticle)
+    func save(_ article: Article) async throws -> Article {
+        modelContext.insert(article)
         try modelContext.save()
-        return modelArticle.toDomain()
+        return article
     }
 }
 ```
 
-### 🟨 Presentation Layer (UI)
-
-**Purpose**: Handles user interface and user interactions.
-
-**Rules**:
-- Depends only on Domain layer (use cases, entities)
-- Uses dependency injection for testability
-- Converts domain data to UI-friendly formats
-
-**Components**:
-- **Views**: SwiftUI views (declarative UI)
-- **ViewModels**: Manage UI state, call use cases
-- **UI State**: Transient state for user interactions
-
-**Example - ViewModel**:
+**Example - ViewModel (in Features/*/Views/)**:
 ```swift
 @Observable
 @MainActor
 final class ArticleListViewModel {
-    var articles: [Domain.Article] = []
+    var articles: [Article] = []
     var isLoading = false
     var errorMessage: String?
 
@@ -293,26 +313,25 @@ struct LuegoApp: App {
 
 ## Benefits of This Architecture
 
+### 🔧 Maintainability
+- **Clear Organization**: Feature-based structure with shared models
+- **Easy to Navigate**: Predictable structure
+- **Reduced Boilerplate**: No domain mapping layers
+
 ### 🧪 Testability
-- **Domain Layer**: Unit test with pure Swift, no mocking needed
 - **Use Cases**: Test with mock repositories
 - **ViewModels**: Test with mock use cases
-- **Repositories**: Integration test with in-memory database
-
-### 🔧 Maintainability
-- **Clear Boundaries**: Each layer has a single responsibility
-- **Dependency Direction**: Always inward toward domain
-- **Easy to Navigate**: Predictable structure
-
-### 🔄 Flexibility
-- **Swap Frameworks**: Replace SwiftData with Core Data or SQLite
-- **Change UI**: Migrate from SwiftUI to UIKit without touching domain
-- **Mock External Services**: Easy to test without network calls
+- **Repositories**: Integration test with in-memory SwiftData
 
 ### 📈 Scalability
 - **Add Features**: Create new use cases without modifying existing code
-- **Parallel Development**: Teams can work on different layers independently
-- **Clear Contracts**: Protocols define clear interfaces
+- **Parallel Development**: Teams can work on different features independently
+- **Clear Contracts**: Repository protocols define clear interfaces
+
+### ⚡ Simplicity
+- **Direct Model Usage**: SwiftData models used throughout the app
+- **Less Code**: No mapping between domain and persistence layers
+- **Pragmatic**: Right level of abstraction for the app's complexity
 
 ## Design Principles
 
@@ -341,8 +360,7 @@ struct LuegoApp: App {
 ### Clean Code Practices
 
 - **No Comments**: Self-documenting code with clear function names
-- **Pure Functions**: Domain logic is side-effect free where possible
-- **Immutability**: Domain entities are value types (structs)
+- **Minimal Side Effects**: Logic is as pure as practical
 - **Explicit Dependencies**: Constructor injection, no singletons in new code
 
 ## Testing Strategy
@@ -408,6 +426,36 @@ class ArticleListViewModelTests: XCTestCase {
 - **Phase 3**: Data Layer (repositories, data sources, mappers)
 - **Phase 4**: Presentation Layer (ViewModels, views with DI)
 - **Phase 5**: Cleanup (removed legacy code, documentation)
+- **Phase 6**: Feature-Based Restructuring (organized by feature with shared infrastructure)
+  - Reorganized from layer-based (Domain/Data/Presentation) to feature-based (Features/Shared)
+  - Created Features/ with ArticleManagement, Reader, and Sharing modules
+  - Moved shared infrastructure to Shared/ (Entities, Repositories, DataSources, Models)
+  - Moved app entry to App/ directory
+  - Maintained Clean Architecture principles within new structure
+  - All tests passing, build successful
+- **Phase 7**: Repository Consolidation (co-located protocols with implementations)
+  - Merged repository protocols into implementation files
+  - Removed separate RepositoryProtocols/ directory
+  - Moved repositories from Shared/ to Features/*/Repositories/
+  - ArticleRepository and MetadataRepository → Features/ArticleManagement/Repositories/
+  - SharedStorageRepository remains in Features/Sharing/Repositories/
+  - Improved code locality and reduced file count
+  - Build successful
+- **Phase 8**: Mapper Consolidation (co-located mappings with models)
+  - Moved domain mapping extensions into model files
+  - Article, ArticleMetadata, ArticleContent now contain their own toDomain/fromDomain methods
+  - Removed separate DTOs/ directory with ArticleMapper and MetadataMapper files
+  - Improved code locality - models now fully self-contained
+  - Build successful
+- **Phase 9**: Architecture Simplification (removed domain layer)
+  - Eliminated separate Domain.Article, Domain.ArticleMetadata, Domain.ArticleContent entities
+  - Use SwiftData models directly throughout application
+  - Removed all toDomain/fromDomain mapping methods
+  - Deleted Shared/Entities/ directory and Domain.swift namespace
+  - Updated all use cases, repositories, and ViewModels to work with models directly
+  - Simplified architecture: pragmatic approach for app's complexity
+  - Reduced boilerplate while maintaining testability
+  - Build successful
 
 ## Future Enhancements
 

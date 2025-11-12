@@ -5,7 +5,7 @@ import Observation
 @Observable
 @MainActor
 final class ArticleListViewModel {
-    var articles: [Domain.Article] = []
+    var articles: [Article] = []
     var isLoading = false
     var errorMessage: String?
 
@@ -73,7 +73,7 @@ final class ArticleListViewModel {
         }
     }
 
-    func deleteArticle(_ article: Domain.Article) async {
+    func deleteArticle(_ article: Article) async {
         do {
             try await deleteArticleUseCase.execute(articleId: article.id)
             articles.removeAll { $0.id == article.id }

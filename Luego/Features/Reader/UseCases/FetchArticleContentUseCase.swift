@@ -1,7 +1,7 @@
 import Foundation
 
 protocol FetchArticleContentUseCase: Sendable {
-    func execute(article: Domain.Article) async throws -> Domain.Article
+    func execute(article: Article) async throws -> Article
 }
 
 final class DefaultFetchArticleContentUseCase: FetchArticleContentUseCase {
@@ -16,17 +16,15 @@ final class DefaultFetchArticleContentUseCase: FetchArticleContentUseCase {
         self.metadataRepository = metadataRepository
     }
 
-    func execute(article: Domain.Article) async throws -> Domain.Article {
+    func execute(article: Article) async throws -> Article {
         guard article.content == nil else {
             return article
         }
 
         let content = try await metadataRepository.fetchContent(for: article.url)
+        article.content = content.content
 
-        var updatedArticle = article
-        updatedArticle.content = content.content
-
-        try await articleRepository.update(updatedArticle)
-        return updatedArticle
+        try await articleRepository.update(article)
+        return article
     }
 }

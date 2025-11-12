@@ -1,7 +1,7 @@
 import Foundation
 
 protocol AddArticleUseCase: Sendable {
-    func execute(url: URL) async throws -> Domain.Article
+    func execute(url: URL) async throws -> Article
 }
 
 final class DefaultAddArticleUseCase: AddArticleUseCase {
@@ -16,11 +16,11 @@ final class DefaultAddArticleUseCase: AddArticleUseCase {
         self.metadataRepository = metadataRepository
     }
 
-    func execute(url: URL) async throws -> Domain.Article {
+    func execute(url: URL) async throws -> Article {
         let validatedURL = try await metadataRepository.validateURL(url)
         let metadata = try await metadataRepository.fetchMetadata(for: validatedURL)
 
-        let article = Domain.Article(
+        let article = Article(
             id: UUID(),
             url: validatedURL,
             title: metadata.title,

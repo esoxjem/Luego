@@ -1,7 +1,7 @@
 import Foundation
 
 protocol GetArticlesUseCase: Sendable {
-    func execute() async throws -> [Domain.Article]
+    func execute() async throws -> [Article]
 }
 
 final class DefaultGetArticlesUseCase: GetArticlesUseCase {
@@ -11,7 +11,7 @@ final class DefaultGetArticlesUseCase: GetArticlesUseCase {
         self.articleRepository = articleRepository
     }
 
-    func execute() async throws -> [Domain.Article] {
+    func execute() async throws -> [Article] {
         try await articleRepository.getAll()
     }
 }

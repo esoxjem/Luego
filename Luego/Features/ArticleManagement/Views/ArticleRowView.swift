@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ArticleRowView: View {
-    let article: Domain.Article
+    let article: Article
 
     private var formattedDate: String {
         let displayDate = article.publishedDate ?? article.savedDate

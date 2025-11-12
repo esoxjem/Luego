@@ -4,7 +4,7 @@ import Observation
 @Observable
 @MainActor
 final class ReaderViewModel {
-    var article: Domain.Article
+    var article: Article
     var articleContent: String?
     var isLoading: Bool
     var errorMessage: String?
@@ -13,7 +13,7 @@ final class ReaderViewModel {
     private let updateReadPositionUseCase: UpdateArticleReadPositionUseCase
 
     init(
-        article: Domain.Article,
+        article: Article,
         fetchContentUseCase: FetchArticleContentUseCase,
         updateReadPositionUseCase: UpdateArticleReadPositionUseCase
     ) {
@@ -43,16 +43,7 @@ final class ReaderViewModel {
 
     func updateReadPosition(_ position: Double) async {
         let clampedPosition = max(0.0, min(1.0, position))
-        article = Domain.Article(
-            id: article.id,
-            url: article.url,
-            title: article.title,
-            content: article.content,
-            savedDate: article.savedDate,
-            thumbnailURL: article.thumbnailURL,
-            publishedDate: article.publishedDate,
-            readPosition: clampedPosition
-        )
+        article.readPosition = clampedPosition
 
         do {
             try await updateReadPositionUseCase.execute(articleId: article.id, position: clampedPosition)

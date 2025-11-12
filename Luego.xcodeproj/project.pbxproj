@@ -45,11 +45,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		601505C82EC3665900CADAFB /* Exceptions for "Luego" folder in "LuegoShareExtension" target */ = {
+		601506582EC4660200CADAFB /* Exceptions for "Luego" folder in "LuegoShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Data/DataSources/Local/SharedStorage.swift,
-				Data/DataSources/Local/UserDefaultsDataSource.swift,
+				Features/Sharing/DataSources/SharedStorage.swift,
+				Features/Sharing/DataSources/UserDefaultsDataSource.swift,
 			);
 			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
 		};
@@ -66,7 +66,7 @@
 		607598912EC1FC8D00BEE86E /* Luego */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				601505C82EC3665900CADAFB /* Exceptions for "Luego" folder in "LuegoShareExtension" target */,
+				601506582EC4660200CADAFB /* Exceptions for "Luego" folder in "LuegoShareExtension" target */,
 			);
 			path = Luego;
 			sourceTree = "<group>";
