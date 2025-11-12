@@ -25,23 +25,15 @@ open Luego.xcodeproj
 
 ## Development Commands
 
-### Building
-- **Build**: ⌘B in Xcode, or `xcodebuild -project Luego.xcodeproj -scheme Luego -configuration Debug build`
-- **Run**: ⌘R in Xcode to build and run on simulator or connected device
-- **Clean**: ⌘⇧K in Xcode, or `xcodebuild clean -project Luego.xcodeproj -scheme Luego`
+### Building with Claude Code
 
-### Running on Specific Simulators
-**IMPORTANT: Always check available simulators before building**
+**IMPORTANT: Use the ios-build-fixer agent for automated building and error fixing**
 
-```bash
-# List available iPhone simulators
-xcrun simctl list devices available | grep "iPhone"
-
-# Build and run on specific simulator (use a simulator from the list above)
-xcodebuild -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=iPhone 17' build
-```
-
-**Note:** Simulator names vary by Xcode version. Always check available simulators first and use an exact name from the list.
+Claude Code includes an `ios-build-fixer` agent that:
+- Automatically checks for available iOS simulators
+- Builds the project with proper error handling
+- Identifies and fixes common build errors automatically
+- Retries the build after applying fixes
 
 ## Project Structure
 
@@ -220,8 +212,11 @@ for selector in contentSelectors {
 Currently, no test targets are configured. When adding tests:
 1. Create a test target via Xcode: File → New → Target → Unit Testing Bundle
 2. Add test files with `XCTestCase` subclasses
-3. Run tests with ⌘U or `xcodebuild test -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=<SIMULATOR_NAME>'`
-   (Check available simulators first using `xcrun simctl list devices available | grep "iPhone"`)
+3. Run tests:
+   - **With Claude Code**: Ask "Run the tests" - the ios-build-fixer agent will handle simulator selection and test execution
+   - **In Xcode**: Press ⌘U
+   - **Manual command line**: `xcodebuild test -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=<SIMULATOR_NAME>'`
+     (Check available simulators first using `xcrun simctl list devices available | grep "iPhone"`)
 
 **Recommended Test Coverage:**
 - ArticleMetadataService: URL validation, HTML parsing, error handling
