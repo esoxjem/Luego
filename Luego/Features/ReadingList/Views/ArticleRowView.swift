@@ -1,77 +1,111 @@
 import SwiftUI
+import NetworkImage
 
 struct ArticleRowView: View {
     let article: Article
 
-    private var formattedDate: String {
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ArticleThumbnailView(thumbnailURL: article.thumbnailURL)
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            ArticleContentView(
+                title: article.title,
+                domain: article.domain,
+                readPercentage: Int(article.readPosition * 100),
+                formattedDate: formatDisplayDate(article),
+                estimatedReadingTime: article.estimatedReadingTime,
+                hasContent: article.content != nil
+            )
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func formatDisplayDate(_ article: Article) -> String {
         let displayDate = article.publishedDate ?? article.savedDate
         let formatter = DateFormatter()
         formatter.dateFormat = "dd-MMM-yy"
         return formatter.string(from: displayDate)
     }
+}
 
-    private var readPercentage: Int {
-        Int(article.readPosition * 100)
-    }
+struct ArticleContentView: View {
+    let title: String
+    let domain: String
+    let readPercentage: Int
+    let formattedDate: String
+    let estimatedReadingTime: String
+    let hasContent: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Group {
-                if let thumbnailURL = article.thumbnailURL {
-                    AsyncImage(url: thumbnailURL) { phase in
-                        switch phase {
-                        case .empty:
-                            thumbnailPlaceholder
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        case .failure:
-                            thumbnailPlaceholder
-                        @unknown default:
-                            thumbnailPlaceholder
-                        }
-                    }
-                } else {
-                    thumbnailPlaceholder
-                }
-            }
-            .frame(width: 60, height: 60)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.headline)
+                .lineLimit(2)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(article.title)
-                    .font(.headline)
-                    .lineLimit(2)
+            Text(domain)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
 
-                Text(article.domain)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+            Text("Read \(readPercentage)%")
+                .font(.caption)
+                .foregroundStyle(.blue)
 
-                Text("Read \(readPercentage)%")
+            ArticleMetadataFooter(
+                formattedDate: formattedDate,
+                estimatedReadingTime: estimatedReadingTime,
+                hasContent: hasContent
+            )
+        }
+    }
+}
+
+struct ArticleMetadataFooter: View {
+    let formattedDate: String
+    let estimatedReadingTime: String
+    let hasContent: Bool
+
+    var body: some View {
+        HStack {
+            Text(formattedDate)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
+            Spacer()
+
+            if hasContent {
+                Text(estimatedReadingTime)
                     .font(.caption)
-                    .foregroundStyle(.blue)
-
-                HStack {
-                    Text(formattedDate)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-
-                    Spacer()
-
-                    if article.content != nil {
-                        Text(article.estimatedReadingTime)
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
+                    .foregroundStyle(.tertiary)
             }
         }
-        .padding(.vertical, 4)
     }
+}
 
-    private var thumbnailPlaceholder: some View {
+struct ArticleThumbnailView: View {
+    let thumbnailURL: URL?
+
+    var body: some View {
+        if let thumbnailURL {
+            NetworkImage(url: thumbnailURL) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    ThumbnailPlaceholder()
+                }
+            }
+        } else {
+            ThumbnailPlaceholder()
+        }
+    }
+}
+
+struct ThumbnailPlaceholder: View {
+    var body: some View {
         RoundedRectangle(cornerRadius: 8)
             .fill(Color.gray.opacity(0.2))
             .overlay {
