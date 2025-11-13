@@ -66,7 +66,6 @@ struct ArticleListView: View {
                 } label: {
                     ArticleRowView(article: article)
                 }
-                .id(article.id.uuidString + String(article.readPosition))
             }
             .onDelete { indexSet in
                 Task {
