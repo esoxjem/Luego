@@ -26,6 +26,7 @@ struct ArticleListView: View {
             }
         }
         .navigationTitle("Luego")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -34,6 +35,9 @@ struct ArticleListView: View {
                     Image(systemName: "plus")
                 }
             }
+        }
+        .onAppear {
+            configureNavigationBarAppearance()
         }
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
@@ -73,6 +77,7 @@ struct ArticleListView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
     }
 
     private var emptyState: some View {
@@ -86,5 +91,22 @@ struct ArticleListView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+    }
+
+    private func configureNavigationBarAppearance() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithDefaultBackground()
+
+        let serifFont = UIFont(descriptor: UIFontDescriptor.preferredFontDescriptor(withTextStyle: .largeTitle)
+            .withDesign(.serif)!
+            .withSymbolicTraits(.traitBold)!,
+            size: 0)
+
+        appearance.largeTitleTextAttributes = [
+            .font: serifFont
+        ]
+
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
     }
 }
