@@ -44,7 +44,7 @@ struct ArticleContentView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
                 Text(title)
-                    .font(.headline)
+                    .font(.system(.headline, design: .serif))
                     .lineLimit(2)
 
                 if isFavorite {
