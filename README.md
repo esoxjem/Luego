@@ -1,5 +1,5 @@
 # Luego
-A minimal, offline read-it-later iOS app. I've built this app as a [Pocket](https://getpocket.com/) alternative for the joy of reading.
+A minimal, offline read-it-later iOS app. I've built this app as an alternative to [Pocket](https://getpocket.com/).
 
 ## Architecture
 
