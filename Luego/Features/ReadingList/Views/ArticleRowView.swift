@@ -16,7 +16,8 @@ struct ArticleRowView: View {
                 readPercentage: Int(article.readPosition * 100),
                 formattedDate: formatDisplayDate(article),
                 estimatedReadingTime: article.estimatedReadingTime,
-                hasContent: article.content != nil
+                hasContent: article.content != nil,
+                isFavorite: article.isFavorite
             )
         }
         .padding(.vertical, 4)
@@ -37,12 +38,21 @@ struct ArticleContentView: View {
     let formattedDate: String
     let estimatedReadingTime: String
     let hasContent: Bool
+    let isFavorite: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.headline)
-                .lineLimit(2)
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .lineLimit(2)
+
+                if isFavorite {
+                    Image(systemName: "heart.fill")
+                        .font(.caption)
+                        .foregroundStyle(.pink)
+                }
+            }
 
             Text(domain)
                 .font(.subheadline)

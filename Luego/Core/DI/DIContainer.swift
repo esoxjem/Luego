@@ -59,12 +59,22 @@ final class DIContainer {
         )
     }()
 
+    private lazy var toggleFavoriteUseCase: ToggleFavoriteUseCaseProtocol = {
+        ToggleFavoriteUseCase(articleRepository: articleRepository)
+    }()
+
+    private lazy var toggleArchiveUseCase: ToggleArchiveUseCaseProtocol = {
+        ToggleArchiveUseCase(articleRepository: articleRepository)
+    }()
+
     func makeArticleListViewModel() -> ArticleListViewModel {
         ArticleListViewModel(
             getArticlesUseCase: getArticlesUseCase,
             addArticleUseCase: addArticleUseCase,
             deleteArticleUseCase: deleteArticleUseCase,
-            syncSharedArticlesUseCase: syncSharedArticlesUseCase
+            syncSharedArticlesUseCase: syncSharedArticlesUseCase,
+            toggleFavoriteUseCase: toggleFavoriteUseCase,
+            toggleArchiveUseCase: toggleArchiveUseCase
         )
     }
 

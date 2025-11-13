@@ -2,28 +2,52 @@ import Foundation
 import SwiftUI
 import Observation
 
+enum ArticleFilter {
+    case readingList
+    case favorites
+    case archived
+}
+
 @Observable
 @MainActor
 final class ArticleListViewModel {
     var articles: [Article] = []
+    var filter: ArticleFilter = .readingList
     var isLoading = false
     var errorMessage: String?
+
+    var filteredArticles: [Article] {
+        switch filter {
+        case .readingList:
+            return articles.filter { !$0.isArchived }
+        case .favorites:
+            return articles.filter { $0.isFavorite && !$0.isArchived }
+        case .archived:
+            return articles.filter { $0.isArchived }
+        }
+    }
 
     private let getArticlesUseCase: GetArticlesUseCaseProtocol
     private let addArticleUseCase: AddArticleUseCaseProtocol
     private let deleteArticleUseCase: DeleteArticleUseCaseProtocol
     private let syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol
+    private let toggleFavoriteUseCase: ToggleFavoriteUseCaseProtocol
+    private let toggleArchiveUseCase: ToggleArchiveUseCaseProtocol
 
     init(
         getArticlesUseCase: GetArticlesUseCaseProtocol,
         addArticleUseCase: AddArticleUseCaseProtocol,
         deleteArticleUseCase: DeleteArticleUseCaseProtocol,
-        syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol
+        syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol,
+        toggleFavoriteUseCase: ToggleFavoriteUseCaseProtocol,
+        toggleArchiveUseCase: ToggleArchiveUseCaseProtocol
     ) {
         self.getArticlesUseCase = getArticlesUseCase
         self.addArticleUseCase = addArticleUseCase
         self.deleteArticleUseCase = deleteArticleUseCase
         self.syncSharedArticlesUseCase = syncSharedArticlesUseCase
+        self.toggleFavoriteUseCase = toggleFavoriteUseCase
+        self.toggleArchiveUseCase = toggleArchiveUseCase
     }
 
     func loadArticles() async {
@@ -95,5 +119,27 @@ final class ArticleListViewModel {
 
     func clearError() {
         errorMessage = nil
+    }
+
+    func toggleFavorite(_ article: Article) async {
+        do {
+            try await toggleFavoriteUseCase.execute(articleId: article.id)
+            await loadArticles()
+        } catch {
+            errorMessage = "Failed to toggle favorite: \(error.localizedDescription)"
+        }
+    }
+
+    func toggleArchive(_ article: Article) async {
+        do {
+            try await toggleArchiveUseCase.execute(articleId: article.id)
+            await loadArticles()
+        } catch {
+            errorMessage = "Failed to toggle archive: \(error.localizedDescription)"
+        }
+    }
+
+    func setFilter(_ newFilter: ArticleFilter) {
+        filter = newFilter
     }
 }

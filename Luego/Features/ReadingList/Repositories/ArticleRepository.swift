@@ -7,6 +7,8 @@ protocol ArticleRepositoryProtocol: Sendable {
     func delete(id: UUID) async throws
     func update(_ article: Article) async throws
     func updateReadPosition(articleId: UUID, position: Double) async throws
+    func toggleFavorite(id: UUID) async throws
+    func toggleArchive(id: UUID) async throws
 }
 
 @MainActor
@@ -55,6 +57,30 @@ final class ArticleRepository: ArticleRepositoryProtocol {
         }
 
         article.readPosition = position
+        try modelContext.save()
+    }
+
+    func toggleFavorite(id: UUID) async throws {
+        let predicate = #Predicate<Article> { $0.id == id }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+
+        guard let article = try modelContext.fetch(descriptor).first else {
+            return
+        }
+
+        article.isFavorite.toggle()
+        try modelContext.save()
+    }
+
+    func toggleArchive(id: UUID) async throws {
+        let predicate = #Predicate<Article> { $0.id == id }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+
+        guard let article = try modelContext.fetch(descriptor).first else {
+            return
+        }
+
+        article.isArchived.toggle()
         try modelContext.save()
     }
 }

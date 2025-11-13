@@ -12,6 +12,7 @@ struct ArticleListView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
+    let filter: ArticleFilter
 
     var body: some View {
         ArticleListContent(
@@ -19,7 +20,7 @@ struct ArticleListView: View {
             diContainer: diContainer,
             onAddArticle: { showingAddArticle = true }
         )
-        .navigationTitle("Luego")
+        .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             AddArticleToolbarButton(onTap: { showingAddArticle = true })
@@ -45,6 +46,7 @@ struct ArticleListView: View {
     private func initializeViewModelIfNeeded() async {
         guard viewModel == nil, let container = diContainer else { return }
         viewModel = container.makeArticleListViewModel()
+        viewModel?.setFilter(filter)
         await viewModel?.loadArticles()
     }
 
@@ -70,6 +72,17 @@ struct ArticleListView: View {
             size: 0
         )
     }
+
+    private var navigationTitle: String {
+        switch filter {
+        case .readingList:
+            return "Luego"
+        case .favorites:
+            return "Favourites"
+        case .archived:
+            return "Archived"
+        }
+    }
 }
 
 struct ArticleListContent: View {
@@ -80,8 +93,8 @@ struct ArticleListContent: View {
     var body: some View {
         Group {
             if let viewModel {
-                if viewModel.articles.isEmpty {
-                    ArticleListEmptyState(onAddArticle: onAddArticle)
+                if viewModel.filteredArticles.isEmpty {
+                    ArticleListEmptyState(onAddArticle: onAddArticle, filter: viewModel.filter)
                 } else {
                     ArticleList(viewModel: viewModel, diContainer: diContainer)
                 }
@@ -98,20 +111,60 @@ struct ArticleList: View {
 
     var body: some View {
         List {
-            ForEach(viewModel.articles) { article in
+            ForEach(viewModel.filteredArticles) { article in
                 NavigationLink {
                     ArticleReaderDestination(article: article, diContainer: diContainer)
                 } label: {
                     ArticleRowView(article: article)
                 }
-            }
-            .onDelete { indexSet in
-                Task {
-                    await viewModel.deleteArticle(at: indexSet)
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    favoriteButton(for: article)
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    archiveButton(for: article)
+                    deleteButton(for: article)
                 }
             }
         }
         .scrollContentBackground(.hidden)
+    }
+
+    private func favoriteButton(for article: Article) -> some View {
+        Button {
+            Task {
+                await viewModel.toggleFavorite(article)
+            }
+        } label: {
+            Label(
+                article.isFavorite ? "Unfavorite" : "Favorite",
+                systemImage: article.isFavorite ? "heart.slash.fill" : "heart.fill"
+            )
+        }
+        .tint(article.isFavorite ? .gray : .red)
+    }
+
+    private func archiveButton(for article: Article) -> some View {
+        Button {
+            Task {
+                await viewModel.toggleArchive(article)
+            }
+        } label: {
+            Label(
+                article.isArchived ? "Unarchive" : "Archive",
+                systemImage: article.isArchived ? "tray.and.arrow.up.fill" : "archivebox.fill"
+            )
+        }
+        .tint(.blue)
+    }
+
+    private func deleteButton(for article: Article) -> some View {
+        Button(role: .destructive) {
+            Task {
+                await viewModel.deleteArticle(article)
+            }
+        } label: {
+            Label("Delete", systemImage: "trash.fill")
+        }
     }
 }
 
@@ -129,17 +182,71 @@ struct ArticleReaderDestination: View {
 
 struct ArticleListEmptyState: View {
     let onAddArticle: () -> Void
+    let filter: ArticleFilter
 
     var body: some View {
         ContentUnavailableView {
-            Label("No Articles", systemImage: "doc.text")
-        } description: {
-            Text("Save your first article to get started")
-        } actions: {
-            Button("Add Article") {
-                onAddArticle()
+            VStack(spacing: 8) {
+                Image(systemName: emptyStateIcon)
+                    .font(.system(size: 64))
+                    .foregroundStyle(iconColor)
+                Text(emptyStateTitle)
+                    .font(.title2)
+                    .fontWeight(.semibold)
             }
-            .buttonStyle(.borderedProminent)
+        } description: {
+            Text(emptyStateDescription)
+        } actions: {
+            if filter == .readingList {
+                Button("Add Article") {
+                    onAddArticle()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+
+    private var iconColor: Color {
+        switch filter {
+        case .readingList:
+            return .gray
+        case .favorites:
+            return .pink
+        case .archived:
+            return .blue
+        }
+    }
+
+    private var emptyStateTitle: String {
+        switch filter {
+        case .readingList:
+            return "No Articles"
+        case .favorites:
+            return "No Favorites"
+        case .archived:
+            return "No Archived Articles"
+        }
+    }
+
+    private var emptyStateIcon: String {
+        switch filter {
+        case .readingList:
+            return "doc.text.fill"
+        case .favorites:
+            return "heart.fill"
+        case .archived:
+            return "archivebox.fill"
+        }
+    }
+
+    private var emptyStateDescription: String {
+        switch filter {
+        case .readingList:
+            return "Save your first article to get started"
+        case .favorites:
+            return "Articles you favorite will appear here"
+        case .archived:
+            return "Archived articles will appear here"
         }
     }
 }
