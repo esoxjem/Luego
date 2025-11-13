@@ -4,6 +4,7 @@ protocol FetchArticleContentUseCaseProtocol: Sendable {
     func execute(article: Article) async throws -> Article
 }
 
+@MainActor
 final class FetchArticleContentUseCase: FetchArticleContentUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
     private let metadataRepository: MetadataRepositoryProtocol

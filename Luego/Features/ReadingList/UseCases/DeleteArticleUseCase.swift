@@ -4,6 +4,7 @@ protocol DeleteArticleUseCaseProtocol: Sendable {
     func execute(articleId: UUID) async throws
 }
 
+@MainActor
 final class DeleteArticleUseCase: DeleteArticleUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
 

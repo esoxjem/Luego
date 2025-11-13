@@ -4,6 +4,7 @@ protocol SyncSharedArticlesUseCaseProtocol: Sendable {
     func execute() async throws -> [Article]
 }
 
+@MainActor
 final class SyncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol {
     private let sharedStorageRepository: SharedStorageRepositoryProtocol
     private let articleRepository: ArticleRepositoryProtocol

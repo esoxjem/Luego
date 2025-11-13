@@ -4,6 +4,7 @@ protocol UpdateArticleReadPositionUseCaseProtocol: Sendable {
     func execute(articleId: UUID, position: Double) async throws
 }
 
+@MainActor
 final class UpdateArticleReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
 

@@ -4,6 +4,7 @@ protocol GetArticlesUseCaseProtocol: Sendable {
     func execute() async throws -> [Article]
 }
 
+@MainActor
 final class GetArticlesUseCase: GetArticlesUseCaseProtocol {
     private let articleRepository: ArticleRepositoryProtocol
 
