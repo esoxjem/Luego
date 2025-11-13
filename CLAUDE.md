@@ -52,7 +52,7 @@ Claude Code includes an `ios-build-fixer` agent that:
 The app follows a **pragmatic architecture** organized by feature with shared infrastructure:
 
 **Organization Strategy:**
-- **Features/**: Vertical slices by feature (ArticleManagement, Reader, Sharing)
+- **Features/**: Vertical slices by feature (ReadingList, Reader, Sharing)
 - **Core/**: Shared infrastructure (DI, Configuration, Models, DataSources)
 - **App/**: Application entry point
 
@@ -135,12 +135,12 @@ The project uses SwiftSPM for dependency management. Dependencies are declared i
 **Example**: Adding "Favorite Articles" feature
 ```
 1. Core/Models/: Add `isFavorite: Bool` to Article model
-2. Features/ArticleManagement/Repositories/: Add `toggleFavorite(id:)` to ArticleRepositoryProtocol
-3. Features/ArticleManagement/UseCases/: Create ToggleFavoriteUseCase.swift
-4. Features/ArticleManagement/Repositories/: Implement `toggleFavorite` in ArticleRepository
+2. Features/ReadingList/Repositories/: Add `toggleFavorite(id:)` to ArticleRepositoryProtocol
+3. Features/ReadingList/UseCases/: Create ToggleFavoriteUseCase.swift
+4. Features/ReadingList/Repositories/: Implement `toggleFavorite` in ArticleRepository
 5. Core/DI/: Add toggleFavoriteUseCase to DIContainer
-6. Features/ArticleManagement/Views/: Use case in ArticleListViewModel
-7. Features/ArticleManagement/Views/: Add favorite button to ArticleRowView
+6. Features/ReadingList/Views/: Use case in ArticleListViewModel
+7. Features/ReadingList/Views/: Add favorite button to ArticleRowView
 ```
 
 ### Coding Guidelines
