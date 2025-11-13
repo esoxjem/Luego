@@ -13,29 +13,23 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack {
-                ArticleListView(filter: .readingList)
+            Tab("", systemImage: "list.bullet", value: 0) {
+                NavigationStack {
+                    ArticleListView(filter: .readingList)
+                }
             }
-            .tabItem {
-                Image(systemName: "list.bullet")
-            }
-            .tag(0)
 
-            NavigationStack {
-                ArticleListView(filter: .favorites)
+            Tab("", systemImage: "heart", value: 1) {
+                NavigationStack {
+                    ArticleListView(filter: .favorites)
+                }
             }
-            .tabItem {
-                Image(systemName: "heart")
-            }
-            .tag(1)
 
-            NavigationStack {
-                ArticleListView(filter: .archived)
+            Tab("", systemImage: "archivebox.fill", value: 2) {
+                NavigationStack {
+                    ArticleListView(filter: .archived)
+                }
             }
-            .tabItem {
-                Image(systemName: "archivebox.fill")
-            }
-            .tag(2)
         }
     }
 }

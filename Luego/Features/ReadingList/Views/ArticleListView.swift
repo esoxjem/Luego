@@ -201,7 +201,8 @@ struct ArticleListEmptyState: View {
                 Button("Add Article") {
                     onAddArticle()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.glassProminent)
+                .tint(.purple)
             }
         }
     }

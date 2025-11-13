@@ -1,5 +1,5 @@
 # Luego
-A minimal, offline read-it-later iOS app. I've built this app as an alternative to [Pocket](https://getpocket.com/).
+A minimal, offline read-it-later iOS app. I've built this app as an alternative to [Pocket](https://getpocket.com/) using [Claude Code](CLAUDE.md).
 
 ## Architecture
 
