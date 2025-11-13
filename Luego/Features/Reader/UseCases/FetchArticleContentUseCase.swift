@@ -1,7 +1,7 @@
 import Foundation
 
 protocol FetchArticleContentUseCaseProtocol: Sendable {
-    func execute(article: Article) async throws -> Article
+    func execute(article: Article, forceRefresh: Bool) async throws -> Article
 }
 
 @MainActor
@@ -17,8 +17,8 @@ final class FetchArticleContentUseCase: FetchArticleContentUseCaseProtocol {
         self.metadataRepository = metadataRepository
     }
 
-    func execute(article: Article) async throws -> Article {
-        guard article.content == nil else {
+    func execute(article: Article, forceRefresh: Bool = false) async throws -> Article {
+        guard forceRefresh || article.content == nil else {
             return article
         }
 

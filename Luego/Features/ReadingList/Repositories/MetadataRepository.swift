@@ -27,7 +27,8 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         let publishedDate = extractPublishedDate(from: document)
 
         let title = ogTitle ?? htmlTitle ?? url.host() ?? url.absoluteString
-        let thumbnailURL = buildThumbnailURL(from: ogImage, baseURL: url)
+        let imageURL = ogImage ?? extractFirstImageURL(from: document)
+        let thumbnailURL = buildThumbnailURL(from: imageURL, baseURL: url)
         let description = ogDescription ?? metaDescription
 
         return ArticleMetadata(
@@ -50,9 +51,10 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         let publishedDate = extractPublishedDate(from: document)
 
         let title = ogTitle ?? htmlTitle ?? url.host() ?? url.absoluteString
-        let thumbnailURL = buildThumbnailURL(from: ogImage, baseURL: url)
+        let imageURL = ogImage ?? extractFirstImageURL(from: document)
+        let thumbnailURL = buildThumbnailURL(from: imageURL, baseURL: url)
         let description = ogDescription ?? metaDescription
-        let content = try extractArticleContent(from: document)
+        let content = try extractArticleContent(from: document, baseURL: url)
 
         return ArticleContent(
             title: title,
@@ -145,6 +147,64 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         return nil
     }
 
+    private func extractFirstImageURL(from document: Document) -> String? {
+        let contentSelectors = [
+            "article img",
+            "main img",
+            "[role=main] img",
+            ".post-content img",
+            ".article-content img",
+            ".entry-content img",
+            ".content img",
+            "img"
+        ]
+
+        for selector in contentSelectors {
+            guard let images = try? document.select(selector).array() else {
+                continue
+            }
+
+            for image in images {
+                if let imageURL = extractValidImageURL(from: image) {
+                    return imageURL
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private func extractValidImageURL(from image: Element) -> String? {
+        guard let src = try? (image.attr("src").isEmpty ? image.attr("data-src") : image.attr("src")),
+              !src.isEmpty else {
+            return nil
+        }
+
+        if isLikelySmallOrIconImage(image) {
+            return nil
+        }
+
+        return src
+    }
+
+    private func isLikelySmallOrIconImage(_ image: Element) -> Bool {
+        let widthString = (try? image.attr("width")) ?? ""
+        let heightString = (try? image.attr("height")) ?? ""
+
+        if let width = Int(widthString), width < 200 {
+            return true
+        }
+
+        if let height = Int(heightString), height < 200 {
+            return true
+        }
+
+        let srcValue = ((try? image.attr("src")) ?? "").lowercased()
+        let iconKeywords = ["icon", "logo", "avatar", "pixel", "tracking", "badge", "button"]
+
+        return iconKeywords.contains { srcValue.contains($0) }
+    }
+
     private func parseDateString(_ dateString: String) -> Date? {
         let formatters: [ISO8601DateFormatter] = [
             {
@@ -220,10 +280,10 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         try document.select("script, style, nav, header, footer, aside, iframe, .ad, .advertisement, .social-share").remove()
     }
 
-    private func extractArticleContent(from document: Document) throws -> String {
+    private func extractArticleContent(from document: Document, baseURL: URL) throws -> String {
         let container = try findMainContentContainer(in: document)
         let elements = try extractContentElements(from: container)
-        let formattedText = formatContentElements(elements)
+        let formattedText = formatContentElements(elements, baseURL: baseURL)
 
         if formattedText.count > 200 {
             return formattedText
@@ -267,7 +327,7 @@ final class MetadataRepository: MetadataRepositoryProtocol {
     }
 
     private func extractContentElements(from container: Element) throws -> [Element] {
-        let allElements = try container.select("p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol").array()
+        let allElements = try container.select("p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol, img").array()
         return removeDescendantDuplicates(from: allElements)
     }
 
@@ -300,18 +360,18 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         return false
     }
 
-    private func formatContentElements(_ elements: [Element]) -> String {
+    private func formatContentElements(_ elements: [Element], baseURL: URL) -> String {
         var contentParts: [String] = []
 
         for element in elements {
-            let markdownText = convertElementToMarkdown(element)
+            let markdownText = convertElementToMarkdown(element, baseURL: baseURL)
 
-            let minLength = isHeadingElement(element) ? 3 : 20
+            let minLength = isHeadingOrImageElement(element) ? 3 : 20
             guard markdownText.count > minLength else {
                 continue
             }
 
-            let formatted = formatElement(element, text: markdownText)
+            let formatted = formatElement(element, text: markdownText, baseURL: baseURL)
             if !formatted.isEmpty {
                 contentParts.append(formatted)
             }
@@ -320,12 +380,20 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         return contentParts.joined(separator: "\n\n")
     }
 
-    private func convertElementToMarkdown(_ element: Element) -> String {
+    private func convertElementToMarkdown(_ element: Element, baseURL: URL) -> String {
+        let tagName = element.tagName()
+
+        if tagName == "img" {
+            return convertImageToMarkdown(element, baseURL: baseURL)
+        }
+
         guard let html = try? element.html() else {
             return ""
         }
 
         var markdown = html
+
+        markdown = convertInlineImagesToMarkdown(markdown, baseURL: baseURL)
 
         markdown = markdown.replacingOccurrences(of: "<li>", with: "\n- ", options: .caseInsensitive)
         markdown = markdown.replacingOccurrences(of: "</li>", with: "", options: .caseInsensitive)
@@ -355,9 +423,104 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private func convertImageToMarkdown(_ element: Element, baseURL: URL) -> String {
+        guard let src = try? element.attr("src"), !src.isEmpty else {
+            return ""
+        }
+
+        let alt = (try? element.attr("alt")) ?? ""
+        let title = (try? element.attr("title")) ?? nil
+
+        guard let resolvedURL = resolveImageURL(src, baseURL: baseURL) else {
+            return ""
+        }
+
+        if let title = title, !title.isEmpty {
+            return "![\(alt)](\(resolvedURL) \"\(title)\")"
+        } else {
+            return "![\(alt)](\(resolvedURL))"
+        }
+    }
+
+    private func convertInlineImagesToMarkdown(_ html: String, baseURL: URL) -> String {
+        guard let regex = try? NSRegularExpression(
+            pattern: "<img[^>]*?(?:src=\"([^\"]*)\"[^>]*?alt=\"([^\"]*)\"[^>]*?|alt=\"([^\"]*)\"[^>]*?src=\"([^\"]*)\"[^>]*?|src=\"([^\"]*)\"[^>]*?)>",
+            options: [.caseInsensitive]
+        ) else {
+            return html
+        }
+
+        let nsString = html as NSString
+        let results = regex.matches(in: html, options: [], range: NSRange(location: 0, length: nsString.length))
+
+        var output = html
+        var offset = 0
+
+        for result in results {
+            let matchRange = NSRange(location: result.range.location + offset, length: result.range.length)
+            var src: String?
+            var alt: String = ""
+
+            if result.range(at: 1).location != NSNotFound {
+                src = nsString.substring(with: result.range(at: 1))
+                if result.range(at: 2).location != NSNotFound {
+                    alt = nsString.substring(with: result.range(at: 2))
+                }
+            } else if result.range(at: 4).location != NSNotFound {
+                src = nsString.substring(with: result.range(at: 4))
+                if result.range(at: 3).location != NSNotFound {
+                    alt = nsString.substring(with: result.range(at: 3))
+                }
+            } else if result.range(at: 5).location != NSNotFound {
+                src = nsString.substring(with: result.range(at: 5))
+            }
+
+            guard let imageSrc = src,
+                  let resolvedURL = resolveImageURL(imageSrc, baseURL: baseURL) else {
+                continue
+            }
+
+            let markdown = "![\(alt)](\(resolvedURL))"
+            let outputNS = output as NSString
+            output = outputNS.replacingCharacters(in: matchRange, with: markdown)
+
+            offset += markdown.count - result.range.length
+        }
+
+        return output
+    }
+
+    private func resolveImageURL(_ imageURL: String, baseURL: URL) -> String? {
+        if imageURL.hasPrefix("http://") || imageURL.hasPrefix("https://") {
+            return imageURL
+        }
+
+        if imageURL.hasPrefix("//") {
+            return "https:" + imageURL
+        }
+
+        if imageURL.hasPrefix("/") {
+            var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+            components?.path = imageURL
+            components?.query = nil
+            return components?.url?.absoluteString
+        }
+
+        if imageURL.hasPrefix("data:") {
+            return imageURL
+        }
+
+        return nil
+    }
+
     private func isHeadingElement(_ element: Element) -> Bool {
         let tagName = element.tagName()
         return ["h1", "h2", "h3", "h4", "h5", "h6"].contains(tagName)
+    }
+
+    private func isHeadingOrImageElement(_ element: Element) -> Bool {
+        let tagName = element.tagName()
+        return ["h1", "h2", "h3", "h4", "h5", "h6", "img"].contains(tagName)
     }
 
     private func normalizeWhitespace(_ text: String) -> String {
@@ -368,7 +531,7 @@ final class MetadataRepository: MetadataRepositoryProtocol {
             .trimmingCharacters(in: .whitespaces)
     }
 
-    private func formatElement(_ element: Element, text: String) -> String {
+    private func formatElement(_ element: Element, text: String, baseURL: URL) -> String {
         let tagName = element.tagName()
 
         switch tagName {
@@ -387,20 +550,20 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         case "blockquote":
             return "> \(text)"
         case "ul", "ol":
-            return formatListElement(element)
+            return formatListElement(element, baseURL: baseURL)
         default:
             return text
         }
     }
 
-    private func formatListElement(_ element: Element) -> String {
+    private func formatListElement(_ element: Element, baseURL: URL) -> String {
         guard let listItems = try? element.select("li").array() else {
             return ""
         }
 
         var items: [String] = []
         for item in listItems {
-            let markdownText = convertElementToMarkdown(item)
+            let markdownText = convertElementToMarkdown(item, baseURL: baseURL)
             if !markdownText.isEmpty {
                 items.append("- \(markdownText)")
             }

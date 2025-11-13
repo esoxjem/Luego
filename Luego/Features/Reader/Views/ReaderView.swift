@@ -46,6 +46,7 @@ struct ReaderView: View {
                 ReaderViewToolbar(
                     showWebView: showWebView,
                     onShowWebView: { showWebView = true },
+                    onRefresh: refreshContent,
                     onShare: shareArticle
                 )
             }
@@ -155,11 +156,16 @@ struct WebViewRepresentable: UIViewRepresentable {
 struct ReaderViewToolbar: View {
     let showWebView: Bool
     let onShowWebView: () -> Void
+    let onRefresh: () -> Void
     let onShare: () -> Void
 
     var body: some View {
         Menu {
             if !showWebView {
+                Button(action: onRefresh) {
+                    Label("Refresh Content", systemImage: "arrow.clockwise")
+                }
+
                 Button(action: onShowWebView) {
                     Label("Show Web View", systemImage: "safari")
                 }
@@ -278,6 +284,12 @@ extension ReaderView {
         let position = min(1.0, max(0.0, scrollPosition / maxScroll))
         Task {
             await viewModel.updateReadPosition(position)
+        }
+    }
+
+    private func refreshContent() {
+        Task {
+            await viewModel.refreshContent()
         }
     }
 

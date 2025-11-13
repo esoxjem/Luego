@@ -31,7 +31,22 @@ final class ReaderViewModel {
         errorMessage = nil
 
         do {
-            let updatedArticle = try await fetchContentUseCase.execute(article: article)
+            let updatedArticle = try await fetchContentUseCase.execute(article: article, forceRefresh: false)
+            article = updatedArticle
+            articleContent = updatedArticle.content
+            isLoading = false
+        } catch {
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
+    }
+
+    func refreshContent() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let updatedArticle = try await fetchContentUseCase.execute(article: article, forceRefresh: true)
             article = updatedArticle
             articleContent = updatedArticle.content
             isLoading = false
