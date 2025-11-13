@@ -14,27 +14,15 @@ struct ArticleListView: View {
     @State private var showingAddArticle = false
 
     var body: some View {
-        Group {
-            if let viewModel {
-                if viewModel.articles.isEmpty {
-                    emptyState
-                } else {
-                    articleList(viewModel: viewModel)
-                }
-            } else {
-                ProgressView()
-            }
-        }
+        ArticleListContent(
+            viewModel: viewModel,
+            diContainer: diContainer,
+            onAddArticle: { showingAddArticle = true }
+        )
         .navigationTitle("Luego")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingAddArticle = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-            }
+            AddArticleToolbarButton(onTap: { showingAddArticle = true })
         }
         .onAppear {
             configureNavigationBarAppearance()
@@ -45,28 +33,74 @@ struct ArticleListView: View {
             }
         }
         .task {
-            if viewModel == nil, let container = diContainer {
-                viewModel = container.makeArticleListViewModel()
-                await viewModel?.loadArticles()
-            }
+            await initializeViewModelIfNeeded()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active, let viewModel {
-                Task {
-                    await viewModel.syncSharedArticles()
-                }
+            Task {
+                await handleScenePhaseChange(newPhase)
             }
         }
     }
 
-    private func articleList(viewModel: ArticleListViewModel) -> some View {
+    private func initializeViewModelIfNeeded() async {
+        guard viewModel == nil, let container = diContainer else { return }
+        viewModel = container.makeArticleListViewModel()
+        await viewModel?.loadArticles()
+    }
+
+    private func handleScenePhaseChange(_ phase: ScenePhase) async {
+        guard phase == .active, let viewModel else { return }
+        await viewModel.syncSharedArticles()
+    }
+
+    private func configureNavigationBarAppearance() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.largeTitleTextAttributes = [.font: serifBoldLargeTitleFont]
+
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+    }
+
+    private var serifBoldLargeTitleFont: UIFont {
+        UIFont(
+            descriptor: UIFontDescriptor.preferredFontDescriptor(withTextStyle: .largeTitle)
+                .withDesign(.serif)!
+                .withSymbolicTraits(.traitBold)!,
+            size: 0
+        )
+    }
+}
+
+struct ArticleListContent: View {
+    let viewModel: ArticleListViewModel?
+    let diContainer: DIContainer?
+    let onAddArticle: () -> Void
+
+    var body: some View {
+        Group {
+            if let viewModel {
+                if viewModel.articles.isEmpty {
+                    ArticleListEmptyState(onAddArticle: onAddArticle)
+                } else {
+                    ArticleList(viewModel: viewModel, diContainer: diContainer)
+                }
+            } else {
+                ProgressView()
+            }
+        }
+    }
+}
+
+struct ArticleList: View {
+    let viewModel: ArticleListViewModel
+    let diContainer: DIContainer?
+
+    var body: some View {
         List {
             ForEach(viewModel.articles) { article in
                 NavigationLink {
-                    if let container = diContainer {
-                        let readerViewModel = container.makeReaderViewModel(article: article)
-                        ReaderView(viewModel: readerViewModel)
-                    }
+                    ArticleReaderDestination(article: article, diContainer: diContainer)
                 } label: {
                     ArticleRowView(article: article)
                 }
@@ -79,34 +113,47 @@ struct ArticleListView: View {
         }
         .scrollContentBackground(.hidden)
     }
+}
 
-    private var emptyState: some View {
+struct ArticleReaderDestination: View {
+    let article: Article
+    let diContainer: DIContainer?
+
+    var body: some View {
+        if let container = diContainer {
+            let readerViewModel = container.makeReaderViewModel(article: article)
+            ReaderView(viewModel: readerViewModel)
+        }
+    }
+}
+
+struct ArticleListEmptyState: View {
+    let onAddArticle: () -> Void
+
+    var body: some View {
         ContentUnavailableView {
             Label("No Articles", systemImage: "doc.text")
         } description: {
             Text("Save your first article to get started")
         } actions: {
             Button("Add Article") {
-                showingAddArticle = true
+                onAddArticle()
             }
             .buttonStyle(.borderedProminent)
         }
     }
+}
 
-    private func configureNavigationBarAppearance() {
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithDefaultBackground()
+struct AddArticleToolbarButton: ToolbarContent {
+    let onTap: () -> Void
 
-        let serifFont = UIFont(descriptor: UIFontDescriptor.preferredFontDescriptor(withTextStyle: .largeTitle)
-            .withDesign(.serif)!
-            .withSymbolicTraits(.traitBold)!,
-            size: 0)
-
-        appearance.largeTitleTextAttributes = [
-            .font: serifFont
-        ]
-
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+    var body: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                onTap()
+            } label: {
+                Image(systemName: "plus")
+            }
+        }
     }
 }
