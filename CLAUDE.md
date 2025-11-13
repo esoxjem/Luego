@@ -181,6 +181,91 @@ for selector in contentSelectors {
 }
 ```
 
+### SwiftUI View Organization
+
+**Component Extraction:**
+- Extract complex views into separate, well-named `struct` components
+- Avoid deeply nested closures and view builders
+- Each component should have a clear, single responsibility
+- Component names should clearly describe what they display
+
+**Top-Down Organization:**
+- Main view struct appears first in the file
+- Direct child views follow immediately after
+- Lower-level utility views appear at the end
+- Extensions and helper functions go last
+- Read from top to bottom: high-level → low-level abstraction
+
+**Good Example (Top-Down):**
+```swift
+struct ReaderView: View {
+    var body: some View {
+        Group {
+            if isLoading {
+                ArticleLoadingView()
+            } else {
+                ArticleReaderModeView(article: article)
+            }
+        }
+    }
+}
+
+struct ArticleReaderModeView: View {
+    var body: some View {
+        ScrollView {
+            ArticleHeaderView(title: title)
+            ArticleContentView(content: content)
+        }
+    }
+}
+
+struct ArticleHeaderView: View {
+    var body: some View {
+        // Header implementation
+    }
+}
+
+struct ArticleContentView: View {
+    var body: some View {
+        // Content implementation
+    }
+}
+
+extension ReaderView {
+    // Helper functions
+}
+```
+
+**Bad Example (Bottom-Up):**
+```swift
+struct ArticleContentView: View {
+    // Utility view appearing first
+}
+
+extension ReaderView {
+    // Extensions before main view
+}
+
+struct ReaderView: View {
+    var body: some View {
+        // Main view buried at bottom
+        ScrollView {
+            VStack {
+                // Deeply nested inline closures
+                if isLoading {
+                    VStack {
+                        ProgressView()
+                        Text("Loading...")
+                    }
+                } else {
+                    // Complex inline view hierarchy
+                }
+            }
+        }
+    }
+}
+```
+
 ### Error Handling
 - Services throw custom error types (e.g., ArticleMetadataError)
 - ViewModels catch errors and store in @Observable properties
