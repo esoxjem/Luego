@@ -79,7 +79,7 @@ Feature Views → Feature UseCases → Feature Repositories → Core Models
 ### Modern Swift Features
 - **@Observable**: Modern observation framework (replaces ObservableObject)
 - **async/await**: All network calls use Swift concurrency
-- **@MainActor**: UI updates isolated to main thread
+- **@MainActor**: UI updates isolated to main thread. All use cases and repositories marked with @MainActor for thread-safe SwiftData operations
 - **#Preview**: Modern preview macro syntax
 - **Structured Concurrency**: Task-based async operations
 
@@ -124,13 +124,15 @@ The project uses SwiftSPM for dependency management. Dependencies are declared i
 
 ### Adding New Features (Feature-Based Approach)
 1. **Update Model** in `/Core/Models/` if needed (add properties to SwiftData model)
-2. **Create/Update Repository** in `/Features/<FeatureName>/Repositories/` with protocol and implementation
-3. **Create Use Case** in `/Features/<FeatureName>/UseCases/` for business logic
+2. **Create/Update Repository** in `/Features/<FeatureName>/Repositories/` with protocol and implementation (mark class with `@MainActor`)
+3. **Create Use Case** in `/Features/<FeatureName>/UseCases/` for business logic (mark class with `@MainActor`)
 4. **Create Data Source** in `/Core/DataSources/` or `/Features/<FeatureName>/DataSources/` if needed
 5. **Create/Update ViewModel** in `/Features/<FeatureName>/Views/` with injected use cases
 6. **Create View** in `/Features/<FeatureName>/Views/` using models
 7. **Wire up in DIContainer** - add repository, use case, and ViewModel factory methods
 8. Update FEATURES.md to track implementation progress
+
+**Important**: Always mark use case and repository classes with `@MainActor` for thread-safe SwiftData operations.
 
 **Example**: Adding "Favorite Articles" feature
 ```

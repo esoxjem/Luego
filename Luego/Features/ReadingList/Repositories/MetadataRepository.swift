@@ -1,26 +1,6 @@
 import Foundation
 import SwiftSoup
 
-enum ArticleMetadataError: LocalizedError {
-    case invalidURL
-    case networkError(Error)
-    case parsingError(Error)
-    case noMetadata
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return "The URL is invalid or malformed."
-        case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
-        case .parsingError(let error):
-            return "Failed to parse article: \(error.localizedDescription)"
-        case .noMetadata:
-            return "No metadata found for this article."
-        }
-    }
-}
-
 protocol MetadataRepositoryProtocol: Sendable {
     func validateURL(_ url: URL) async throws -> URL
     func fetchMetadata(for url: URL) async throws -> ArticleMetadata

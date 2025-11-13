@@ -121,12 +121,14 @@ The architecture maintains separation of concerns with a pragmatic approach:
 - Minimal framework dependencies
 - Depend on repository protocols from Features/*/Repositories/
 - Coordinate operations between repositories
+- All use case classes marked with `@MainActor` for main thread execution
 
 **Data Access (Repositories)**:
 - Located in Features/*/Repositories/
 - Each repository contains both protocol and implementation
 - Work directly with SwiftData models
 - Handle persistence and external data
+- All repository classes marked with `@MainActor` (required for SwiftData's ModelContext)
 
 **Presentation (Views & ViewModels)**:
 - Located in Features/*/Views/

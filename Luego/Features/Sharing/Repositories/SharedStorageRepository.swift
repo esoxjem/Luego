@@ -5,6 +5,7 @@ protocol SharedStorageRepositoryProtocol: Sendable {
     func clearSharedURLs() async
 }
 
+@MainActor
 final class SharedStorageRepository: SharedStorageRepositoryProtocol {
     private let userDefaultsDataSource: UserDefaultsDataSource
 
