@@ -124,7 +124,7 @@ final class ArticleListViewModel {
     func toggleFavorite(_ article: Article) async {
         do {
             try await toggleFavoriteUseCase.execute(articleId: article.id)
-            await loadArticles()
+            article.isFavorite.toggle()
         } catch {
             errorMessage = "Failed to toggle favorite: \(error.localizedDescription)"
         }
@@ -133,7 +133,7 @@ final class ArticleListViewModel {
     func toggleArchive(_ article: Article) async {
         do {
             try await toggleArchiveUseCase.execute(articleId: article.id)
-            await loadArticles()
+            article.isArchived.toggle()
         } catch {
             errorMessage = "Failed to toggle archive: \(error.localizedDescription)"
         }
