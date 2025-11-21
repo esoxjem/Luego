@@ -75,8 +75,7 @@ struct ArticleReaderModeView: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        ArticleHeaderView(
-                            title: article.title,
+                        ArticleMetadataView(
                             domain: article.domain,
                             formattedDate: formattedDate
                         )
@@ -180,28 +179,21 @@ struct ReaderViewToolbar: View {
     }
 }
 
-struct ArticleHeaderView: View {
-    let title: String
+struct ArticleMetadataView: View {
     let domain: String
     let formattedDate: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.title.weight(.bold))
-                .foregroundColor(.primary)
+        HStack {
+            Text(domain)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-            HStack {
-                Text(domain)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            Spacer()
 
-                Spacer()
-
-                Text(formattedDate)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+            Text(formattedDate)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
     }
 }
