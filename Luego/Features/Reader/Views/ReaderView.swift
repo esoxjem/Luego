@@ -75,14 +75,15 @@ struct ArticleReaderModeView: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        ArticleMetadataView(
+                        ArticleHeaderView(
+                            title: article.title,
                             domain: article.domain,
                             formattedDate: formattedDate
                         )
 
                         Divider()
 
-                        Markdown(content)
+                        Markdown(stripFirstH1FromMarkdown(content, matchingTitle: article.title))
                             .markdownTheme(.reader)
                     }
                     .fontDesign(.serif)
@@ -179,21 +180,28 @@ struct ReaderViewToolbar: View {
     }
 }
 
-struct ArticleMetadataView: View {
+struct ArticleHeaderView: View {
+    let title: String
     let domain: String
     let formattedDate: String
 
     var body: some View {
-        HStack {
-            Text(domain)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.title.weight(.bold))
+                .foregroundColor(.primary)
 
-            Spacer()
+            HStack {
+                Text(domain)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
-            Text(formattedDate)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                Spacer()
+
+                Text(formattedDate)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }
@@ -299,6 +307,70 @@ extension ReaderView {
 
         rootViewController.present(activityVC, animated: true)
     }
+}
+
+private func stripFirstH1FromMarkdown(_ markdown: String, matchingTitle: String) -> String {
+    let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false)
+
+    guard let firstLineIndex = lines.firstIndex(where: { line in
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        return trimmed.hasPrefix("# ")
+    }) else {
+        return markdown
+    }
+
+    let firstH1Line = lines[firstLineIndex]
+    let h1Text = firstH1Line
+        .trimmingCharacters(in: .whitespaces)
+        .dropFirst(2)
+        .trimmingCharacters(in: .whitespaces)
+
+    let normalizedH1 = normalizeForComparison(String(h1Text))
+    let normalizedTitle = normalizeForComparison(matchingTitle)
+
+    guard areSimilar(normalizedH1, normalizedTitle) else {
+        return markdown
+    }
+
+    var resultLines = Array(lines)
+    resultLines.remove(at: firstLineIndex)
+
+    while firstLineIndex < resultLines.count {
+        let nextLine = resultLines[firstLineIndex].trimmingCharacters(in: .whitespaces)
+        if nextLine.isEmpty {
+            resultLines.remove(at: firstLineIndex)
+        } else {
+            break
+        }
+    }
+
+    return resultLines.joined(separator: "\n")
+}
+
+private func normalizeForComparison(_ text: String) -> String {
+    return text
+        .lowercased()
+        .components(separatedBy: .punctuationCharacters)
+        .joined()
+        .components(separatedBy: .whitespaces)
+        .filter { !$0.isEmpty }
+        .joined(separator: " ")
+}
+
+private func areSimilar(_ text1: String, _ text2: String) -> Bool {
+    if text1 == text2 {
+        return true
+    }
+
+    let words1 = Set(text1.split(separator: " "))
+    let words2 = Set(text2.split(separator: " "))
+    let intersection = words1.intersection(words2)
+    let union = words1.union(words2)
+
+    guard !union.isEmpty else { return false }
+
+    let similarity = Double(intersection.count) / Double(union.count)
+    return similarity > 0.7
 }
 
 extension Color {
