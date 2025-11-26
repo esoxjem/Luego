@@ -6,8 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Luego** is a minimal read-it-later iOS application that allows users to save articles from URLs, fetch metadata automatically, and manage a reading list. Built with SwiftUI and Swift 5.0, targeting iOS 26.0+.
 
-- **Supported Devices**: iPhone and iPad (Universal)
-- **Current Version**: 1.0 (Build 1) - v0.1.0 Alpha (in active development)
+- **Supported Devices**: iPhone
 
 ## Getting Started
 
