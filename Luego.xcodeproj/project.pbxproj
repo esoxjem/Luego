@@ -41,7 +41,6 @@
 		601507252EC4B31A00CADAFB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		6075988F2EC1FC8D00BEE86E /* Luego.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luego.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		607598CF2EC2220900BEE86E /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
-		607598D02EC2220900BEE86E /* FEATURES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FEATURES.md; sourceTree = "<group>"; };
 		608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LuegoShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -114,7 +113,6 @@
 				601507252EC4B31A00CADAFB /* README.md */,
 				601505C22EC3650D00CADAFB /* ARCHITECTURE.md */,
 				607598CF2EC2220900BEE86E /* CLAUDE.md */,
-				607598D02EC2220900BEE86E /* FEATURES.md */,
 				607598912EC1FC8D00BEE86E /* Luego */,
 				608D756A2EC33EA6002DD532 /* LuegoShareExtension */,
 				607598902EC1FC8D00BEE86E /* Products */,
