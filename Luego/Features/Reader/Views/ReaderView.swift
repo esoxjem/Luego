@@ -78,6 +78,7 @@ struct ArticleReaderModeView: View {
                         ArticleHeaderView(
                             title: article.title,
                             domain: article.domain,
+                            url: article.url,
                             formattedDate: formattedDate
                         )
 
@@ -183,6 +184,7 @@ struct ReaderViewToolbar: View {
 struct ArticleHeaderView: View {
     let title: String
     let domain: String
+    let url: URL
     let formattedDate: String
 
     var body: some View {
@@ -192,9 +194,12 @@ struct ArticleHeaderView: View {
                 .foregroundColor(.primary)
 
             HStack {
-                Text(domain)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Link(destination: url) {
+                    Text(domain)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .underline()
+                }
 
                 Spacer()
 
