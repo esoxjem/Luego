@@ -1,11 +1,9 @@
 import SwiftUI
-import WebKit
 import MarkdownUI
 
 struct ReaderView: View {
     @Bindable var viewModel: ReaderViewModel
-
-    @State private var showWebView = false
+    @Environment(\.openURL) private var openURL
     @State private var scrollPosition: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
     @State private var viewHeight: CGFloat = 0
@@ -16,9 +14,6 @@ struct ReaderView: View {
         Group {
             if viewModel.isLoading {
                 ArticleLoadingView()
-            } else if showWebView {
-                WebViewRepresentable(url: viewModel.article.url)
-                    .ignoresSafeArea(edges: .bottom)
             } else if let content = viewModel.articleContent {
                 ArticleReaderModeView(
                     article: viewModel.article,
@@ -36,7 +31,7 @@ struct ReaderView: View {
             } else if let error = viewModel.errorMessage {
                 ArticleErrorView(
                     message: error,
-                    onShowWebView: { showWebView = true },
+                    onOpenInBrowser: openInBrowser,
                     onRetry: { Task { await viewModel.loadContent() } }
                 )
             }
@@ -44,8 +39,7 @@ struct ReaderView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 ReaderViewToolbar(
-                    showWebView: showWebView,
-                    onShowWebView: { showWebView = true },
+                    onOpenInBrowser: openInBrowser,
                     onRefresh: refreshContent,
                     onShare: shareArticle
                 )
@@ -123,7 +117,7 @@ struct ArticleLoadingView: View {
 
 struct ArticleErrorView: View {
     let message: String
-    let onShowWebView: () -> Void
+    let onOpenInBrowser: () -> Void
     let onRetry: () -> Void
 
     var body: some View {
@@ -132,7 +126,7 @@ struct ArticleErrorView: View {
         } description: {
             Text(message)
         } actions: {
-            Button("Open in Web View", action: onShowWebView)
+            Button("Open in Browser", action: onOpenInBrowser)
                 .buttonStyle(.borderedProminent)
 
             Button("Retry", action: onRetry)
@@ -141,35 +135,19 @@ struct ArticleErrorView: View {
     }
 }
 
-struct WebViewRepresentable: UIViewRepresentable {
-    let url: URL
-
-    func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.load(URLRequest(url: url))
-        return webView
-    }
-
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-    }
-}
-
 struct ReaderViewToolbar: View {
-    let showWebView: Bool
-    let onShowWebView: () -> Void
+    let onOpenInBrowser: () -> Void
     let onRefresh: () -> Void
     let onShare: () -> Void
 
     var body: some View {
         Menu {
-            if !showWebView {
-                Button(action: onRefresh) {
-                    Label("Refresh Content", systemImage: "arrow.clockwise")
-                }
+            Button(action: onRefresh) {
+                Label("Refresh Content", systemImage: "arrow.clockwise")
+            }
 
-                Button(action: onShowWebView) {
-                    Label("Show Web View", systemImage: "safari")
-                }
+            Button(action: onOpenInBrowser) {
+                Label("Open in Browser", systemImage: "safari")
             }
 
             Button(action: onShare) {
@@ -238,6 +216,10 @@ struct ScrollPositionTracker: View {
 }
 
 extension ReaderView {
+    private func openInBrowser() {
+        openURL(viewModel.article.url)
+    }
+
     private var formattedDate: String {
         let displayDate = viewModel.article.publishedDate ?? viewModel.article.savedDate
         let formatter = DateFormatter()
