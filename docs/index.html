@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="hero">
@@ -34,6 +34,18 @@
             </div>
         </div>
     </header>
+
+    <section class="screenshots">
+        <div class="carousel">
+            <div class="carousel-track">
+                <img src="screenshots/App Store Screenshot 1.jpg" alt="Luego reading list view">
+                <img src="screenshots/App Store Screenshot 2.jpg" alt="Luego article reader">
+                <img src="screenshots/App Store Screenshot 3.jpg" alt="Luego save article">
+                <img src="screenshots/App Store Screenshot 4.jpg" alt="Luego share extension">
+                <img src="screenshots/App Store Screenshot 5.jpg" alt="Luego offline reading">
+            </div>
+        </div>
+    </section>
 
     <section id="features" class="features">
         <div class="container">
@@ -129,5 +141,34 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        const carousel = document.querySelector('.carousel');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        carousel.addEventListener('mousedown', (e) => {
+            isDown = true;
+            startX = e.pageX - carousel.offsetLeft;
+            scrollLeft = carousel.scrollLeft;
+        });
+
+        carousel.addEventListener('mouseleave', () => {
+            isDown = false;
+        });
+
+        carousel.addEventListener('mouseup', () => {
+            isDown = false;
+        });
+
+        carousel.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - carousel.offsetLeft;
+            const walk = (x - startX) * 2;
+            carousel.scrollLeft = scrollLeft - walk;
+        });
+    </script>
 </body>
 </html>

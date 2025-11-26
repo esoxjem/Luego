@@ -1,12 +1,12 @@
 :root {
-    --color-bg: #fafafa;
-    --color-surface: #ffffff;
-    --color-text: #1a1a1a;
-    --color-text-secondary: #666666;
-    --color-primary: #0066cc;
-    --color-primary-dark: #0052a3;
-    --color-accent: #f5f5f5;
-    --color-border: #e5e5e5;
+    --color-bg: #0a0a0a;
+    --color-surface: #141414;
+    --color-text: #f5f5f5;
+    --color-text-secondary: #a0a0a0;
+    --color-primary: #4da6ff;
+    --color-primary-dark: #3399ff;
+    --color-accent: #1a1a1a;
+    --color-border: #2a2a2a;
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --max-width: 1200px;
     --spacing-xs: 0.5rem;
@@ -17,8 +17,8 @@
     --spacing-2xl: 5rem;
     --radius: 12px;
     --radius-sm: 8px;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -53,15 +53,18 @@ h1, h2, h3 {
 
 h1 {
     font-size: clamp(2.5rem, 5vw, 3.5rem);
+    font-family: 'New York', 'Lora', Georgia, serif;
 }
 
 h2 {
     font-size: clamp(1.75rem, 3vw, 2.25rem);
     margin-bottom: var(--spacing-sm);
+    font-family: 'New York', 'Lora', Georgia, serif;
 }
 
 h3 {
     font-size: 1.125rem;
+    font-family: 'New York', 'Lora', Georgia, serif;
 }
 
 a {
@@ -88,13 +91,52 @@ a:hover {
     text-decoration: none;
 }
 
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
 .btn-primary {
-    background-color: var(--color-primary);
+    background-color: #3131BD;
     color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent 0%,
+        transparent 40%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 60%,
+        transparent 100%
+    );
+    animation: glimmer 3s ease-in-out infinite;
+}
+
+@keyframes glimmer {
+    0% {
+        left: -100%;
+    }
+    50%, 100% {
+        left: 100%;
+    }
 }
 
 .btn-primary:hover {
-    background-color: var(--color-primary-dark);
+    background-color: #3939d4;
     color: white;
 }
 
@@ -107,6 +149,7 @@ a:hover {
 .btn-secondary:hover {
     background-color: var(--color-accent);
     color: var(--color-text);
+    border-color: var(--color-text-secondary);
 }
 
 .btn-outline {
@@ -141,6 +184,7 @@ a:hover {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--color-text);
+    font-family: 'New York', 'Lora', Georgia, serif;
 }
 
 .nav-links {
@@ -187,6 +231,7 @@ a:hover {
     color: var(--color-text-secondary);
     margin-top: var(--spacing-md);
     max-width: 600px;
+    font-family: 'New York', 'Lora', Georgia, serif;
 }
 
 .hero-buttons {
@@ -195,6 +240,46 @@ a:hover {
     margin-top: var(--spacing-lg);
     flex-wrap: wrap;
     justify-content: center;
+}
+
+.screenshots {
+    padding: var(--spacing-lg) 0;
+    background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
+}
+
+.carousel {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    cursor: grab;
+}
+
+.carousel:active {
+    cursor: grabbing;
+}
+
+.carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.carousel-track {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    min-width: min-content;
+}
+
+.carousel-track img {
+    flex-shrink: 0;
+    width: 260px;
+    height: auto;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    pointer-events: none;
+    user-select: none;
 }
 
 .features {
@@ -228,7 +313,7 @@ a:hover {
 .feature-icon {
     width: 48px;
     height: 48px;
-    background-color: var(--color-primary);
+    background-color: #3131BD;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -349,8 +434,8 @@ a:hover {
 }
 
 .footer {
-    background-color: var(--color-text);
-    color: var(--color-bg);
+    background-color: #000000;
+    color: #f5f5f5;
     padding: var(--spacing-xl) 0 var(--spacing-lg);
 }
 
@@ -373,6 +458,7 @@ a:hover {
     font-weight: 700;
     display: block;
     margin-bottom: var(--spacing-xs);
+    font-family: 'New York', 'Lora', Georgia, serif;
 }
 
 .footer-brand p {
@@ -434,6 +520,16 @@ a:hover {
         grid-template-columns: 1fr;
     }
 
+    .carousel-track {
+        justify-content: flex-start;
+        padding: var(--spacing-sm) var(--spacing-md);
+        gap: var(--spacing-sm);
+    }
+
+    .carousel-track img {
+        width: 200px;
+    }
+
     .step {
         flex-direction: column;
         text-align: center;
@@ -458,20 +554,3 @@ a:hover {
     }
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --color-bg: #0a0a0a;
-        --color-surface: #141414;
-        --color-text: #f5f5f5;
-        --color-text-secondary: #a0a0a0;
-        --color-primary: #4da6ff;
-        --color-primary-dark: #3399ff;
-        --color-accent: #1a1a1a;
-        --color-border: #2a2a2a;
-    }
-
-    .step-content pre {
-        background-color: #1a1a1a;
-        color: #e5e5e5;
-    }
-}
