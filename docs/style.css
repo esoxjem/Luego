@@ -157,6 +157,19 @@ a:hover {
     color: var(--color-text);
 }
 
+.nav-github {
+    display: flex;
+    align-items: center;
+}
+
+.nav-github svg {
+    transition: transform 0.2s ease;
+}
+
+.nav-github:hover svg {
+    transform: scale(1.1);
+}
+
 .hero-content {
     flex: 1;
     display: flex;
