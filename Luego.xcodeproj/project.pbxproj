@@ -64,6 +64,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		600EEBCD2ED6C294005459C8 /* docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = docs;
+			sourceTree = "<group>";
+		};
 		607598912EC1FC8D00BEE86E /* Luego */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -105,6 +110,7 @@
 		607598862EC1FC8D00BEE86E = {
 			isa = PBXGroup;
 			children = (
+				600EEBCD2ED6C294005459C8 /* docs */,
 				601507252EC4B31A00CADAFB /* README.md */,
 				601505C22EC3650D00CADAFB /* ARCHITECTURE.md */,
 				607598CF2EC2220900BEE86E /* CLAUDE.md */,
