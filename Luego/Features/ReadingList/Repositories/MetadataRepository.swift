@@ -1,7 +1,7 @@
 import Foundation
 import SwiftSoup
 
-protocol MetadataRepositoryProtocol: Sendable {
+protocol MetadataRepositoryProtocol {
     func validateURL(_ url: URL) async throws -> URL
     func fetchMetadata(for url: URL) async throws -> ArticleMetadata
     func fetchContent(for url: URL) async throws -> ArticleContent
@@ -9,6 +9,12 @@ protocol MetadataRepositoryProtocol: Sendable {
 
 @MainActor
 final class MetadataRepository: MetadataRepositoryProtocol {
+    private let turndownDataSource: TurndownDataSource
+
+    init(turndownDataSource: TurndownDataSource) {
+        self.turndownDataSource = turndownDataSource
+    }
+
     func validateURL(_ url: URL) async throws -> URL {
         let urlString = url.absoluteString
         guard let validatedURL = validateURLString(urlString) else {
@@ -282,11 +288,16 @@ final class MetadataRepository: MetadataRepositoryProtocol {
 
     private func extractArticleContent(from document: Document, baseURL: URL) throws -> String {
         let container = try findMainContentContainer(in: document)
-        let elements = try extractContentElements(from: container)
-        let formattedText = formatContentElements(elements, baseURL: baseURL)
 
-        if formattedText.count > 200 {
-            return formattedText
+        guard let html = try? container.html() else {
+            throw ArticleMetadataError.noMetadata
+        }
+
+        if let markdown = turndownDataSource.convert(html) {
+            let resolved = resolveRelativeURLsInMarkdown(markdown, baseURL: baseURL)
+            if resolved.count > 200 {
+                return resolved
+            }
         }
 
         let plainTextContent = try extractPlainTextContent(from: container)
@@ -295,6 +306,44 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         }
 
         return plainTextContent
+    }
+
+    private func resolveRelativeURLsInMarkdown(_ markdown: String, baseURL: URL) -> String {
+        var result = markdown
+
+        result = resolveMarkdownURLs(in: result, pattern: "!\\[([^\\]]*)\\]\\(([^)]+)\\)", baseURL: baseURL, isImage: true)
+        result = resolveMarkdownURLs(in: result, pattern: "\\[([^\\]]*)\\]\\(([^)]+)\\)", baseURL: baseURL, isImage: false)
+
+        return result
+    }
+
+    private func resolveMarkdownURLs(in text: String, pattern: String, baseURL: URL, isImage: Bool) -> String {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return text
+        }
+
+        var result = text
+        let nsString = text as NSString
+        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
+
+        for match in matches.reversed() {
+            guard match.numberOfRanges >= 3 else { continue }
+
+            let fullRange = match.range
+            let altRange = match.range(at: 1)
+            let urlRange = match.range(at: 2)
+
+            let alt = nsString.substring(with: altRange)
+            let url = nsString.substring(with: urlRange)
+
+            if let resolvedURL = resolveImageURL(url, baseURL: baseURL) {
+                let prefix = isImage ? "![" : "["
+                let replacement = "\(prefix)\(alt)](\(resolvedURL))"
+                result = (result as NSString).replacingCharacters(in: fullRange, with: replacement)
+            }
+        }
+
+        return result
     }
 
     private func findMainContentContainer(in document: Document) throws -> Element {
@@ -326,170 +375,6 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         return text.count > 100
     }
 
-    private func extractContentElements(from container: Element) throws -> [Element] {
-        let allElements = try container.select("p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol, img").array()
-        return removeDescendantDuplicates(from: allElements)
-    }
-
-    private func removeDescendantDuplicates(from elements: [Element]) -> [Element] {
-        var result: [Element] = []
-
-        for element in elements {
-            let isDescendant = result.contains { potentialAncestor in
-                isDescendantOf(element, ancestor: potentialAncestor)
-            }
-
-            if !isDescendant {
-                result.append(element)
-            }
-        }
-
-        return result
-    }
-
-    private func isDescendantOf(_ element: Element, ancestor: Element) -> Bool {
-        var current = element.parent()
-
-        while let parent = current {
-            if parent === ancestor {
-                return true
-            }
-            current = parent.parent()
-        }
-
-        return false
-    }
-
-    private func formatContentElements(_ elements: [Element], baseURL: URL) -> String {
-        var contentParts: [String] = []
-
-        for element in elements {
-            let markdownText = convertElementToMarkdown(element, baseURL: baseURL)
-
-            let minLength = isHeadingOrImageElement(element) ? 3 : 20
-            guard markdownText.count > minLength else {
-                continue
-            }
-
-            let formatted = formatElement(element, text: markdownText, baseURL: baseURL)
-            if !formatted.isEmpty {
-                contentParts.append(formatted)
-            }
-        }
-
-        return contentParts.joined(separator: "\n\n")
-    }
-
-    private func convertElementToMarkdown(_ element: Element, baseURL: URL) -> String {
-        let tagName = element.tagName()
-
-        if tagName == "img" {
-            return convertImageToMarkdown(element, baseURL: baseURL)
-        }
-
-        guard let html = try? element.html() else {
-            return ""
-        }
-
-        var markdown = html
-
-        markdown = convertInlineImagesToMarkdown(markdown, baseURL: baseURL)
-
-        markdown = markdown.replacingOccurrences(of: "<li>", with: "\n- ", options: .caseInsensitive)
-        markdown = markdown.replacingOccurrences(of: "</li>", with: "", options: .caseInsensitive)
-        markdown = markdown.replacingOccurrences(of: "</?ul>", with: "\n", options: [.regularExpression, .caseInsensitive])
-        markdown = markdown.replacingOccurrences(of: "</?ol>", with: "\n", options: [.regularExpression, .caseInsensitive])
-
-        markdown = markdown.replacingOccurrences(of: "<strong>(.*?)</strong>", with: "**$1**", options: .regularExpression)
-        markdown = markdown.replacingOccurrences(of: "<b>(.*?)</b>", with: "**$1**", options: .regularExpression)
-        markdown = markdown.replacingOccurrences(of: "<em>(.*?)</em>", with: "*$1*", options: .regularExpression)
-        markdown = markdown.replacingOccurrences(of: "<i>(.*?)</i>", with: "*$1*", options: .regularExpression)
-        markdown = markdown.replacingOccurrences(of: "<code>(.*?)</code>", with: "`$1`", options: .regularExpression)
-
-        markdown = markdown.replacingOccurrences(of: "<a[^>]*href=\"([^\"]*)\"[^>]*>(.*?)</a>", with: "[$2]($1)", options: .regularExpression)
-
-        markdown = markdown.replacingOccurrences(of: "<br\\s*/?>", with: " ", options: .regularExpression)
-        markdown = markdown.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-
-        markdown = markdown.replacingOccurrences(of: "&amp;", with: "&")
-        markdown = markdown.replacingOccurrences(of: "&lt;", with: "<")
-        markdown = markdown.replacingOccurrences(of: "&gt;", with: ">")
-        markdown = markdown.replacingOccurrences(of: "&quot;", with: "\"")
-        markdown = markdown.replacingOccurrences(of: "&#39;", with: "'")
-        markdown = markdown.replacingOccurrences(of: "&nbsp;", with: " ")
-
-        markdown = markdown.replacingOccurrences(of: "\\n{3,}", with: "\n\n", options: .regularExpression)
-
-        return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func convertImageToMarkdown(_ element: Element, baseURL: URL) -> String {
-        guard let src = try? element.attr("src"), !src.isEmpty else {
-            return ""
-        }
-
-        let alt = (try? element.attr("alt")) ?? ""
-        let title = (try? element.attr("title")) ?? nil
-
-        guard let resolvedURL = resolveImageURL(src, baseURL: baseURL) else {
-            return ""
-        }
-
-        if let title = title, !title.isEmpty {
-            return "![\(alt)](\(resolvedURL) \"\(title)\")"
-        } else {
-            return "![\(alt)](\(resolvedURL))"
-        }
-    }
-
-    private func convertInlineImagesToMarkdown(_ html: String, baseURL: URL) -> String {
-        guard let regex = try? NSRegularExpression(
-            pattern: "<img[^>]*?(?:src=\"([^\"]*)\"[^>]*?alt=\"([^\"]*)\"[^>]*?|alt=\"([^\"]*)\"[^>]*?src=\"([^\"]*)\"[^>]*?|src=\"([^\"]*)\"[^>]*?)>",
-            options: [.caseInsensitive]
-        ) else {
-            return html
-        }
-
-        let nsString = html as NSString
-        let results = regex.matches(in: html, options: [], range: NSRange(location: 0, length: nsString.length))
-
-        var output = html
-        var offset = 0
-
-        for result in results {
-            let matchRange = NSRange(location: result.range.location + offset, length: result.range.length)
-            var src: String?
-            var alt: String = ""
-
-            if result.range(at: 1).location != NSNotFound {
-                src = nsString.substring(with: result.range(at: 1))
-                if result.range(at: 2).location != NSNotFound {
-                    alt = nsString.substring(with: result.range(at: 2))
-                }
-            } else if result.range(at: 4).location != NSNotFound {
-                src = nsString.substring(with: result.range(at: 4))
-                if result.range(at: 3).location != NSNotFound {
-                    alt = nsString.substring(with: result.range(at: 3))
-                }
-            } else if result.range(at: 5).location != NSNotFound {
-                src = nsString.substring(with: result.range(at: 5))
-            }
-
-            guard let imageSrc = src,
-                  let resolvedURL = resolveImageURL(imageSrc, baseURL: baseURL) else {
-                continue
-            }
-
-            let markdown = "![\(alt)](\(resolvedURL))"
-            let outputNS = output as NSString
-            output = outputNS.replacingCharacters(in: matchRange, with: markdown)
-
-            offset += markdown.count - result.range.length
-        }
-
-        return output
-    }
-
     private func resolveImageURL(_ imageURL: String, baseURL: URL) -> String? {
         if imageURL.hasPrefix("http://") || imageURL.hasPrefix("https://") {
             return imageURL
@@ -513,63 +398,12 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         return nil
     }
 
-    private func isHeadingElement(_ element: Element) -> Bool {
-        let tagName = element.tagName()
-        return ["h1", "h2", "h3", "h4", "h5", "h6"].contains(tagName)
-    }
-
-    private func isHeadingOrImageElement(_ element: Element) -> Bool {
-        let tagName = element.tagName()
-        return ["h1", "h2", "h3", "h4", "h5", "h6", "img"].contains(tagName)
-    }
-
     private func normalizeWhitespace(_ text: String) -> String {
-        return text
+        text
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespaces)
-    }
-
-    private func formatElement(_ element: Element, text: String, baseURL: URL) -> String {
-        let tagName = element.tagName()
-
-        switch tagName {
-        case "h1":
-            return "# \(text)"
-        case "h2":
-            return "## \(text)"
-        case "h3":
-            return "### \(text)"
-        case "h4":
-            return "#### \(text)"
-        case "h5":
-            return "##### \(text)"
-        case "h6":
-            return "###### \(text)"
-        case "blockquote":
-            return "> \(text)"
-        case "ul", "ol":
-            return formatListElement(element, baseURL: baseURL)
-        default:
-            return text
-        }
-    }
-
-    private func formatListElement(_ element: Element, baseURL: URL) -> String {
-        guard let listItems = try? element.select("li").array() else {
-            return ""
-        }
-
-        var items: [String] = []
-        for item in listItems {
-            let markdownText = convertElementToMarkdown(item, baseURL: baseURL)
-            if !markdownText.isEmpty {
-                items.append("- \(markdownText)")
-            }
-        }
-
-        return items.joined(separator: "\n")
     }
 
     private func extractPlainTextContent(from container: Element) throws -> String {

@@ -13,12 +13,16 @@ final class DIContainer {
         UserDefaultsDataSource()
     }()
 
+    private lazy var turndownDataSource: TurndownDataSource = {
+        TurndownDataSource()
+    }()
+
     private lazy var articleRepository: ArticleRepositoryProtocol = {
         ArticleRepository(modelContext: modelContext)
     }()
 
     private lazy var metadataRepository: MetadataRepositoryProtocol = {
-        MetadataRepository()
+        MetadataRepository(turndownDataSource: turndownDataSource)
     }()
 
     private lazy var sharedStorageRepository: SharedStorageRepositoryProtocol = {

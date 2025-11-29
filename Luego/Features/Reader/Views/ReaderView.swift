@@ -80,6 +80,7 @@ struct ArticleReaderModeView: View {
 
                         Markdown(stripFirstH1FromMarkdown(content, matchingTitle: article.title))
                             .markdownTheme(.reader)
+                            .markdownImageProvider(CustomImageProvider())
                     }
                     .fontDesign(.serif)
                     .padding(.vertical)
@@ -372,4 +373,10 @@ extension Theme {
         .text {
             FontSize(18)
         }
+}
+
+struct CustomImageProvider: ImageProvider {
+    func makeImage(url: URL?) -> some View {
+        MarkdownImageView(imageURL: url)
+    }
 }
