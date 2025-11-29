@@ -3,6 +3,7 @@ import NetworkImage
 
 struct MarkdownImageView: View {
     let imageURL: URL?
+    let viewModel: ReaderViewModel
 
     var body: some View {
         if let imageURL, isWebURL(imageURL) {
@@ -12,6 +13,9 @@ struct MarkdownImageView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxWidth: .infinity)
+                        .onTapGesture {
+                            viewModel.selectedImageURL = imageURL
+                        }
                 } else {
                     MarkdownImagePlaceholder()
                 }

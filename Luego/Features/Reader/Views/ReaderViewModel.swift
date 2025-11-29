@@ -8,6 +8,7 @@ final class ReaderViewModel {
     var articleContent: String?
     var isLoading: Bool
     var errorMessage: String?
+    var selectedImageURL: URL? = nil
 
     private let fetchContentUseCase: FetchArticleContentUseCaseProtocol
     private let updateReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol

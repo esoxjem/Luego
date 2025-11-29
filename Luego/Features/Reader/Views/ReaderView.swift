@@ -19,6 +19,7 @@ struct ReaderView: View {
                     article: viewModel.article,
                     content: content,
                     formattedDate: formattedDate,
+                    viewModel: viewModel,
                     scrollPosition: $scrollPosition,
                     contentHeight: $contentHeight,
                     viewHeight: $viewHeight,
@@ -48,6 +49,12 @@ struct ReaderView: View {
         .task {
             await viewModel.loadContent()
         }
+        .fullScreenCover(item: $viewModel.selectedImageURL) { url in
+            FullscreenImageViewer(
+                imageURL: url,
+                onDismiss: { viewModel.selectedImageURL = nil }
+            )
+        }
     }
 }
 
@@ -55,6 +62,7 @@ struct ArticleReaderModeView: View {
     let article: Article
     let content: String
     let formattedDate: String
+    let viewModel: ReaderViewModel
     @Binding var scrollPosition: CGFloat
     @Binding var contentHeight: CGFloat
     @Binding var viewHeight: CGFloat
@@ -80,7 +88,7 @@ struct ArticleReaderModeView: View {
 
                         Markdown(stripFirstH1FromMarkdown(content, matchingTitle: article.title))
                             .markdownTheme(.reader)
-                            .markdownImageProvider(CustomImageProvider())
+                            .markdownImageProvider(CustomImageProvider(viewModel: viewModel))
                     }
                     .fontDesign(.serif)
                     .padding(.vertical)
@@ -376,7 +384,9 @@ extension Theme {
 }
 
 struct CustomImageProvider: ImageProvider {
+    let viewModel: ReaderViewModel
+
     func makeImage(url: URL?) -> some View {
-        MarkdownImageView(imageURL: url)
+        MarkdownImageView(imageURL: url, viewModel: viewModel)
     }
 }
