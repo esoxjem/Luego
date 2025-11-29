@@ -11,7 +11,7 @@ import SwiftData
 @Model
 final class Article {
     @Attribute(.unique) var id: UUID
-    var url: URL
+    @Attribute(.unique) var url: URL
     var title: String
     var content: String?
     var savedDate: Date
