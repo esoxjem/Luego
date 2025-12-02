@@ -1,24 +1,27 @@
 import SwiftUI
-import NetworkImage
 
 struct MarkdownImageView: View {
     let imageURL: URL?
     let viewModel: ReaderViewModel
 
+    @State private var loadedImage: UIImage?
+    @State private var loadFailed = false
+
     var body: some View {
         if let imageURL, isWebURL(imageURL) {
-            NetworkImage(url: imageURL) { state in
-                if let image = state.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: .infinity)
-                        .onTapGesture {
-                            viewModel.selectedImageURL = imageURL
-                        }
-                } else {
+            Group {
+                if let loadedImage {
+                    TrueSizeImage(image: loadedImage) {
+                        viewModel.selectedImageURL = imageURL
+                    }
+                } else if loadFailed {
                     MarkdownImagePlaceholder()
+                } else {
+                    MarkdownImageLoadingView()
                 }
+            }
+            .task {
+                await loadImage(from: imageURL)
             }
         } else {
             EmptyView()
@@ -27,6 +30,33 @@ struct MarkdownImageView: View {
 
     private func isWebURL(_ url: URL) -> Bool {
         url.scheme == "http" || url.scheme == "https"
+    }
+
+    private func loadImage(from url: URL) async {
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let uiImage = UIImage(data: data) {
+                loadedImage = uiImage
+            } else {
+                loadFailed = true
+            }
+        } catch {
+            loadFailed = true
+        }
+    }
+}
+
+struct TrueSizeImage: View {
+    let image: UIImage
+    let onTap: () -> Void
+
+    var body: some View {
+        Image(uiImage: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: image.size.width)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .onTapGesture(perform: onTap)
     }
 }
 
