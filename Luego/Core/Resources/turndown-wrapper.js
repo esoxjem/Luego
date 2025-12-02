@@ -28,9 +28,9 @@
             
             var turndownService = new TurndownService(config);
             
-            // Strip script, style, noscript tags
+            // Strip script, style, noscript, and svg tags
             turndownService.addRule('removeScripts', {
-                filter: ['script', 'style', 'noscript'],
+                filter: ['script', 'style', 'noscript', 'svg'],
                 replacement: function() { return ''; }
             });
             

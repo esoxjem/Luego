@@ -283,7 +283,7 @@ final class MetadataRepository: MetadataRepositoryProtocol {
     }
 
     private func removeUnwantedElements(from document: Document) throws {
-        try document.select("script, style, nav, header, footer, aside, iframe, .ad, .advertisement, .social-share").remove()
+        try document.select("script, style, nav, header, footer, aside, iframe, svg, .ad, .advertisement, .social-share").remove()
     }
 
     private func extractArticleContent(from document: Document, baseURL: URL) throws -> String {
