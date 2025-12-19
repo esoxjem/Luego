@@ -12,7 +12,7 @@ struct DiscoveryReaderView: View {
                 if viewModel.isLoading {
                     DiscoveryLoadingView(pendingURL: viewModel.pendingArticleURL, gifName: viewModel.currentLoadingGif)
                 } else if let article = viewModel.ephemeralArticle {
-                    DiscoveryArticleContentView(article: article, viewModel: viewModel)
+                    DiscoveryArticleContentView(article: article)
                 } else if let error = viewModel.errorMessage {
                     DiscoveryErrorView(
                         message: error,
@@ -56,12 +56,6 @@ struct DiscoveryReaderView: View {
                 if viewModel.ephemeralArticle == nil && !viewModel.isLoading {
                     await viewModel.fetchRandomArticle()
                 }
-            }
-            .fullScreenCover(item: $viewModel.selectedImageURL) { url in
-                FullscreenImageViewer(
-                    imageURL: url,
-                    onDismiss: { viewModel.selectedImageURL = nil }
-                )
             }
         }
     }

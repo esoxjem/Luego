@@ -3,12 +3,11 @@ import Observation
 
 @Observable
 @MainActor
-final class ReaderViewModel: ImageSelectionHandler {
+final class ReaderViewModel {
     var article: Article
     var articleContent: String?
     var isLoading: Bool
     var errorMessage: String?
-    var selectedImageURL: URL? = nil
 
     private let fetchContentUseCase: FetchArticleContentUseCaseProtocol
     private let updateReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol

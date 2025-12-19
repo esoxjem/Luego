@@ -14,12 +14,11 @@ enum LoadingGifRotator {
 
 @Observable
 @MainActor
-final class DiscoveryViewModel: ImageSelectionHandler {
+final class DiscoveryViewModel {
     var ephemeralArticle: EphemeralArticle?
     var isLoading = false
     var errorMessage: String?
     var isSaved = false
-    var selectedImageURL: URL?
     var pendingArticleURL: URL?
     var currentLoadingGif: String = LoadingGifRotator.next()
     private var consecutiveFailures = 0

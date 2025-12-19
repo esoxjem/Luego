@@ -3,7 +3,6 @@ import MarkdownUI
 
 struct DiscoveryArticleContentView: View {
     let article: EphemeralArticle
-    let viewModel: DiscoveryViewModel
 
     var body: some View {
         ScrollView {
@@ -19,7 +18,7 @@ struct DiscoveryArticleContentView: View {
 
                 Markdown(stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
                     .markdownTheme(.reader)
-                    .markdownImageProvider(ReaderImageProvider(imageHandler: viewModel))
+                    .markdownImageProvider(ReaderImageProvider())
             }
             .fontDesign(.serif)
             .padding(.vertical)

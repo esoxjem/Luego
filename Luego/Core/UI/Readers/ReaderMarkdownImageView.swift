@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ReaderMarkdownImageView: View {
     let imageURL: URL?
-    let imageHandler: any ImageSelectionHandler
 
     @State private var loadedImage: UIImage?
     @State private var loadFailed = false
@@ -11,9 +10,7 @@ struct ReaderMarkdownImageView: View {
         if let imageURL, isWebURL(imageURL) {
             Group {
                 if let loadedImage {
-                    TrueSizeImage(image: loadedImage) {
-                        imageHandler.selectedImageURL = imageURL
-                    }
+                    TrueSizeImage(image: loadedImage)
                 } else if loadFailed {
                     MarkdownImagePlaceholder()
                 } else {
@@ -48,7 +45,6 @@ struct ReaderMarkdownImageView: View {
 
 struct TrueSizeImage: View {
     let image: UIImage
-    let onTap: () -> Void
 
     var body: some View {
         Image(uiImage: image)
@@ -56,7 +52,7 @@ struct TrueSizeImage: View {
             .aspectRatio(contentMode: .fit)
             .frame(maxWidth: image.size.width)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .onTapGesture(perform: onTap)
+            .allowsHitTesting(false)
     }
 }
 
