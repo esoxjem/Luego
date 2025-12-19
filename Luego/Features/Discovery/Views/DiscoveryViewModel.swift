@@ -8,6 +8,7 @@ final class DiscoveryViewModel {
     var errorMessage: String?
     var isSaved = false
     var selectedImageURL: URL?
+    var pendingArticleURL: URL?
     private var consecutiveFailures = 0
 
     private let fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol
@@ -28,15 +29,20 @@ final class DiscoveryViewModel {
         isLoading = true
         errorMessage = nil
         ephemeralArticle = nil
+        pendingArticleURL = nil
         isSaved = false
 
         do {
-            let article = try await fetchRandomArticleUseCase.execute()
+            let article = try await fetchRandomArticleUseCase.execute { [weak self] url in
+                self?.pendingArticleURL = url
+            }
             consecutiveFailures = 0
+            pendingArticleURL = nil
             ephemeralArticle = article
             await checkIfAlreadySaved(url: article.url)
         } catch {
             consecutiveFailures += 1
+            pendingArticleURL = nil
             if consecutiveFailures < 5 {
                 await fetchRandomArticle()
                 return

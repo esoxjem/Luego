@@ -2,6 +2,7 @@ import Foundation
 
 protocol FetchRandomArticleUseCaseProtocol: Sendable {
     func execute() async throws -> EphemeralArticle
+    func execute(onArticleEntryFetched: @escaping @MainActor (URL) -> Void) async throws -> EphemeralArticle
     func clearCache()
 }
 
@@ -30,15 +31,20 @@ final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
     }
 
     func execute() async throws -> EphemeralArticle {
-        try await fetchRandomArticleFromSmallWeb()
+        try await execute(onArticleEntryFetched: { _ in })
+    }
+
+    func execute(onArticleEntryFetched: @escaping @MainActor (URL) -> Void) async throws -> EphemeralArticle {
+        let articleEntry = try await smallWebRepository.randomArticleEntry()
+        await onArticleEntryFetched(articleEntry.articleUrl)
+        return try await fetchArticleContent(for: articleEntry)
     }
 
     func clearCache() {
         smallWebRepository.clearCache()
     }
 
-    private func fetchRandomArticleFromSmallWeb() async throws -> EphemeralArticle {
-        let articleEntry = try await smallWebRepository.randomArticleEntry()
+    private func fetchArticleContent(for articleEntry: SmallWebArticleEntry) async throws -> EphemeralArticle {
         let discoveryTimeoutSeconds: TimeInterval = 10
 
         do {

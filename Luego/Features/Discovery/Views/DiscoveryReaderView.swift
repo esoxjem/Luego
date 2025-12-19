@@ -10,7 +10,7 @@ struct DiscoveryReaderView: View {
         NavigationStack {
             Group {
                 if viewModel.isLoading {
-                    DiscoveryLoadingView()
+                    DiscoveryLoadingView(pendingURL: viewModel.pendingArticleURL)
                 } else if let article = viewModel.ephemeralArticle {
                     DiscoveryArticleContentView(article: article, viewModel: viewModel)
                 } else if let error = viewModel.errorMessage {
@@ -19,7 +19,7 @@ struct DiscoveryReaderView: View {
                         onTryAnother: { Task { await viewModel.loadAnotherArticle() } }
                     )
                 } else {
-                    DiscoveryLoadingView()
+                    DiscoveryLoadingView(pendingURL: nil)
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -90,13 +90,42 @@ struct DiscoveryReaderView: View {
 }
 
 struct DiscoveryLoadingView: View {
+    var pendingURL: URL?
+
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
             Text("Finding something interesting...")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            if let domain = pendingURL?.host() {
+                LoadingDomainChip(domain: domain)
+                    .transition(.opacity.combined(with: .scale))
+            }
         }
+        .animation(.easeInOut(duration: 0.3), value: pendingURL)
+    }
+}
+
+struct LoadingDomainChip: View {
+    let domain: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "globe")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+
+            Text(domain)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.1))
+        .clipShape(Capsule())
+        .shimmer()
     }
 }
 
