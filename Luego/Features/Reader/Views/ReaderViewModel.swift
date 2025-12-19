@@ -3,7 +3,7 @@ import Observation
 
 @Observable
 @MainActor
-final class ReaderViewModel {
+final class ReaderViewModel: ImageSelectionHandler {
     var article: Article
     var articleContent: String?
     var isLoading: Bool

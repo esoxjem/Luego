@@ -17,9 +17,9 @@ struct DiscoveryArticleContentView: View {
 
                 Divider()
 
-                Markdown(article.content)
+                Markdown(stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
                     .markdownTheme(.reader)
-                    .markdownImageProvider(DiscoveryImageProvider(viewModel: viewModel))
+                    .markdownImageProvider(ReaderImageProvider(imageHandler: viewModel))
             }
             .fontDesign(.serif)
             .padding(.vertical)
@@ -87,94 +87,3 @@ struct SourceAttributionChip: View {
     }
 }
 
-struct DiscoveryMarkdownImageView: View {
-    let imageURL: URL?
-    let viewModel: DiscoveryViewModel
-
-    @State private var loadedImage: UIImage?
-    @State private var loadFailed = false
-
-    var body: some View {
-        if let imageURL, isWebURL(imageURL) {
-            Group {
-                if let loadedImage {
-                    DiscoveryTrueSizeImage(image: loadedImage) {
-                        viewModel.selectedImageURL = imageURL
-                    }
-                } else if loadFailed {
-                    DiscoveryImagePlaceholder()
-                } else {
-                    DiscoveryImageLoadingView()
-                }
-            }
-            .task {
-                await loadImage(from: imageURL)
-            }
-        } else {
-            EmptyView()
-        }
-    }
-
-    private func isWebURL(_ url: URL) -> Bool {
-        url.scheme == "http" || url.scheme == "https"
-    }
-
-    private func loadImage(from url: URL) async {
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let uiImage = UIImage(data: data) {
-                loadedImage = uiImage
-            } else {
-                loadFailed = true
-            }
-        } catch {
-            loadFailed = true
-        }
-    }
-}
-
-struct DiscoveryTrueSizeImage: View {
-    let image: UIImage
-    let onTap: () -> Void
-
-    var body: some View {
-        Image(uiImage: image)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(maxWidth: image.size.width)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .onTapGesture(perform: onTap)
-    }
-}
-
-struct DiscoveryImageLoadingView: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(Color.gray.opacity(0.1))
-            .frame(height: 200)
-            .overlay {
-                ProgressView()
-            }
-    }
-}
-
-struct DiscoveryImagePlaceholder: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(Color.gray.opacity(0.15))
-            .frame(height: 100)
-            .overlay {
-                Image(systemName: "photo")
-                    .foregroundStyle(.secondary)
-                    .imageScale(.large)
-            }
-    }
-}
-
-struct DiscoveryImageProvider: ImageProvider {
-    let viewModel: DiscoveryViewModel
-
-    func makeImage(url: URL?) -> some View {
-        DiscoveryMarkdownImageView(imageURL: url, viewModel: viewModel)
-    }
-}

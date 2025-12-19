@@ -88,7 +88,7 @@ struct ArticleReaderModeView: View {
 
                         Markdown(stripFirstH1FromMarkdown(content, matchingTitle: article.title))
                             .markdownTheme(.reader)
-                            .markdownImageProvider(CustomImageProvider(viewModel: viewModel))
+                            .markdownImageProvider(ReaderImageProvider(imageHandler: viewModel))
                     }
                     .fontDesign(.serif)
                     .padding(.vertical)
@@ -189,29 +189,6 @@ struct ArticleHeaderView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-        }
-    }
-}
-
-struct DomainChip: View {
-    let domain: String
-    let url: URL
-
-    var body: some View {
-        Link(destination: url) {
-            HStack(spacing: 6) {
-                Image(systemName: "globe")
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-
-                Text(domain)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.secondary.opacity(0.1))
-            .clipShape(Capsule())
         }
     }
 }
@@ -323,88 +300,3 @@ extension ReaderView {
     }
 }
 
-private func stripFirstH1FromMarkdown(_ markdown: String, matchingTitle: String) -> String {
-    let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false)
-
-    guard let firstLineIndex = lines.firstIndex(where: { line in
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-        return trimmed.hasPrefix("# ")
-    }) else {
-        return markdown
-    }
-
-    let firstH1Line = lines[firstLineIndex]
-    let h1Text = firstH1Line
-        .trimmingCharacters(in: .whitespaces)
-        .dropFirst(2)
-        .trimmingCharacters(in: .whitespaces)
-
-    let normalizedH1 = normalizeForComparison(String(h1Text))
-    let normalizedTitle = normalizeForComparison(matchingTitle)
-
-    guard areSimilar(normalizedH1, normalizedTitle) else {
-        return markdown
-    }
-
-    var resultLines = Array(lines)
-    resultLines.remove(at: firstLineIndex)
-
-    while firstLineIndex < resultLines.count {
-        let nextLine = resultLines[firstLineIndex].trimmingCharacters(in: .whitespaces)
-        if nextLine.isEmpty {
-            resultLines.remove(at: firstLineIndex)
-        } else {
-            break
-        }
-    }
-
-    return resultLines.joined(separator: "\n")
-}
-
-private func normalizeForComparison(_ text: String) -> String {
-    return text
-        .lowercased()
-        .components(separatedBy: .punctuationCharacters)
-        .joined()
-        .components(separatedBy: .whitespaces)
-        .filter { !$0.isEmpty }
-        .joined(separator: " ")
-}
-
-private func areSimilar(_ text1: String, _ text2: String) -> Bool {
-    if text1 == text2 {
-        return true
-    }
-
-    let words1 = Set(text1.split(separator: " "))
-    let words2 = Set(text2.split(separator: " "))
-    let intersection = words1.intersection(words2)
-    let union = words1.union(words2)
-
-    guard !union.isEmpty else { return false }
-
-    let similarity = Double(intersection.count) / Double(union.count)
-    return similarity > 0.7
-}
-
-extension Color {
-    static let gitHubBackground = Color(
-        light: .white,
-        dark: Color(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0)
-    )
-}
-
-extension Theme {
-    static let reader = Theme.gitHub
-        .text {
-            FontSize(18)
-        }
-}
-
-struct CustomImageProvider: ImageProvider {
-    let viewModel: ReaderViewModel
-
-    func makeImage(url: URL?) -> some View {
-        MarkdownImageView(imageURL: url, viewModel: viewModel)
-    }
-}

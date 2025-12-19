@@ -2,7 +2,7 @@ import Foundation
 
 @Observable
 @MainActor
-final class DiscoveryViewModel {
+final class DiscoveryViewModel: ImageSelectionHandler {
     var ephemeralArticle: EphemeralArticle?
     var isLoading = false
     var errorMessage: String?

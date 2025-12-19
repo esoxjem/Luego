@@ -1,8 +1,8 @@
 import SwiftUI
 
-struct MarkdownImageView: View {
+struct ReaderMarkdownImageView: View {
     let imageURL: URL?
-    let viewModel: ReaderViewModel
+    let imageHandler: any ImageSelectionHandler
 
     @State private var loadedImage: UIImage?
     @State private var loadFailed = false
@@ -12,7 +12,7 @@ struct MarkdownImageView: View {
             Group {
                 if let loadedImage {
                     TrueSizeImage(image: loadedImage) {
-                        viewModel.selectedImageURL = imageURL
+                        imageHandler.selectedImageURL = imageURL
                     }
                 } else if loadFailed {
                     MarkdownImagePlaceholder()
