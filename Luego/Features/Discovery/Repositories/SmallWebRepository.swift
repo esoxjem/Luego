@@ -34,7 +34,7 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
     private let resetThreshold = 0.8
 
     private var cachedArticles: [SmallWebArticleEntry] = []
-    private var shownArticleURLs: Set<String> = []
+    private var shownArticleHashes: Set<UInt64> = []
 
     init(opmlDataSource: OPMLDataSource) {
         self.opmlDataSource = opmlDataSource
@@ -82,12 +82,12 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
         let unseenCountBeforeReset = unseenArticles.count
 
         #if DEBUG
-        print("[Discovery] Total articles: \(articles.count), Shown: \(shownArticleURLs.count), Unseen: \(unseenCountBeforeReset)")
+        print("[Discovery] Total articles: \(articles.count), Shown: \(shownArticleHashes.count), Unseen: \(unseenCountBeforeReset)")
         #endif
 
         resetShownArticlesIfNeeded(totalCount: articles.count, unseenCount: unseenArticles.count)
 
-        let didReset = shownArticleURLs.isEmpty && unseenCountBeforeReset < articles.count
+        let didReset = shownArticleHashes.isEmpty && unseenCountBeforeReset < articles.count
         #if DEBUG
         if didReset {
             print("[Discovery] Reset shown articles - starting fresh cycle")
@@ -109,19 +109,27 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
     }
 
     private func filterUnseenArticles(from articles: [SmallWebArticleEntry]) -> [SmallWebArticleEntry] {
-        articles.filter { !shownArticleURLs.contains($0.articleUrl.absoluteString) }
+        articles.filter { !shownArticleHashes.contains(stableHash($0.articleUrl.absoluteString)) }
     }
 
     private func resetShownArticlesIfNeeded(totalCount: Int, unseenCount: Int) {
         let shownRatio = Double(totalCount - unseenCount) / Double(totalCount)
         guard shownRatio >= resetThreshold || unseenCount == 0 else { return }
-        shownArticleURLs.removeAll()
+        shownArticleHashes.removeAll()
         saveShownArticles()
     }
 
     private func markArticleAsShown(_ article: SmallWebArticleEntry) {
-        shownArticleURLs.insert(article.articleUrl.absoluteString)
+        shownArticleHashes.insert(stableHash(article.articleUrl.absoluteString))
         saveShownArticles()
+    }
+
+    private func stableHash(_ string: String) -> UInt64 {
+        var hash: UInt64 = 5381
+        for byte in string.utf8 {
+            hash = ((hash << 5) &+ hash) &+ UInt64(byte)
+        }
+        return hash
     }
 
     private func isCacheValid() -> Bool {
@@ -160,20 +168,20 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
 
     private func loadShownArticles() {
         guard let data = UserDefaults.standard.data(forKey: shownArticlesKey),
-              let urls = try? JSONDecoder().decode(Set<String>.self, from: data) else {
+              let hashes = try? JSONDecoder().decode(Set<UInt64>.self, from: data) else {
             return
         }
-        shownArticleURLs = urls
+        shownArticleHashes = hashes
     }
 
     private func saveShownArticles() {
-        guard let data = try? JSONEncoder().encode(shownArticleURLs) else { return }
+        guard let data = try? JSONEncoder().encode(shownArticleHashes) else { return }
         UserDefaults.standard.set(data, forKey: shownArticlesKey)
     }
 
     func clearCache() {
         cachedArticles = []
-        shownArticleURLs.removeAll()
+        shownArticleHashes.removeAll()
         UserDefaults.standard.removeObject(forKey: cacheKey)
         UserDefaults.standard.removeObject(forKey: cacheTimestampKey)
         UserDefaults.standard.removeObject(forKey: shownArticlesKey)

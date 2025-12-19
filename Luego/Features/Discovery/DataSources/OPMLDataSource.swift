@@ -1,6 +1,7 @@
 import Foundation
 
-final class OPMLDataSource: NSObject, @unchecked Sendable {
+@MainActor
+final class OPMLDataSource: NSObject, Sendable {
     private var articles: [SmallWebArticleEntry] = []
 
     func parse(_ data: Data) -> [SmallWebArticleEntry] {

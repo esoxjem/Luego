@@ -93,14 +93,6 @@ struct SourceAttributionView: View {
     }
 }
 
-struct DiscoveryImageProvider: ImageProvider {
-    let viewModel: DiscoveryViewModel
-
-    func makeImage(url: URL?) -> some View {
-        DiscoveryMarkdownImageView(imageURL: url, viewModel: viewModel)
-    }
-}
-
 struct DiscoveryMarkdownImageView: View {
     let imageURL: URL?
     let viewModel: DiscoveryViewModel
@@ -182,5 +174,13 @@ struct DiscoveryImagePlaceholder: View {
                     .foregroundStyle(.secondary)
                     .imageScale(.large)
             }
+    }
+}
+
+struct DiscoveryImageProvider: ImageProvider {
+    let viewModel: DiscoveryViewModel
+
+    func makeImage(url: URL?) -> some View {
+        DiscoveryMarkdownImageView(imageURL: url, viewModel: viewModel)
     }
 }

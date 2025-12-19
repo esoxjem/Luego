@@ -10,8 +10,8 @@ enum DiscoveryError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .contentFetchFailed:
-            return "Could not load article content"
+        case .contentFetchFailed(let underlyingError):
+            return "Could not load article content: \(underlyingError.localizedDescription)"
         }
     }
 }
