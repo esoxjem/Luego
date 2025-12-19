@@ -24,6 +24,8 @@ Example entry:
 
 **Important**: Despite `type="rss"`, these are article URLs, not feed URLs. Do not attempt RSS parsing.
 
+**XML Sanitization**: Kagi's OPML contains unescaped ampersands in URLs (e.g., `&p=123` instead of `&amp;p=123`). The `OPMLDataSource` sanitizes these before parsing using a regex that escapes lone ampersands while preserving valid XML entities.
+
 ## Architecture
 
 ```
@@ -87,7 +89,7 @@ Example entry:
 
 | File | Description |
 |------|-------------|
-| `DataSources/OPMLDataSource.swift` | XML parser for Kagi OPML format |
+| `DataSources/OPMLDataSource.swift` | XML parser for Kagi OPML format with ampersand sanitization |
 
 ### Repositories
 
@@ -115,9 +117,12 @@ Example entry:
 `SmallWebRepository` caches OPML data in UserDefaults:
 - `smallweb_articles_v2`: JSON-encoded array of `CachedArticle`
 - `smallweb_cache_timestamp_v2`: Cache creation date
+- `smallweb_shown_articles`: Set of shown article URLs (for non-repeat selection)
 - Duration: 24 hours
 
 Cache stores title, articleUrl, and htmlUrl for each entry.
+
+**Force Refresh**: Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This clears all cached data and fetches fresh OPML (~5000 articles, ~1.4MB download).
 
 ## Error Handling
 
@@ -151,7 +156,15 @@ func makeDiscoveryViewModel() -> DiscoveryViewModel
 
 - **DiscoveryLoadingView**: Spinner with "Finding something interesting..."
 - **DiscoveryErrorView**: Error message with "Try Another" button
-- **DiscoveryToolbar**: Menu with Save, Try Another (dice), Share, Open in Browser
+- **DiscoveryToolbar**: Menu with Save, Try Another (dice), Share, Open in Browser, Refresh Article Pool
+
+## Debug Logging
+
+Debug builds include logging (wrapped in `#if DEBUG`) for:
+- OPML download size and parse count
+- Article selection and shown/unseen counts
+- Cache clearing events
+- XML parse errors with line/column numbers
 
 ## Testing Considerations
 
@@ -159,3 +172,4 @@ func makeDiscoveryViewModel() -> DiscoveryViewModel
 - Mock `MetadataRepositoryProtocol` to avoid network calls
 - Test auto-retry logic in `DiscoveryViewModel` by simulating consecutive failures
 - Test cache expiration logic in `SmallWebRepository`
+- Test XML sanitization with malformed ampersands in `OPMLDataSource`
