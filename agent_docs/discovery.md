@@ -119,6 +119,18 @@ Example entry:
 |------|-------------|
 | `Core/UI/ShimmerModifier.swift` | Reusable animated gradient overlay for loading states. Apply via `.shimmer()` modifier. |
 
+### Shared Reader Components
+
+Located in `Core/UI/Readers/`, shared with the Reader feature. See [reader.md](reader.md) for details.
+
+| File | Description |
+|------|-------------|
+| `MarkdownUtilities.swift` | H1 stripping to avoid duplicate titles in markdown |
+| `ReaderTheme.swift` | `.gitHubBackground` color and `.reader` markdown theme |
+| `ReaderImageProvider.swift` | MarkdownUI ImageProvider for tap-to-fullscreen images |
+| `FullscreenImageViewer.swift` | Zoomable fullscreen image overlay |
+| `ImageSelectionHandler.swift` | Protocol that `DiscoveryViewModel` conforms to |
+
 ## Caching
 
 `SmallWebRepository` caches OPML data in UserDefaults:

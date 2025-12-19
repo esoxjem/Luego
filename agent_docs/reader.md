@@ -1,0 +1,155 @@
+# Reader Feature
+
+Article reading experience with markdown rendering, read position tracking, and fullscreen image viewing.
+
+## Overview
+
+The Reader feature displays saved articles in a clean, distraction-free reading interface. It fetches article content on-demand, renders markdown with a custom theme, tracks reading progress, and supports fullscreen image viewing.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          ReaderView                              │
+│                              │                                   │
+│                       ReaderViewModel                            │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+            ┌──────────────────┴──────────────────┐
+            ▼                                     ▼
+┌─────────────────────┐              ┌─────────────────────┐
+│ FetchArticleContent │              │ UpdateArticleRead   │
+│ UseCase             │              │ PositionUseCase     │
+└─────────────────────┘              └─────────────────────┘
+            │                                     │
+            ▼                                     ▼
+┌─────────────────────┐              ┌─────────────────────┐
+│ Metadata            │              │ Article             │
+│ Repository          │              │ Repository          │
+└─────────────────────┘              └─────────────────────┘
+```
+
+## Data Flow
+
+1. **Load Content**:
+   - `ReaderViewModel.loadContent()` checks if article already has content
+   - If not, `FetchArticleContentUseCase` fetches markdown via `MetadataRepository`
+   - Content is persisted to the `Article` model for future access
+
+2. **Read Position Tracking**:
+   - `ScrollPositionTracker` monitors scroll position via GeometryReader
+   - Position updates are debounced (1 second delay) to avoid excessive writes
+   - `UpdateArticleReadPositionUseCase` persists position (0.0 to 1.0)
+   - On view appear, scroll position is restored from saved value
+
+3. **Fullscreen Image Viewing**:
+   - Images in markdown are tappable via `ReaderImageProvider`
+   - Tap sets `viewModel.selectedImageURL`, triggering fullScreenCover
+   - `FullscreenImageViewer` displays zoomable image with pinch/pan gestures
+
+## Files
+
+### UseCases
+
+| File | Description |
+|------|-------------|
+| `UseCases/FetchArticleContentUseCase.swift` | Fetches article markdown content, supports force refresh |
+| `UseCases/UpdateArticleReadPositionUseCase.swift` | Persists read position (0.0-1.0) to article |
+
+### Views
+
+| File | Description |
+|------|-------------|
+| `Views/ReaderView.swift` | Main reader view with loading, content, and error states |
+| `Views/ReaderViewModel.swift` | State management, conforms to `ImageSelectionHandler` |
+| `Views/ZoomableScrollView.swift` | UIKit wrapper for pinch-to-zoom functionality |
+
+## Shared Reader Components
+
+Located in `Core/UI/Readers/`, these components are shared between Reader and Discovery features.
+
+| File | Description |
+|------|-------------|
+| `MarkdownUtilities.swift` | H1 stripping to avoid duplicate titles, fuzzy title matching |
+| `ReaderTheme.swift` | `.gitHubBackground` color and `.reader` markdown theme |
+| `DomainChip.swift` | Clickable domain chip linking to article URL |
+| `ReaderMarkdownImageView.swift` | Async image loading with tap-to-fullscreen |
+| `ReaderImageProvider.swift` | MarkdownUI ImageProvider using shared image view |
+| `ImageSelectionHandler.swift` | Protocol for ViewModel image selection capability |
+| `FullscreenImageViewer.swift` | Zoomable fullscreen image overlay |
+
+### ImageSelectionHandler Protocol
+
+```swift
+protocol ImageSelectionHandler: AnyObject {
+    var selectedImageURL: URL? { get set }
+}
+```
+
+Both `ReaderViewModel` and `DiscoveryViewModel` conform to this protocol, enabling shared image handling without generics.
+
+### Markdown H1 Stripping
+
+The `stripFirstH1FromMarkdown(_:matchingTitle:)` function removes duplicate titles:
+- Searches first 3 H1 headings in markdown
+- Uses Jaccard similarity (>0.7 threshold) for fuzzy matching
+- Handles normalized comparison (lowercase, no punctuation)
+- Removes matching H1 and trailing blank lines
+
+## Read Position Tracking
+
+### How It Works
+
+1. **ScrollPositionTracker** uses nested GeometryReader to track:
+   - `contentHeight`: Total scrollable content height
+   - `viewHeight`: Visible viewport height
+   - `scrollPosition`: Current scroll offset from top
+
+2. **Position Calculation**:
+   ```swift
+   let maxScroll = contentHeight - viewHeight
+   let position = scrollPosition / maxScroll  // 0.0 to 1.0
+   ```
+
+3. **Debouncing**: Updates are debounced with 1-second delay to prevent excessive persistence calls during active scrolling.
+
+4. **Restoration**: On view appear, saved position is restored using ScrollViewReader with interpolated anchor.
+
+## UI Components
+
+- **ArticleLoadingView**: Spinner with "Loading article..." text
+- **ArticleReaderModeView**: Main content display with header, divider, markdown
+- **ArticleErrorView**: Error state with "Open in Browser" and "Retry" buttons
+- **ReaderViewToolbar**: Menu with Refresh, Open in Browser, Share options
+- **ArticleHeaderView**: Title, domain chip, and formatted date
+
+## Entry Points
+
+1. **Reading List**: Tap any article in ArticleListView navigates to ReaderView
+2. **Navigation**: Uses NavigationLink with ArticleReaderDestination wrapper
+
+## DI Container Integration
+
+```swift
+// In DIContainer.swift
+private lazy var fetchArticleContentUseCase: FetchArticleContentUseCaseProtocol
+private lazy var updateArticleReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol
+
+func makeReaderViewModel(article: Article) -> ReaderViewModel
+```
+
+## Content Fetching
+
+- **On-Demand**: Content is fetched only when user opens article
+- **Caching**: Once fetched, content is persisted to Article.content
+- **Force Refresh**: Toolbar "Refresh Content" option re-fetches from source
+- **Error Handling**: Failed fetches show error view with retry option
+
+## Testing Considerations
+
+- Mock `FetchArticleContentUseCaseProtocol` for content loading tests
+- Mock `UpdateArticleReadPositionUseCaseProtocol` for position persistence tests
+- Test debouncing logic with rapid scroll position changes
+- Test position restoration with various saved positions
+- Test H1 stripping with various title formats and edge cases
+- Test `ImageSelectionHandler` conformance with mock ViewModels
