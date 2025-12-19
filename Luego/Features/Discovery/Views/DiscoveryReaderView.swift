@@ -22,6 +22,19 @@ struct DiscoveryReaderView: View {
                     DiscoveryLoadingView()
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if viewModel.ephemeralArticle != nil && !viewModel.isLoading {
+                    HStack {
+                        Spacer()
+                        DiscoveryBottomBar(
+                            isSaved: viewModel.isSaved,
+                            onShuffle: { Task { await viewModel.loadAnotherArticle() } },
+                            onSave: { Task { await viewModel.saveToReadingList() } }
+                        )
+                    }
+                    .padding(.trailing)
+                }
+            }
             .navigationTitle("Discover")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -31,10 +44,7 @@ struct DiscoveryReaderView: View {
 
                 if viewModel.ephemeralArticle != nil {
                     ToolbarItem(placement: .primaryAction) {
-                        DiscoveryToolbar(
-                            isSaved: viewModel.isSaved,
-                            onSave: { Task { await viewModel.saveToReadingList() } },
-                            onShuffle: { Task { await viewModel.loadAnotherArticle() } },
+                        DiscoveryToolbarMenu(
                             onShare: shareArticle,
                             onOpenInBrowser: openInBrowser,
                             onClearCache: { Task { await viewModel.forceRefresh() } }
@@ -106,29 +116,55 @@ struct DiscoveryErrorView: View {
     }
 }
 
-struct DiscoveryToolbar: View {
+struct DiscoveryBottomBar: View {
     let isSaved: Bool
-    let onSave: () -> Void
     let onShuffle: () -> Void
+    let onSave: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            DiscoveryBottomBarButton(
+                systemImage: "die.face.5",
+                action: onShuffle
+            )
+
+            Divider()
+                .frame(height: 24)
+                .overlay(.white.opacity(0.8))
+
+            DiscoveryBottomBarButton(
+                systemImage: isSaved ? "checkmark" : "plus",
+                action: onSave
+            )
+            .disabled(isSaved)
+        }
+        .glassEffect(.regular.interactive().tint(.purple.opacity(0.8)))
+    }
+}
+
+struct DiscoveryBottomBarButton: View {
+    let systemImage: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44, alignment: .center)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct DiscoveryToolbarMenu: View {
     let onShare: () -> Void
     let onOpenInBrowser: () -> Void
     let onClearCache: () -> Void
 
     var body: some View {
         Menu {
-            if isSaved {
-                Label("Saved to List", systemImage: "checkmark")
-                    .foregroundStyle(.secondary)
-            } else {
-                Button(action: onSave) {
-                    Label("Save to List", systemImage: "plus")
-                }
-            }
-
-            Button(action: onShuffle) {
-                Label("Try Another", systemImage: "die.face.5")
-            }
-
             Button(action: onShare) {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
