@@ -1,10 +1,10 @@
 # Reader Feature
 
-Article reading experience with markdown rendering, read position tracking, and fullscreen image viewing.
+Article reading experience with markdown rendering and read position tracking.
 
 ## Overview
 
-The Reader feature displays saved articles in a clean, distraction-free reading interface. It fetches article content on-demand, renders markdown with a custom theme, tracks reading progress, and supports fullscreen image viewing.
+The Reader feature displays saved articles in a clean, distraction-free reading interface. It fetches article content on-demand, renders markdown with a custom theme, and tracks reading progress.
 
 ## Architecture
 
@@ -42,11 +42,6 @@ The Reader feature displays saved articles in a clean, distraction-free reading 
    - `UpdateArticleReadPositionUseCase` persists position (0.0 to 1.0)
    - On view appear, scroll position is restored from saved value
 
-3. **Fullscreen Image Viewing**:
-   - Images in markdown are tappable via `ReaderImageProvider`
-   - Tap sets `viewModel.selectedImageURL`, triggering fullScreenCover
-   - `FullscreenImageViewer` displays zoomable image with pinch/pan gestures
-
 ## Files
 
 ### UseCases
@@ -61,8 +56,7 @@ The Reader feature displays saved articles in a clean, distraction-free reading 
 | File | Description |
 |------|-------------|
 | `Views/ReaderView.swift` | Main reader view with loading, content, and error states |
-| `Views/ReaderViewModel.swift` | State management, conforms to `ImageSelectionHandler` |
-| `Views/ZoomableScrollView.swift` | UIKit wrapper for pinch-to-zoom functionality |
+| `Views/ReaderViewModel.swift` | State management for article content and read position |
 
 ## Shared Reader Components
 
@@ -73,20 +67,8 @@ Located in `Core/UI/Readers/`, these components are shared between Reader and Di
 | `MarkdownUtilities.swift` | H1 stripping to avoid duplicate titles, fuzzy title matching |
 | `ReaderTheme.swift` | `.gitHubBackground` color and `.reader` markdown theme |
 | `DomainChip.swift` | Clickable domain chip linking to article URL |
-| `ReaderMarkdownImageView.swift` | Async image loading with tap-to-fullscreen |
+| `ReaderMarkdownImageView.swift` | Async image loading for markdown content |
 | `ReaderImageProvider.swift` | MarkdownUI ImageProvider using shared image view |
-| `ImageSelectionHandler.swift` | Protocol for ViewModel image selection capability |
-| `FullscreenImageViewer.swift` | Zoomable fullscreen image overlay |
-
-### ImageSelectionHandler Protocol
-
-```swift
-protocol ImageSelectionHandler: AnyObject {
-    var selectedImageURL: URL? { get set }
-}
-```
-
-Both `ReaderViewModel` and `DiscoveryViewModel` conform to this protocol, enabling shared image handling without generics.
 
 ### Markdown H1 Stripping
 
@@ -122,6 +104,7 @@ The `stripFirstH1FromMarkdown(_:matchingTitle:)` function removes duplicate titl
 - **ArticleErrorView**: Error state with "Open in Browser" and "Retry" buttons
 - **ReaderViewToolbar**: Menu with Refresh, Open in Browser, Share options
 - **ArticleHeaderView**: Title, domain chip, and formatted date
+- **ScrollPositionTracker**: GeometryReader-based scroll position monitor
 
 ## Entry Points
 
@@ -152,4 +135,3 @@ func makeReaderViewModel(article: Article) -> ReaderViewModel
 - Test debouncing logic with rapid scroll position changes
 - Test position restoration with various saved positions
 - Test H1 stripping with various title formats and edge cases
-- Test `ImageSelectionHandler` conformance with mock ViewModels
