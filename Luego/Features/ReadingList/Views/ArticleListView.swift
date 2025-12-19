@@ -24,10 +24,20 @@ struct ArticleListView: View {
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            if filter == .readingList {
-                DiscoverToolbarButton(onTap: { showingDiscovery = true })
+            ToolbarItemGroup(placement: .primaryAction) {
+                if filter == .readingList {
+                    Button {
+                        showingDiscovery = true
+                    } label: {
+                        Image(systemName: "die.face.5")
+                    }
+                }
+                Button {
+                    showingAddArticle = true
+                } label: {
+                    Image(systemName: "plus")
+                }
             }
-            AddArticleToolbarButton(onTap: { showingAddArticle = true })
         }
         .onAppear {
             configureNavigationBarAppearance()
@@ -261,30 +271,3 @@ struct ArticleListEmptyState: View {
     }
 }
 
-struct DiscoverToolbarButton: ToolbarContent {
-    let onTap: () -> Void
-
-    var body: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button {
-                onTap()
-            } label: {
-                Image(systemName: "die.face.5")
-            }
-        }
-    }
-}
-
-struct AddArticleToolbarButton: ToolbarContent {
-    let onTap: () -> Void
-
-    var body: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                onTap()
-            } label: {
-                Image(systemName: "plus")
-            }
-        }
-    }
-}
