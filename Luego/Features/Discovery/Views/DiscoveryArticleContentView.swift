@@ -10,7 +10,6 @@ struct DiscoveryArticleContentView: View {
             VStack(alignment: .leading, spacing: 20) {
                 DiscoveryArticleHeaderView(
                     title: article.title,
-                    domain: article.domain,
                     url: article.url,
                     feedTitle: article.feedTitle,
                     formattedDate: formattedDate
@@ -40,7 +39,6 @@ struct DiscoveryArticleContentView: View {
 
 struct DiscoveryArticleHeaderView: View {
     let title: String
-    let domain: String
     let url: URL
     let feedTitle: String
     let formattedDate: String
@@ -52,12 +50,7 @@ struct DiscoveryArticleHeaderView: View {
                 .foregroundColor(.primary)
 
             HStack {
-                Link(destination: url) {
-                    Text(domain)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .underline()
-                }
+                SourceAttributionChip(feedTitle: feedTitle, url: url)
 
                 Spacer()
 
@@ -67,29 +60,30 @@ struct DiscoveryArticleHeaderView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-
-            SourceAttributionView(feedTitle: feedTitle)
         }
     }
 }
 
-struct SourceAttributionView: View {
+struct SourceAttributionChip: View {
     let feedTitle: String
+    let url: URL
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "globe")
-                .foregroundStyle(.secondary)
-                .font(.caption)
+        Link(destination: url) {
+            HStack(spacing: 6) {
+                Image(systemName: "globe")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
 
-            Text("via \(feedTitle)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text("via \(feedTitle)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.1))
+            .clipShape(Capsule())
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color.secondary.opacity(0.1))
-        .clipShape(Capsule())
     }
 }
 
