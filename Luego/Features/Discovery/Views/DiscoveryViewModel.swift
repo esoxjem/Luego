@@ -1,6 +1,6 @@
 import Foundation
 
-enum LoadingGifRotator {
+enum KagiLoadingGifRotator {
     private static let gifs = ["kagi-loading", "kagi-loading-2"]
     private static var lastIndex: Int?
 
@@ -15,26 +15,31 @@ enum LoadingGifRotator {
 @Observable
 @MainActor
 final class DiscoveryViewModel {
+    var selectedSource: DiscoverySource
     var ephemeralArticle: EphemeralArticle?
     var isLoading = false
     var errorMessage: String?
     var isSaved = false
     var pendingArticleURL: URL?
-    var currentLoadingGif: String = LoadingGifRotator.next()
+    var currentLoadingGif: String = KagiLoadingGifRotator.next()
     private var consecutiveFailures = 0
 
-    private let fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol
     private let saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol
     private let articleRepository: ArticleRepositoryProtocol
+    private let currentUseCase: FetchRandomArticleUseCaseProtocol
 
     init(
-        fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol,
+        useCaseFactory: @escaping @MainActor (DiscoverySource) -> FetchRandomArticleUseCaseProtocol,
         saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol,
-        articleRepository: ArticleRepositoryProtocol
+        articleRepository: ArticleRepositoryProtocol,
+        preferencesDataSource: DiscoveryPreferencesDataSourceProtocol
     ) {
-        self.fetchRandomArticleUseCase = fetchRandomArticleUseCase
         self.saveDiscoveredArticleUseCase = saveDiscoveredArticleUseCase
         self.articleRepository = articleRepository
+
+        let savedSource = preferencesDataSource.getSelectedSource()
+        self.selectedSource = savedSource
+        self.currentUseCase = useCaseFactory(savedSource)
     }
 
     func fetchRandomArticle() async {
@@ -43,10 +48,13 @@ final class DiscoveryViewModel {
         ephemeralArticle = nil
         pendingArticleURL = nil
         isSaved = false
-        currentLoadingGif = LoadingGifRotator.next()
+
+        if selectedSource == .kagiSmallWeb {
+            currentLoadingGif = KagiLoadingGifRotator.next()
+        }
 
         do {
-            let article = try await fetchRandomArticleUseCase.execute { [weak self] url in
+            let article = try await currentUseCase.execute { [weak self] url in
                 self?.pendingArticleURL = url
             }
             consecutiveFailures = 0
@@ -82,7 +90,7 @@ final class DiscoveryViewModel {
     }
 
     func forceRefresh() async {
-        fetchRandomArticleUseCase.clearCache()
+        currentUseCase.clearCache()
         await fetchRandomArticle()
     }
 

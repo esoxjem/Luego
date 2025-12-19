@@ -9,9 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.diContainer) private var diContainer
     @State private var selectedTab = 0
-    @State private var showingDiscovery = false
 
     var body: some View {
         TabView(selection: $selectedTab) {

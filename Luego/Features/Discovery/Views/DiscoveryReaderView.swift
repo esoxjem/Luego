@@ -10,7 +10,7 @@ struct DiscoveryReaderView: View {
         NavigationStack {
             Group {
                 if viewModel.isLoading {
-                    DiscoveryLoadingView(pendingURL: viewModel.pendingArticleURL, gifName: viewModel.currentLoadingGif)
+                    DiscoveryLoadingContentView(viewModel: viewModel)
                 } else if let article = viewModel.ephemeralArticle {
                     DiscoveryArticleContentView(article: article)
                 } else if let error = viewModel.errorMessage {
@@ -19,7 +19,7 @@ struct DiscoveryReaderView: View {
                         onTryAnother: { Task { await viewModel.loadAnotherArticle() } }
                     )
                 } else {
-                    DiscoveryLoadingView(pendingURL: nil, gifName: viewModel.currentLoadingGif)
+                    DiscoveryLoadingContentView(viewModel: viewModel)
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -83,9 +83,31 @@ struct DiscoveryReaderView: View {
     }
 }
 
-struct DiscoveryLoadingView: View {
+struct DiscoveryLoadingContentView: View {
+    @Bindable var viewModel: DiscoveryViewModel
+
+    var body: some View {
+        switch viewModel.selectedSource {
+        case .kagiSmallWeb:
+            KagiSmallWebLoadingView(
+                pendingURL: viewModel.pendingArticleURL,
+                gifName: viewModel.currentLoadingGif,
+                loadingText: viewModel.selectedSource.loadingText
+            )
+        case .blogroll:
+            BlogrollLoadingView(
+                pendingURL: viewModel.pendingArticleURL,
+                loadingText: viewModel.selectedSource.loadingText
+            )
+        }
+    }
+}
+
+struct KagiSmallWebLoadingView: View {
     var pendingURL: URL?
     var gifName: String
+    var loadingText: String
+    @State private var isVisible = false
 
     var body: some View {
         VStack {
@@ -97,7 +119,7 @@ struct DiscoveryLoadingView: View {
             Spacer()
 
             VStack(spacing: 16) {
-                Text("Finding something interesting...")
+                Text(loadingText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -110,6 +132,8 @@ struct DiscoveryLoadingView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.3), value: pendingURL)
+        .onAppear { isVisible = true }
+        .onDisappear { isVisible = false }
     }
 }
 

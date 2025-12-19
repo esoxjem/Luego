@@ -75,20 +75,43 @@ final class DIContainer {
         OPMLDataSource()
     }()
 
-    private lazy var smallWebRepository: SmallWebRepositoryProtocol = {
-        SmallWebRepository(opmlDataSource: opmlDataSource)
+    private lazy var blogrollRSSDataSource: BlogrollRSSDataSource = {
+        BlogrollRSSDataSource()
     }()
 
-    private lazy var fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol = {
-        FetchRandomArticleUseCase(
-            smallWebRepository: smallWebRepository,
-            metadataRepository: metadataRepository
+    private lazy var genericRSSDataSource: GenericRSSDataSource = {
+        GenericRSSDataSource()
+    }()
+
+    private lazy var kagiSmallWebRepository: DiscoverySourceProtocol = {
+        KagiSmallWebRepository(opmlDataSource: opmlDataSource)
+    }()
+
+    private lazy var blogrollRepository: DiscoverySourceProtocol = {
+        BlogrollRepository(
+            blogrollRSSDataSource: blogrollRSSDataSource,
+            genericRSSDataSource: genericRSSDataSource
         )
+    }()
+
+    private lazy var discoveryPreferencesDataSource: DiscoveryPreferencesDataSourceProtocol = {
+        DiscoveryPreferencesDataSource()
     }()
 
     private lazy var saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol = {
         SaveDiscoveredArticleUseCase(articleRepository: articleRepository)
     }()
+
+    private func makeFetchRandomArticleUseCase(for source: DiscoverySource) -> FetchRandomArticleUseCaseProtocol {
+        let repository: DiscoverySourceProtocol = switch source {
+        case .kagiSmallWeb: kagiSmallWebRepository
+        case .blogroll: blogrollRepository
+        }
+        return FetchRandomArticleUseCase(
+            sourceRepository: repository,
+            metadataRepository: metadataRepository
+        )
+    }
 
     func makeArticleListViewModel() -> ArticleListViewModel {
         ArticleListViewModel(
@@ -111,9 +134,14 @@ final class DIContainer {
 
     func makeDiscoveryViewModel() -> DiscoveryViewModel {
         DiscoveryViewModel(
-            fetchRandomArticleUseCase: fetchRandomArticleUseCase,
+            useCaseFactory: makeFetchRandomArticleUseCase,
             saveDiscoveredArticleUseCase: saveDiscoveredArticleUseCase,
-            articleRepository: articleRepository
+            articleRepository: articleRepository,
+            preferencesDataSource: discoveryPreferencesDataSource
         )
+    }
+
+    func makeSettingsViewModel() -> SettingsViewModel {
+        SettingsViewModel(preferencesDataSource: discoveryPreferencesDataSource)
     }
 }

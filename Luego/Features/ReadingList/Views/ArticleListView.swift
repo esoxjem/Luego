@@ -16,6 +16,7 @@ struct ArticleListView: View {
     @State private var discoveryViewModel: DiscoveryViewModel?
     @State private var showingAddArticle = false
     @State private var showingDiscovery = false
+    @State private var showingSettings = false
     let filter: ArticleFilter
 
     private var filteredArticles: [Article] {
@@ -40,6 +41,13 @@ struct ArticleListView: View {
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showingSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+            }
             ToolbarItemGroup(placement: .primaryAction) {
                 if filter == .readingList {
                     Button {
@@ -61,6 +69,13 @@ struct ArticleListView: View {
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
                 AddArticleView(viewModel: viewModel, existingArticles: allArticles)
+            }
+        }
+        .sheet(isPresented: $showingSettings) {
+            if let container = diContainer {
+                NavigationStack {
+                    SettingsView(viewModel: container.makeSettingsViewModel())
+                }
             }
         }
         .fullScreenCover(isPresented: $showingDiscovery) {

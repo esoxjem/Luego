@@ -19,14 +19,14 @@ enum DiscoveryError: LocalizedError {
 
 @MainActor
 final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
-    private let smallWebRepository: SmallWebRepositoryProtocol
+    private let sourceRepository: DiscoverySourceProtocol
     private let metadataRepository: MetadataRepositoryProtocol
 
     init(
-        smallWebRepository: SmallWebRepositoryProtocol,
+        sourceRepository: DiscoverySourceProtocol,
         metadataRepository: MetadataRepositoryProtocol
     ) {
-        self.smallWebRepository = smallWebRepository
+        self.sourceRepository = sourceRepository
         self.metadataRepository = metadataRepository
     }
 
@@ -35,13 +35,13 @@ final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
     }
 
     func execute(onArticleEntryFetched: @escaping @MainActor (URL) -> Void) async throws -> EphemeralArticle {
-        let articleEntry = try await smallWebRepository.randomArticleEntry()
+        let articleEntry = try await sourceRepository.randomArticleEntry()
         await onArticleEntryFetched(articleEntry.articleUrl)
         return try await fetchArticleContent(for: articleEntry)
     }
 
     func clearCache() {
-        smallWebRepository.clearCache()
+        sourceRepository.clearCache()
     }
 
     private func fetchArticleContent(for articleEntry: SmallWebArticleEntry) async throws -> EphemeralArticle {

@@ -1,10 +1,13 @@
 import Foundation
 
-protocol SmallWebRepositoryProtocol: Sendable {
+protocol DiscoverySourceProtocol: Sendable {
+    var sourceIdentifier: DiscoverySource { get }
     func fetchArticles(forceRefresh: Bool) async throws -> [SmallWebArticleEntry]
     func randomArticleEntry() async throws -> SmallWebArticleEntry
     func clearCache()
 }
+
+typealias SmallWebRepositoryProtocol = DiscoverySourceProtocol
 
 enum SmallWebError: LocalizedError {
     case fetchFailed(Error)
@@ -24,22 +27,22 @@ enum SmallWebError: LocalizedError {
 }
 
 @MainActor
-final class SmallWebRepository: SmallWebRepositoryProtocol {
+final class KagiSmallWebRepository: DiscoverySourceProtocol {
+    let sourceIdentifier: DiscoverySource = .kagiSmallWeb
+
     private let opmlDataSource: OPMLDataSource
+    private let seenTracker: SeenItemTracker
     private let opmlURL = URL(string: "https://kagi.com/smallweb/opml")!
     private let cacheKey = "smallweb_articles_v2"
     private let cacheTimestampKey = "smallweb_cache_timestamp_v2"
     private let cacheDuration: TimeInterval = 24 * 60 * 60
-    private let shownArticlesKey = "smallweb_shown_articles"
-    private let resetThreshold = 0.8
 
     private var cachedArticles: [SmallWebArticleEntry] = []
-    private var shownArticleHashes: Set<UInt64> = []
 
     init(opmlDataSource: OPMLDataSource) {
         self.opmlDataSource = opmlDataSource
+        self.seenTracker = SeenItemTracker(storageKey: "smallweb_shown_articles")
         loadCachedArticles()
-        loadShownArticles()
     }
 
     func fetchArticles(forceRefresh: Bool = false) async throws -> [SmallWebArticleEntry] {
@@ -49,13 +52,7 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
 
         do {
             let (data, _) = try await URLSession.shared.data(from: opmlURL)
-            #if DEBUG
-            print("[Discovery] Downloaded OPML: \(data.count) bytes (\(data.count / 1024)KB)")
-            #endif
             let articles = opmlDataSource.parse(data)
-            #if DEBUG
-            print("[Discovery] Parsed \(articles.count) articles from OPML")
-            #endif
 
             guard !articles.isEmpty else {
                 throw SmallWebError.parsingFailed
@@ -78,21 +75,8 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
             throw SmallWebError.noArticlesAvailable
         }
 
-        let unseenArticles = filterUnseenArticles(from: articles)
-        let unseenCountBeforeReset = unseenArticles.count
-
-        #if DEBUG
-        print("[Discovery] Total articles: \(articles.count), Shown: \(shownArticleHashes.count), Unseen: \(unseenCountBeforeReset)")
-        #endif
-
-        resetShownArticlesIfNeeded(totalCount: articles.count, unseenCount: unseenArticles.count)
-
-        let didReset = shownArticleHashes.isEmpty && unseenCountBeforeReset < articles.count
-        #if DEBUG
-        if didReset {
-            print("[Discovery] Reset shown articles - starting fresh cycle")
-        }
-        #endif
+        let unseenArticles = seenTracker.filterUnseen(articles) { $0.articleUrl.absoluteString }
+        let didReset = seenTracker.resetIfNeeded(totalCount: articles.count, unseenCount: unseenArticles.count)
 
         let articlesToChooseFrom = didReset ? articles : (unseenArticles.isEmpty ? articles : unseenArticles)
 
@@ -100,36 +84,8 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
             throw SmallWebError.noArticlesAvailable
         }
 
-        #if DEBUG
-        print("[Discovery] Selected: \(selectedArticle.title) - \(selectedArticle.articleUrl.absoluteString)")
-        #endif
-
-        markArticleAsShown(selectedArticle)
+        seenTracker.markAsSeen(selectedArticle.articleUrl.absoluteString)
         return selectedArticle
-    }
-
-    private func filterUnseenArticles(from articles: [SmallWebArticleEntry]) -> [SmallWebArticleEntry] {
-        articles.filter { !shownArticleHashes.contains(stableHash($0.articleUrl.absoluteString)) }
-    }
-
-    private func resetShownArticlesIfNeeded(totalCount: Int, unseenCount: Int) {
-        let shownRatio = Double(totalCount - unseenCount) / Double(totalCount)
-        guard shownRatio >= resetThreshold || unseenCount == 0 else { return }
-        shownArticleHashes.removeAll()
-        saveShownArticles()
-    }
-
-    private func markArticleAsShown(_ article: SmallWebArticleEntry) {
-        shownArticleHashes.insert(stableHash(article.articleUrl.absoluteString))
-        saveShownArticles()
-    }
-
-    private func stableHash(_ string: String) -> UInt64 {
-        var hash: UInt64 = 5381
-        for byte in string.utf8 {
-            hash = ((hash << 5) &+ hash) &+ UInt64(byte)
-        }
-        return hash
     }
 
     private func isCacheValid() -> Bool {
@@ -166,28 +122,11 @@ final class SmallWebRepository: SmallWebRepositoryProtocol {
         }
     }
 
-    private func loadShownArticles() {
-        guard let data = UserDefaults.standard.data(forKey: shownArticlesKey),
-              let hashes = try? JSONDecoder().decode(Set<UInt64>.self, from: data) else {
-            return
-        }
-        shownArticleHashes = hashes
-    }
-
-    private func saveShownArticles() {
-        guard let data = try? JSONEncoder().encode(shownArticleHashes) else { return }
-        UserDefaults.standard.set(data, forKey: shownArticlesKey)
-    }
-
     func clearCache() {
         cachedArticles = []
-        shownArticleHashes.removeAll()
+        seenTracker.clear()
         UserDefaults.standard.removeObject(forKey: cacheKey)
         UserDefaults.standard.removeObject(forKey: cacheTimestampKey)
-        UserDefaults.standard.removeObject(forKey: shownArticlesKey)
-        #if DEBUG
-        print("[Discovery] Cache cleared")
-        #endif
     }
 }
 
