@@ -36,7 +36,7 @@ struct ArticleListView: View {
             viewModel: viewModel,
             diContainer: diContainer,
             filter: filter,
-            onAddArticle: { showingAddArticle = true }
+            onDiscover: { showingDiscovery = true }
         )
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.large)
@@ -143,13 +143,13 @@ struct ArticleListContent: View {
     let viewModel: ArticleListViewModel?
     let diContainer: DIContainer?
     let filter: ArticleFilter
-    let onAddArticle: () -> Void
+    let onDiscover: () -> Void
 
     var body: some View {
         Group {
             if let viewModel {
                 if articles.isEmpty {
-                    ArticleListEmptyState(onAddArticle: onAddArticle, filter: filter)
+                    ArticleListEmptyState(onDiscover: onDiscover, filter: filter)
                 } else {
                     ArticleList(articles: articles, viewModel: viewModel, diContainer: diContainer)
                 }
@@ -237,7 +237,7 @@ struct ArticleReaderDestination: View {
 }
 
 struct ArticleListEmptyState: View {
-    let onAddArticle: () -> Void
+    let onDiscover: () -> Void
     let filter: ArticleFilter
 
     var body: some View {
@@ -254,8 +254,8 @@ struct ArticleListEmptyState: View {
             Text(emptyStateDescription)
         } actions: {
             if filter == .readingList {
-                Button("Add Article") {
-                    onAddArticle()
+                Button("Inspire Me") {
+                    onDiscover()
                 }
                 .buttonStyle(.glassProminent)
                 .tint(.purple)
