@@ -12,6 +12,7 @@ struct ArticleListView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
+    @State private var showingDiscovery = false
     let filter: ArticleFilter
 
     var body: some View {
@@ -23,6 +24,9 @@ struct ArticleListView: View {
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
+            if filter == .readingList {
+                DiscoverToolbarButton(onTap: { showingDiscovery = true })
+            }
             AddArticleToolbarButton(onTap: { showingAddArticle = true })
         }
         .onAppear {
@@ -31,6 +35,11 @@ struct ArticleListView: View {
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
                 AddArticleView(viewModel: viewModel)
+            }
+        }
+        .fullScreenCover(isPresented: $showingDiscovery) {
+            if let container = diContainer {
+                DiscoveryReaderView(viewModel: container.makeDiscoveryViewModel())
             }
         }
         .task {
@@ -248,6 +257,20 @@ struct ArticleListEmptyState: View {
             return "Articles you favorite will appear here"
         case .archived:
             return "Archived articles will appear here"
+        }
+    }
+}
+
+struct DiscoverToolbarButton: ToolbarContent {
+    let onTap: () -> Void
+
+    var body: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                onTap()
+            } label: {
+                Image(systemName: "die.face.5")
+            }
         }
     }
 }

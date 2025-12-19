@@ -71,6 +71,25 @@ final class DIContainer {
         ToggleArchiveUseCase(articleRepository: articleRepository)
     }()
 
+    private lazy var opmlDataSource: OPMLDataSource = {
+        OPMLDataSource()
+    }()
+
+    private lazy var smallWebRepository: SmallWebRepositoryProtocol = {
+        SmallWebRepository(opmlDataSource: opmlDataSource)
+    }()
+
+    private lazy var fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol = {
+        FetchRandomArticleUseCase(
+            smallWebRepository: smallWebRepository,
+            metadataRepository: metadataRepository
+        )
+    }()
+
+    private lazy var saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol = {
+        SaveDiscoveredArticleUseCase(articleRepository: articleRepository)
+    }()
+
     func makeArticleListViewModel() -> ArticleListViewModel {
         ArticleListViewModel(
             getArticlesUseCase: getArticlesUseCase,
@@ -87,6 +106,14 @@ final class DIContainer {
             article: article,
             fetchContentUseCase: fetchArticleContentUseCase,
             updateReadPositionUseCase: updateArticleReadPositionUseCase
+        )
+    }
+
+    func makeDiscoveryViewModel() -> DiscoveryViewModel {
+        DiscoveryViewModel(
+            fetchRandomArticleUseCase: fetchRandomArticleUseCase,
+            saveDiscoveredArticleUseCase: saveDiscoveredArticleUseCase,
+            articleRepository: articleRepository
         )
     }
 }
