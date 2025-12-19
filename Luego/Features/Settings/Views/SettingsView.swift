@@ -14,6 +14,8 @@ struct SettingsView: View {
                 didRefresh: viewModel.didRefreshPool,
                 onRefresh: viewModel.refreshArticlePool
             )
+
+            AppVersionSection()
         }
         .navigationTitle("Settings")
     }
@@ -116,6 +118,27 @@ struct RefreshArticlePoolSection: View {
             .disabled(didRefresh)
         } footer: {
             Text("Clears the cached article pool and fetches fresh articles on next discovery.")
+        }
+    }
+}
+
+struct AppVersionSection: View {
+    private var versionString: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "Version \(version) (\(build))"
+    }
+
+    var body: some View {
+        Section {
+            HStack {
+                Spacer()
+                Text(versionString)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .listRowBackground(Color.clear)
         }
     }
 }
