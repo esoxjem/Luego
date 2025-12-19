@@ -1,14 +1,18 @@
 # Discovery Feature
 
-Random article exploration using Kagi Small Web.
+Random article exploration from independent blogs and small websites.
 
 ## Overview
 
-The Discovery feature allows users to explore random articles from independent blogs and small websites curated by Kagi's Small Web initiative. Users can browse articles, save interesting ones to their reading list, or skip to find something else.
+The Discovery feature allows users to explore random articles from independent blogs and small websites. Users can browse articles, save interesting ones to their reading list, or skip to find something else. The feature supports multiple discovery sources that users can switch between.
 
-## Data Source
+## Data Sources
 
-**Kagi Small Web OPML**: `https://kagi.com/smallweb/opml`
+Discovery supports multiple sources via the `DiscoverySourceProtocol`:
+
+### Kagi Small Web
+
+**URL**: `https://kagi.com/smallweb/opml`
 
 The OPML feed provides direct article URLs (not RSS feed URLs). Each `<outline>` element contains:
 - `xmlUrl`: Direct link to the article
@@ -25,6 +29,16 @@ Example entry:
 **Important**: Despite `type="rss"`, these are article URLs, not feed URLs. Do not attempt RSS parsing.
 
 **XML Sanitization**: Kagi's OPML contains unescaped ampersands in URLs (e.g., `&p=123` instead of `&amp;p=123`). The `OPMLDataSource` sanitizes these before parsing using a regex that escapes lone ampersands while preserving valid XML entities.
+
+### Blogroll.org
+
+**URL**: `https://blogroll.org/feed`
+
+A curated directory of independent blogs. Unlike Kagi Small Web, this is a two-step process:
+1. Fetch the blogroll RSS feed to get a list of blogs (with their feed URLs)
+2. Pick a random blog, fetch its RSS feed, then pick a random post from that blog
+
+This provides fresher content since it fetches the latest posts from each blog rather than a static article list.
 
 ## Architecture
 
@@ -44,27 +58,29 @@ Example entry:
          │                    │                    │
          ▼                    │                    │
 ┌─────────────────┐           │                    │
-│ SmallWeb        │           │                    │
-│ Repository      │           └────────────────────┘
-└─────────────────┘                    │
-         │                             ▼
-         ▼                    ┌─────────────────┐
-┌─────────────────┐           │ SwiftData       │
-│ OPMLDataSource  │           │ ModelContext    │
-└─────────────────┘           └─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Metadata        │
-│ Repository      │
-└─────────────────┘
+│ Discovery       │           └────────────────────┘
+│ Sources         │                    │
+│ (Protocol)      │                    ▼
+└─────────────────┘           ┌─────────────────┐
+    │         │               │ SwiftData       │
+    ▼         ▼               │ ModelContext    │
+┌───────┐ ┌───────┐           └─────────────────┘
+│ Kagi  │ │Blogroll│
+│ Repo  │ │ Repo  │
+└───────┘ └───────┘
+    │         │
+    ▼         ▼
+┌───────┐ ┌───────────┐
+│ OPML  │ │ RSS       │
+│DataSrc│ │DataSources│
+└───────┘ └───────────┘
 ```
 
 ## Data Flow
 
 1. **Fetch Random Article** (two-phase with progress callback):
-   - `SmallWebRepository.randomArticleEntry()` returns a random `SmallWebArticleEntry`
-   - Uses cached OPML data if valid (24-hour cache)
+   - `DiscoverySourceProtocol.randomArticleEntry()` returns a random `SmallWebArticleEntry`
+   - Uses cached data if valid (24-hour cache per source)
    - **Progress callback** fires immediately with the article URL (enables early UI feedback)
    - `MetadataRepository.fetchContent()` fetches article content from the URL (slow, up to 10s)
    - Returns `EphemeralArticle` (not persisted until user saves)
@@ -77,32 +93,42 @@ Example entry:
    - ViewModel queries `ArticleRepository.getAll()` to check URL match
    - Updates `isSaved` state to show checkmark instead of save button
 
+4. **Source Selection**:
+   - User preference stored via `DiscoveryPreferencesDataSource`
+   - `FetchRandomArticleUseCase` routes to appropriate repository based on selected source
+
 ## Files
 
 ### Models
 
 | File | Description |
 |------|-------------|
-| `Models/SmallWebFeed.swift` | `SmallWebArticleEntry` - parsed OPML entry with title and articleUrl |
+| `Models/SmallWebFeed.swift` | `SmallWebArticleEntry` - parsed entry with title and articleUrl (shared by all sources) |
 | `Models/EphemeralArticle.swift` | Temporary article not yet saved to reading list |
+| `Models/DiscoverySource.swift` | Enum defining available discovery sources (kagiSmallWeb, blogroll) |
 
 ### DataSources
 
 | File | Description |
 |------|-------------|
-| `DataSources/OPMLDataSource.swift` | XML parser for Kagi OPML format with ampersand sanitization. Marked `@MainActor` for thread-safe SwiftData integration. |
+| `DataSources/OPMLDataSource.swift` | XML parser for Kagi OPML format with ampersand sanitization |
+| `DataSources/BlogrollRSSDataSource.swift` | RSS parser for blogroll.org feed (extracts blog feed URLs) |
+| `DataSources/GenericRSSDataSource.swift` | Generic RSS parser for individual blog feeds (extracts post URLs) |
+| `DataSources/DiscoveryPreferencesDataSource.swift` | Stores user's selected discovery source preference |
+| `Core/DataSources/SeenItemTracker.swift` | Hash-based tracking of seen items with auto-reset |
 
 ### Repositories
 
 | File | Description |
 |------|-------------|
-| `Repositories/SmallWebRepository.swift` | Fetches/caches OPML, provides random entries |
+| `Repositories/KagiSmallWebRepository.swift` | Fetches/caches Kagi OPML, provides random articles. Implements `DiscoverySourceProtocol`. |
+| `Repositories/BlogrollRepository.swift` | Fetches/caches blogroll, fetches blog feeds, provides random posts. Implements `DiscoverySourceProtocol`. |
 
 ### UseCases
 
 | File | Description |
 |------|-------------|
-| `UseCases/FetchRandomArticleUseCase.swift` | Gets random article from SmallWeb. Supports progress callback via `execute(onArticleEntryFetched:)` to report URL before content loads. |
+| `UseCases/FetchRandomArticleUseCase.swift` | Routes to appropriate source based on user preference. Supports progress callback via `execute(onArticleEntryFetched:)`. |
 | `UseCases/SaveDiscoveredArticleUseCase.swift` | Converts ephemeral article to persisted Article |
 
 ### Views
@@ -110,8 +136,9 @@ Example entry:
 | File | Description |
 |------|-------------|
 | `Views/DiscoveryViewModel.swift` | State management with auto-retry on fetch errors (up to 5 attempts). Exposes `pendingArticleURL` for early loading feedback. |
-| `Views/DiscoveryReaderView.swift` | Main view with toolbar, loading, error states. Contains `LoadingDomainChip` with shimmer effect. |
+| `Views/DiscoveryReaderView.swift` | Main view with toolbar, loading, error states |
 | `Views/DiscoveryArticleContentView.swift` | Article content display with markdown |
+| `Views/BlogrollLoadingView.swift` | Loading view specific to blogroll source |
 
 ### Shared UI
 
@@ -127,23 +154,48 @@ Located in `Core/UI/Readers/`, shared with the Reader feature. See [reader.md](r
 |------|-------------|
 | `MarkdownUtilities.swift` | H1 stripping to avoid duplicate titles in markdown |
 | `ReaderTheme.swift` | `.gitHubBackground` color and `.reader` markdown theme |
-| `ReaderImageProvider.swift` | MarkdownUI ImageProvider for tap-to-fullscreen images |
-| `FullscreenImageViewer.swift` | Zoomable fullscreen image overlay |
-| `ImageSelectionHandler.swift` | Protocol that `DiscoveryViewModel` conforms to |
 
 ## Caching
 
-`SmallWebRepository` caches OPML data in UserDefaults:
-- `smallweb_articles_v2`: JSON-encoded array of `CachedArticle`
-- `smallweb_cache_timestamp_v2`: Cache creation date
-- `smallweb_shown_articles`: Set of djb2 URL hashes (`UInt64`) for non-repeat selection
-- Duration: 24 hours
+Discovery uses a **two-layer caching strategy**: article pool caching and seen-item tracking.
 
-Cache stores title, articleUrl, and htmlUrl for each entry.
+### Article Pool Cache
 
-**Hash-Based Tracking**: Shown articles are tracked using 64-bit djb2 hashes instead of full URL strings, reducing memory usage by ~12x while maintaining stable persistence across app launches.
+Each discovery source caches its article/blog list in UserDefaults:
 
-**Force Refresh**: Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This clears all cached data and fetches fresh OPML (~5000 articles, ~1.4MB download).
+| Source | Cache Key | Timestamp Key | Duration |
+|--------|-----------|---------------|----------|
+| Kagi Small Web | `smallweb_articles_v2` | `smallweb_cache_timestamp_v2` | 24 hours |
+| Blogroll.org | `blogroll_articles_v1` | `blogroll_cache_timestamp_v1` | 24 hours |
+
+Cache stores JSON-encoded arrays containing title, URL, and optional htmlUrl for each entry.
+
+### Seen-Item Tracking
+
+`SeenItemTracker` (`Core/DataSources/SeenItemTracker.swift`) prevents showing the same article/blog twice using **djb2 hashing**:
+
+```swift
+private func stableHash(_ string: String) -> UInt64 {
+    var hash: UInt64 = 5381
+    for byte in string.utf8 {
+        hash = ((hash << 5) &+ hash) &+ UInt64(byte)
+    }
+    return hash
+}
+```
+
+| Source | Storage Key | Tracks |
+|--------|-------------|--------|
+| Kagi | `smallweb_shown_articles` | Individual article URLs |
+| Blogroll | `blogroll_shown_blogs` | Blog feed URLs (not individual posts) |
+
+**Why hashing?** Storing ~5000 URL strings would consume ~500KB+. Storing 64-bit hashes uses ~40KB—a 12x memory reduction.
+
+**Auto-Reset**: When 80%+ of items have been seen (configurable via `resetThreshold`), the tracker automatically resets to allow repeat selections.
+
+### Force Refresh
+
+Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This calls `clearCache()` on the active repository, clearing both the article pool and seen-item hashes.
 
 ## Error Handling
 
@@ -151,14 +203,31 @@ Cache stores title, articleUrl, and htmlUrl for each entry.
 
 **Auto-Skip Behavior**: When an article fails to load (timeout, dead URL, etc.), the ViewModel automatically tries another article. Errors are only shown after 5 consecutive failures, indicating a likely network issue.
 
+### Kagi Small Web Errors
+
 | Error | Cause | User Message |
 |-------|-------|--------------|
 | `SmallWebError.fetchFailed` | Network error fetching OPML | "Could not load the article list" |
 | `SmallWebError.parsingFailed` | Empty or invalid OPML | "Could not parse the article list" |
 | `SmallWebError.noArticlesAvailable` | Empty article list | "No articles available" |
-| `DiscoveryError.contentFetchFailed` | Article content fetch failed | "Could not load article content: {underlying error}" |
 
-**Error Context**: `DiscoveryError.contentFetchFailed` includes the underlying error's `localizedDescription` for better debugging (e.g., network timeouts, parsing failures).
+### Blogroll Errors
+
+| Error | Cause | User Message |
+|-------|-------|--------------|
+| `BlogrollError.fetchFailed` | Network error fetching blogroll | "Could not load the blogroll" |
+| `BlogrollError.parsingFailed` | Empty or invalid blogroll | "Could not parse the blogroll" |
+| `BlogrollError.noArticlesAvailable` | Empty blog list | "No blogs available" |
+| `BlogrollError.blogFeedFetchFailed` | Failed to fetch individual blog's RSS | "Could not load the blog's feed" |
+| `BlogrollError.noPostsInBlogFeed` | Blog feed has no posts | "No posts found in this blog" |
+
+**Blogroll Retry Logic**: `BlogrollRepository` retries up to 5 times when fetching random articles, automatically skipping blogs with broken feeds.
+
+### General Errors
+
+| Error | Cause | User Message |
+|-------|-------|--------------|
+| `DiscoveryError.contentFetchFailed` | Article content fetch failed | "Could not load article content: {underlying error}" |
 
 ## Entry Points
 
@@ -170,7 +239,10 @@ Cache stores title, articleUrl, and htmlUrl for each entry.
 ```swift
 // In DIContainer.swift
 private lazy var opmlDataSource: OPMLDataSource
-private lazy var smallWebRepository: SmallWebRepositoryProtocol
+private lazy var blogrollRSSDataSource: BlogrollRSSDataSource
+private lazy var genericRSSDataSource: GenericRSSDataSource
+private lazy var kagiSmallWebRepository: KagiSmallWebRepository
+private lazy var blogrollRepository: BlogrollRepository
 private lazy var fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol
 private lazy var saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol
 
@@ -180,26 +252,28 @@ func makeDiscoveryViewModel() -> DiscoveryViewModel
 ## UI Components
 
 - **DiscoveryLoadingView**: Spinner with "Finding something interesting..." and domain chip (when URL is known)
-- **LoadingDomainChip**: Displays target domain with shimmer animation during content fetch. Uses `Core/UI/ShimmerModifier`.
+- **BlogrollLoadingView**: Loading view for blogroll source
+- **LoadingDomainChip**: Displays target domain with shimmer animation during content fetch
 - **DiscoveryErrorView**: Error message with "Try Another" button
-- **DiscoveryToolbar**: Menu with Save, Try Another (dice), Share, Open in Browser, Refresh Article Pool
+- **DiscoveryToolbar**: Menu with Save, Try Another (dice), Share, Open in Browser, Refresh Article Pool, Source Selection
 
-**Shimmer Effect**: The `ShimmerModifier` (`Core/UI/ShimmerModifier.swift`) creates an animated gradient highlight that sweeps across the chip, providing visual feedback that content is loading. Reusable across other views via `.shimmer()` modifier.
+**Shimmer Effect**: The `ShimmerModifier` (`Core/UI/ShimmerModifier.swift`) creates an animated gradient highlight that sweeps across the chip, providing visual feedback that content is loading.
 
 ## Debug Logging
 
 Debug builds include logging (wrapped in `#if DEBUG`) for:
-- OPML download size and parse count
-- Article selection and shown/unseen counts
+- OPML/RSS download size and parse count
+- Article/blog selection and shown/unseen counts
 - Cache clearing events
 - XML parse errors with line/column numbers
 
 ## Testing Considerations
 
-- Mock `SmallWebRepositoryProtocol` to return controlled `SmallWebArticleEntry` values
+- Mock `DiscoverySourceProtocol` to return controlled `SmallWebArticleEntry` values
 - Mock `MetadataRepositoryProtocol` to avoid network calls
 - Test auto-retry logic in `DiscoveryViewModel` by simulating consecutive failures
-- Test cache expiration logic in `SmallWebRepository`
+- Test cache expiration logic in both `KagiSmallWebRepository` and `BlogrollRepository`
 - Test XML sanitization with malformed ampersands in `OPMLDataSource`
-- Test hash-based shown article tracking persists correctly across app launches
+- Test `SeenItemTracker` hash persistence and auto-reset behavior
+- Test blogroll's two-step fetch (blogroll → blog feed → random post)
 - Verify `@MainActor` isolation prevents data races in concurrent access scenarios
