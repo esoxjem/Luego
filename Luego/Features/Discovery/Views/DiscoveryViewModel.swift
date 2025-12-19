@@ -1,5 +1,17 @@
 import Foundation
 
+enum LoadingGifRotator {
+    private static let gifs = ["kagi-loading", "kagi-loading-2"]
+    private static var lastIndex: Int?
+
+    static func next() -> String {
+        let availableIndices = gifs.indices.filter { $0 != lastIndex }
+        let nextIndex = availableIndices.randomElement() ?? 0
+        lastIndex = nextIndex
+        return gifs[nextIndex]
+    }
+}
+
 @Observable
 @MainActor
 final class DiscoveryViewModel: ImageSelectionHandler {
@@ -9,6 +21,7 @@ final class DiscoveryViewModel: ImageSelectionHandler {
     var isSaved = false
     var selectedImageURL: URL?
     var pendingArticleURL: URL?
+    var currentLoadingGif: String = LoadingGifRotator.next()
     private var consecutiveFailures = 0
 
     private let fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol
@@ -31,6 +44,7 @@ final class DiscoveryViewModel: ImageSelectionHandler {
         ephemeralArticle = nil
         pendingArticleURL = nil
         isSaved = false
+        currentLoadingGif = LoadingGifRotator.next()
 
         do {
             let article = try await fetchRandomArticleUseCase.execute { [weak self] url in

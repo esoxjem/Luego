@@ -10,7 +10,7 @@ struct DiscoveryReaderView: View {
         NavigationStack {
             Group {
                 if viewModel.isLoading {
-                    DiscoveryLoadingView(pendingURL: viewModel.pendingArticleURL)
+                    DiscoveryLoadingView(pendingURL: viewModel.pendingArticleURL, gifName: viewModel.currentLoadingGif)
                 } else if let article = viewModel.ephemeralArticle {
                     DiscoveryArticleContentView(article: article, viewModel: viewModel)
                 } else if let error = viewModel.errorMessage {
@@ -19,7 +19,7 @@ struct DiscoveryReaderView: View {
                         onTryAnother: { Task { await viewModel.loadAnotherArticle() } }
                     )
                 } else {
-                    DiscoveryLoadingView(pendingURL: nil)
+                    DiscoveryLoadingView(pendingURL: nil, gifName: viewModel.currentLoadingGif)
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -91,19 +91,30 @@ struct DiscoveryReaderView: View {
 
 struct DiscoveryLoadingView: View {
     var pendingURL: URL?
+    var gifName: String
 
     var body: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-            Text("Finding something interesting...")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        VStack {
+            Spacer()
 
-            if let domain = pendingURL?.host() {
-                LoadingDomainChip(domain: domain)
-                    .transition(.opacity.combined(with: .scale))
+            GIFImageView(gifName: gifName)
+                .frame(width: 88, height: 31)
+
+            Spacer()
+
+            VStack(spacing: 16) {
+                Text("Finding something interesting...")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if let domain = pendingURL?.host() {
+                    LoadingDomainChip(domain: domain)
+                        .transition(.opacity.combined(with: .scale))
+                }
             }
+            .padding(.bottom, 40)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.3), value: pendingURL)
     }
 }
