@@ -2,6 +2,7 @@ import Foundation
 
 protocol FetchRandomArticleUseCaseProtocol: Sendable {
     func execute() async throws -> EphemeralArticle
+    func clearCache()
 }
 
 enum DiscoveryError: LocalizedError {
@@ -30,6 +31,10 @@ final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
 
     func execute() async throws -> EphemeralArticle {
         try await fetchRandomArticleFromSmallWeb()
+    }
+
+    func clearCache() {
+        smallWebRepository.clearCache()
     }
 
     private func fetchRandomArticleFromSmallWeb() async throws -> EphemeralArticle {

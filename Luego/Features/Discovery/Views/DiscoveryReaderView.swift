@@ -36,7 +36,8 @@ struct DiscoveryReaderView: View {
                             onSave: { Task { await viewModel.saveToReadingList() } },
                             onShuffle: { Task { await viewModel.loadAnotherArticle() } },
                             onShare: shareArticle,
-                            onOpenInBrowser: openInBrowser
+                            onOpenInBrowser: openInBrowser,
+                            onClearCache: { Task { await viewModel.forceRefresh() } }
                         )
                     }
                 }
@@ -111,6 +112,7 @@ struct DiscoveryToolbar: View {
     let onShuffle: () -> Void
     let onShare: () -> Void
     let onOpenInBrowser: () -> Void
+    let onClearCache: () -> Void
 
     var body: some View {
         Menu {
@@ -133,6 +135,12 @@ struct DiscoveryToolbar: View {
 
             Button(action: onOpenInBrowser) {
                 Label("Open in Browser", systemImage: "safari")
+            }
+
+            Divider()
+
+            Button(action: onClearCache) {
+                Label("Refresh Article Pool", systemImage: "arrow.clockwise")
             }
         } label: {
             Image(systemName: "ellipsis.circle")

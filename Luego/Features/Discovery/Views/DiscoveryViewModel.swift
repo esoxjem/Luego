@@ -62,6 +62,11 @@ final class DiscoveryViewModel {
         await fetchRandomArticle()
     }
 
+    func forceRefresh() async {
+        fetchRandomArticleUseCase.clearCache()
+        await fetchRandomArticle()
+    }
+
     private func checkIfAlreadySaved(url: URL) async {
         do {
             let articles = try await articleRepository.getAll()
