@@ -41,13 +41,6 @@ struct ArticleListView: View {
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showingSettings = true
-                } label: {
-                    Image(systemName: "gearshape")
-                }
-            }
             ToolbarItemGroup(placement: .primaryAction) {
                 if filter == .readingList {
                     Button {
@@ -60,6 +53,11 @@ struct ArticleListView: View {
                     showingAddArticle = true
                 } label: {
                     Image(systemName: "plus")
+                }
+                Button {
+                    showingSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
                 }
             }
         }
