@@ -128,6 +128,8 @@ Cache stores title, articleUrl, and htmlUrl for each entry.
 
 ## Error Handling
 
+**10-Second Timeout**: Discovery article fetches use a 10-second timeout (passed via `FetchRandomArticleUseCase`). If an article doesn't respond in time, the system automatically moves to the next article. This timeout is specific to Discovery—the normal reader uses URLSession's default timeout.
+
 **Auto-Skip Behavior**: When an article fails to load (timeout, dead URL, etc.), the ViewModel automatically tries another article. Errors are only shown after 5 consecutive failures, indicating a likely network issue.
 
 | Error | Cause | User Message |

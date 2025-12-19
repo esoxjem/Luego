@@ -39,9 +39,10 @@ final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
 
     private func fetchRandomArticleFromSmallWeb() async throws -> EphemeralArticle {
         let articleEntry = try await smallWebRepository.randomArticleEntry()
+        let discoveryTimeoutSeconds: TimeInterval = 10
 
         do {
-            let articleContent = try await metadataRepository.fetchContent(for: articleEntry.articleUrl)
+            let articleContent = try await metadataRepository.fetchContent(for: articleEntry.articleUrl, timeout: discoveryTimeoutSeconds)
             let domain = articleEntry.articleUrl.host() ?? "Unknown"
 
             return EphemeralArticle(

@@ -3,8 +3,18 @@ import SwiftSoup
 
 protocol MetadataRepositoryProtocol {
     func validateURL(_ url: URL) async throws -> URL
-    func fetchMetadata(for url: URL) async throws -> ArticleMetadata
-    func fetchContent(for url: URL) async throws -> ArticleContent
+    func fetchMetadata(for url: URL, timeout: TimeInterval?) async throws -> ArticleMetadata
+    func fetchContent(for url: URL, timeout: TimeInterval?) async throws -> ArticleContent
+}
+
+extension MetadataRepositoryProtocol {
+    func fetchMetadata(for url: URL) async throws -> ArticleMetadata {
+        try await fetchMetadata(for: url, timeout: nil)
+    }
+
+    func fetchContent(for url: URL) async throws -> ArticleContent {
+        try await fetchContent(for: url, timeout: nil)
+    }
 }
 
 @MainActor
@@ -23,9 +33,9 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         return validatedURL
     }
 
-    func fetchMetadata(for url: URL) async throws -> ArticleMetadata {
+    func fetchMetadata(for url: URL, timeout: TimeInterval?) async throws -> ArticleMetadata {
         try validateHTTPScheme(url)
-        let htmlContent = try await fetchHTMLContent(from: url)
+        let htmlContent = try await fetchHTMLContent(from: url, timeout: timeout)
         let document = try parseHTML(htmlContent)
 
         let (ogTitle, ogImage, ogDescription) = extractOpenGraphMetadata(from: document)
@@ -45,9 +55,9 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         )
     }
 
-    func fetchContent(for url: URL) async throws -> ArticleContent {
+    func fetchContent(for url: URL, timeout: TimeInterval?) async throws -> ArticleContent {
         try validateHTTPScheme(url)
-        let htmlContent = try await fetchHTMLContent(from: url)
+        let htmlContent = try await fetchHTMLContent(from: url, timeout: timeout)
         let document = try parseHTML(htmlContent)
 
         try removeUnwantedElements(from: document)
@@ -90,9 +100,16 @@ final class MetadataRepository: MetadataRepositoryProtocol {
         }
     }
 
-    private func fetchHTMLContent(from url: URL) async throws -> String {
+    private func fetchHTMLContent(from url: URL, timeout: TimeInterval?) async throws -> String {
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let data: Data
+            if let timeout {
+                var request = URLRequest(url: url)
+                request.timeoutInterval = timeout
+                (data, _) = try await URLSession.shared.data(for: request)
+            } else {
+                (data, _) = try await URLSession.shared.data(from: url)
+            }
             guard let content = String(data: data, encoding: .utf8) else {
                 throw ArticleMetadataError.noMetadata
             }
