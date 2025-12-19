@@ -5,13 +5,10 @@ protocol FetchRandomArticleUseCaseProtocol: Sendable {
 }
 
 enum DiscoveryError: LocalizedError {
-    case allAttemptsFailed
     case contentFetchFailed(Error)
 
     var errorDescription: String? {
         switch self {
-        case .allAttemptsFailed:
-            return "Could not find a working article after multiple attempts"
         case .contentFetchFailed:
             return "Could not load article content"
         }
@@ -22,7 +19,6 @@ enum DiscoveryError: LocalizedError {
 final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
     private let smallWebRepository: SmallWebRepositoryProtocol
     private let metadataRepository: MetadataRepositoryProtocol
-    private let maxAttempts = 3
 
     init(
         smallWebRepository: SmallWebRepositoryProtocol,
@@ -33,18 +29,7 @@ final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
     }
 
     func execute() async throws -> EphemeralArticle {
-        var lastError: Error?
-
-        for attempt in 1...maxAttempts {
-            do {
-                return try await fetchRandomArticleFromSmallWeb()
-            } catch {
-                lastError = error
-                continue
-            }
-        }
-
-        throw lastError ?? DiscoveryError.allAttemptsFailed
+        try await fetchRandomArticleFromSmallWeb()
     }
 
     private func fetchRandomArticleFromSmallWeb() async throws -> EphemeralArticle {

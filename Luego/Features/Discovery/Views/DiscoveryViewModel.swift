@@ -8,6 +8,7 @@ final class DiscoveryViewModel {
     var errorMessage: String?
     var isSaved = false
     var selectedImageURL: URL?
+    private var consecutiveFailures = 0
 
     private let fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol
     private let saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol
@@ -31,9 +32,15 @@ final class DiscoveryViewModel {
 
         do {
             let article = try await fetchRandomArticleUseCase.execute()
+            consecutiveFailures = 0
             ephemeralArticle = article
             await checkIfAlreadySaved(url: article.url)
         } catch {
+            consecutiveFailures += 1
+            if consecutiveFailures < 5 {
+                await fetchRandomArticle()
+                return
+            }
             errorMessage = error.localizedDescription
         }
 
