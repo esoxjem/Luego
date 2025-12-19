@@ -9,6 +9,11 @@ struct SettingsView: View {
                 selectedSource: $viewModel.selectedDiscoverySource,
                 onSourceChanged: viewModel.updateDiscoverySource
             )
+
+            RefreshArticlePoolSection(
+                didRefresh: viewModel.didRefreshPool,
+                onRefresh: viewModel.refreshArticlePool
+            )
         }
         .navigationTitle("Settings")
     }
@@ -87,5 +92,30 @@ struct SourceWebsiteLinkButton: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct RefreshArticlePoolSection: View {
+    let didRefresh: Bool
+    let onRefresh: () -> Void
+
+    var body: some View {
+        Section {
+            Button(action: onRefresh) {
+                HStack {
+                    Label("Refresh Article Pool", systemImage: "arrow.clockwise")
+
+                    Spacer()
+
+                    if didRefresh {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(.green)
+                    }
+                }
+            }
+            .disabled(didRefresh)
+        } footer: {
+            Text("Clears the cached article pool and fetches fresh articles on next discovery.")
+        }
     }
 }

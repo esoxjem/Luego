@@ -142,6 +142,9 @@ final class DIContainer {
     }
 
     func makeSettingsViewModel() -> SettingsViewModel {
-        SettingsViewModel(preferencesDataSource: discoveryPreferencesDataSource)
+        SettingsViewModel(
+            preferencesDataSource: discoveryPreferencesDataSource,
+            discoveryRepositories: [kagiSmallWebRepository, blogrollRepository]
+        )
     }
 }

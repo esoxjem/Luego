@@ -46,8 +46,7 @@ struct DiscoveryReaderView: View {
                     ToolbarItem(placement: .primaryAction) {
                         DiscoveryToolbarMenu(
                             onShare: shareArticle,
-                            onOpenInBrowser: openInBrowser,
-                            onClearCache: { Task { await viewModel.forceRefresh() } }
+                            onOpenInBrowser: openInBrowser
                         )
                     }
                 }
@@ -219,7 +218,6 @@ struct DiscoveryBottomBarButton: View {
 struct DiscoveryToolbarMenu: View {
     let onShare: () -> Void
     let onOpenInBrowser: () -> Void
-    let onClearCache: () -> Void
 
     var body: some View {
         Menu {
@@ -229,12 +227,6 @@ struct DiscoveryToolbarMenu: View {
 
             Button(action: onOpenInBrowser) {
                 Label("Open in Browser", systemImage: "safari")
-            }
-
-            Divider()
-
-            Button(action: onClearCache) {
-                Label("Refresh Article Pool", systemImage: "arrow.clockwise")
             }
         } label: {
             Image(systemName: "ellipsis.circle")
