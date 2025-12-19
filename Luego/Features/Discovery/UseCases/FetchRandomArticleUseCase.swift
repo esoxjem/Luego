@@ -43,9 +43,24 @@ final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
     }
 
     func execute(onArticleEntryFetched: @escaping @MainActor (URL) -> Void) async throws -> EphemeralArticle {
+        let maxRetries = 10
+        for _ in 0..<maxRetries {
+            let articleEntry = try await sourceRepository.randomArticleEntry()
+            if isYouTubeURL(articleEntry.articleUrl) {
+                continue
+            }
+            await onArticleEntryFetched(articleEntry.articleUrl)
+            return try await fetchArticleContent(for: articleEntry)
+        }
         let articleEntry = try await sourceRepository.randomArticleEntry()
         await onArticleEntryFetched(articleEntry.articleUrl)
         return try await fetchArticleContent(for: articleEntry)
+    }
+
+    private func isYouTubeURL(_ url: URL) -> Bool {
+        guard let host = url.host()?.lowercased() else { return false }
+        let youtubeHosts = ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"]
+        return youtubeHosts.contains(host)
     }
 
     func clearCache() {
