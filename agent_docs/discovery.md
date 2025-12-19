@@ -89,7 +89,7 @@ Example entry:
 
 | File | Description |
 |------|-------------|
-| `DataSources/OPMLDataSource.swift` | XML parser for Kagi OPML format with ampersand sanitization |
+| `DataSources/OPMLDataSource.swift` | XML parser for Kagi OPML format with ampersand sanitization. Marked `@MainActor` for thread-safe SwiftData integration. |
 
 ### Repositories
 
@@ -117,10 +117,12 @@ Example entry:
 `SmallWebRepository` caches OPML data in UserDefaults:
 - `smallweb_articles_v2`: JSON-encoded array of `CachedArticle`
 - `smallweb_cache_timestamp_v2`: Cache creation date
-- `smallweb_shown_articles`: Set of shown article URLs (for non-repeat selection)
+- `smallweb_shown_articles`: Set of djb2 URL hashes (`UInt64`) for non-repeat selection
 - Duration: 24 hours
 
 Cache stores title, articleUrl, and htmlUrl for each entry.
+
+**Hash-Based Tracking**: Shown articles are tracked using 64-bit djb2 hashes instead of full URL strings, reducing memory usage by ~12x while maintaining stable persistence across app launches.
 
 **Force Refresh**: Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This clears all cached data and fetches fresh OPML (~5000 articles, ~1.4MB download).
 
@@ -133,7 +135,9 @@ Cache stores title, articleUrl, and htmlUrl for each entry.
 | `SmallWebError.fetchFailed` | Network error fetching OPML | "Could not load the article list" |
 | `SmallWebError.parsingFailed` | Empty or invalid OPML | "Could not parse the article list" |
 | `SmallWebError.noArticlesAvailable` | Empty article list | "No articles available" |
-| `DiscoveryError.contentFetchFailed` | Article content fetch failed | "Could not load article content" |
+| `DiscoveryError.contentFetchFailed` | Article content fetch failed | "Could not load article content: {underlying error}" |
+
+**Error Context**: `DiscoveryError.contentFetchFailed` includes the underlying error's `localizedDescription` for better debugging (e.g., network timeouts, parsing failures).
 
 ## Entry Points
 
@@ -173,3 +177,5 @@ Debug builds include logging (wrapped in `#if DEBUG`) for:
 - Test auto-retry logic in `DiscoveryViewModel` by simulating consecutive failures
 - Test cache expiration logic in `SmallWebRepository`
 - Test XML sanitization with malformed ampersands in `OPMLDataSource`
+- Test hash-based shown article tracking persists correctly across app launches
+- Verify `@MainActor` isolation prevents data races in concurrent access scenarios
