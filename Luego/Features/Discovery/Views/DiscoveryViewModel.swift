@@ -16,6 +16,7 @@ enum KagiLoadingGifRotator {
 @MainActor
 final class DiscoveryViewModel {
     var selectedSource: DiscoverySource
+    var activeSource: DiscoverySource?
     var ephemeralArticle: EphemeralArticle?
     var isLoading = false
     var errorMessage: String?
@@ -27,6 +28,10 @@ final class DiscoveryViewModel {
     private let saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol
     private let articleRepository: ArticleRepositoryProtocol
     private let currentUseCase: FetchRandomArticleUseCaseProtocol
+
+    var currentLoadingText: String {
+        (activeSource ?? selectedSource).loadingText
+    }
 
     init(
         useCaseFactory: @escaping @MainActor (DiscoverySource) -> FetchRandomArticleUseCaseProtocol,
@@ -49,7 +54,9 @@ final class DiscoveryViewModel {
         pendingArticleURL = nil
         isSaved = false
 
-        if selectedSource == .kagiSmallWeb {
+        activeSource = currentUseCase.prepareForFetch()
+
+        if activeSource == .kagiSmallWeb {
             currentLoadingGif = KagiLoadingGifRotator.next()
         }
 

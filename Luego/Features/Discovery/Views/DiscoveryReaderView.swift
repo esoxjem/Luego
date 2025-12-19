@@ -86,17 +86,17 @@ struct DiscoveryLoadingContentView: View {
     @Bindable var viewModel: DiscoveryViewModel
 
     var body: some View {
-        switch viewModel.selectedSource {
+        switch viewModel.activeSource {
         case .kagiSmallWeb:
             KagiSmallWebLoadingView(
                 pendingURL: viewModel.pendingArticleURL,
                 gifName: viewModel.currentLoadingGif,
-                loadingText: viewModel.selectedSource.loadingText
+                loadingText: viewModel.currentLoadingText
             )
-        case .blogroll:
+        case .blogroll, .surpriseMe, .none:
             BlogrollLoadingView(
                 pendingURL: viewModel.pendingArticleURL,
-                loadingText: viewModel.selectedSource.loadingText
+                loadingText: viewModel.currentLoadingText
             )
         }
     }

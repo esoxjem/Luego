@@ -103,14 +103,25 @@ final class DIContainer {
     }()
 
     private func makeFetchRandomArticleUseCase(for source: DiscoverySource) -> FetchRandomArticleUseCaseProtocol {
-        let repository: DiscoverySourceProtocol = switch source {
-        case .kagiSmallWeb: kagiSmallWebRepository
-        case .blogroll: blogrollRepository
+        switch source {
+        case .kagiSmallWeb:
+            return FetchRandomArticleUseCase(
+                source: .kagiSmallWeb,
+                sourceRepository: kagiSmallWebRepository,
+                metadataRepository: metadataRepository
+            )
+        case .blogroll:
+            return FetchRandomArticleUseCase(
+                source: .blogroll,
+                sourceRepository: blogrollRepository,
+                metadataRepository: metadataRepository
+            )
+        case .surpriseMe:
+            return SurpriseMeFetchRandomArticleUseCase(
+                kagiUseCase: makeFetchRandomArticleUseCase(for: .kagiSmallWeb),
+                blogrollUseCase: makeFetchRandomArticleUseCase(for: .blogroll)
+            )
         }
-        return FetchRandomArticleUseCase(
-            sourceRepository: repository,
-            metadataRepository: metadataRepository
-        )
     }
 
     func makeArticleListViewModel() -> ArticleListViewModel {

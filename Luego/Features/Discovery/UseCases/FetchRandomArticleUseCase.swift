@@ -4,6 +4,7 @@ protocol FetchRandomArticleUseCaseProtocol: Sendable {
     func execute() async throws -> EphemeralArticle
     func execute(onArticleEntryFetched: @escaping @MainActor (URL) -> Void) async throws -> EphemeralArticle
     func clearCache()
+    func prepareForFetch() -> DiscoverySource
 }
 
 enum DiscoveryError: LocalizedError {
@@ -19,15 +20,22 @@ enum DiscoveryError: LocalizedError {
 
 @MainActor
 final class FetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol {
+    private let source: DiscoverySource
     private let sourceRepository: DiscoverySourceProtocol
     private let metadataRepository: MetadataRepositoryProtocol
 
     init(
+        source: DiscoverySource,
         sourceRepository: DiscoverySourceProtocol,
         metadataRepository: MetadataRepositoryProtocol
     ) {
+        self.source = source
         self.sourceRepository = sourceRepository
         self.metadataRepository = metadataRepository
+    }
+
+    func prepareForFetch() -> DiscoverySource {
+        source
     }
 
     func execute() async throws -> EphemeralArticle {

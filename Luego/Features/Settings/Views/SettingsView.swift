@@ -65,7 +65,9 @@ struct DiscoverySourceRow: View {
                         Text(source.displayName)
                             .foregroundStyle(.primary)
 
-                        SourceWebsiteLinkButton(url: source.websiteURL, openURL: openURL)
+                        if let websiteURL = source.websiteURL {
+                            SourceWebsiteLinkButton(url: websiteURL, openURL: openURL)
+                        }
                     }
 
                     Text(source.descriptionText)
