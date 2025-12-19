@@ -7,9 +7,9 @@ protocol SharedStorageRepositoryProtocol: Sendable {
 
 @MainActor
 final class SharedStorageRepository: SharedStorageRepositoryProtocol {
-    private let userDefaultsDataSource: UserDefaultsDataSource
+    private let userDefaultsDataSource: UserDefaultsDataSourceProtocol
 
-    init(userDefaultsDataSource: UserDefaultsDataSource) {
+    init(userDefaultsDataSource: UserDefaultsDataSourceProtocol) {
         self.userDefaultsDataSource = userDefaultsDataSource
     }
 

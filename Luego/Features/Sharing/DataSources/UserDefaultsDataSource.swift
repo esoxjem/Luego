@@ -1,9 +1,15 @@
 import Foundation
 
-final class UserDefaultsDataSource {
-    private let sharedStorage: SharedStorage
+protocol UserDefaultsDataSourceProtocol: Sendable {
+    func getSharedURLs() -> [URL]
+    func clearSharedURLs()
+}
 
-    init(sharedStorage: SharedStorage = .shared) {
+@MainActor
+final class UserDefaultsDataSource: UserDefaultsDataSourceProtocol {
+    private let sharedStorage: SharedStorageDataSourceProtocol
+
+    init(sharedStorage: SharedStorageDataSourceProtocol) {
         self.sharedStorage = sharedStorage
     }
 

@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 protocol SyncSharedArticlesUseCaseProtocol: Sendable {
     func execute() async throws -> [Article]
@@ -9,6 +10,7 @@ final class SyncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol {
     private let sharedStorageRepository: SharedStorageRepositoryProtocol
     private let articleRepository: ArticleRepositoryProtocol
     private let metadataRepository: MetadataRepositoryProtocol
+    private let logger = Logger(subsystem: "com.esoxjem.Luego", category: "SyncSharedArticles")
 
     init(
         sharedStorageRepository: SharedStorageRepositoryProtocol,
@@ -47,6 +49,7 @@ final class SyncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol {
                 let savedArticle = try await articleRepository.save(article)
                 newArticles.append(savedArticle)
             } catch {
+                logger.error("Failed to sync shared article from \(url.absoluteString): \(error.localizedDescription)")
                 continue
             }
         }

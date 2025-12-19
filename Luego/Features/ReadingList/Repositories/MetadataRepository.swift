@@ -1,7 +1,7 @@
 import Foundation
 import SwiftSoup
 
-protocol MetadataRepositoryProtocol {
+protocol MetadataRepositoryProtocol: Sendable {
     func validateURL(_ url: URL) async throws -> URL
     func fetchMetadata(for url: URL, timeout: TimeInterval?) async throws -> ArticleMetadata
     func fetchContent(for url: URL, timeout: TimeInterval?) async throws -> ArticleContent

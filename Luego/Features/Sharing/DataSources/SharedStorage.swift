@@ -1,12 +1,19 @@
 import Foundation
 import os
 
-struct SharedURL: Codable {
+struct SharedURL: Codable, Sendable {
     let url: URL
     let timestamp: Date
 }
 
-final class SharedStorage {
+protocol SharedStorageDataSourceProtocol: Sendable {
+    func saveSharedURL(_ url: URL)
+    func getSharedURLs() -> [SharedURL]
+    func clearSharedURLs()
+}
+
+@MainActor
+final class SharedStorage: SharedStorageDataSourceProtocol {
     static let shared = SharedStorage()
 
     private let appGroupIdentifier = "group.com.esoxjem.Luego"
@@ -27,7 +34,6 @@ final class SharedStorage {
 
         if let encoded = try? JSONEncoder().encode(sharedURLs) {
             userDefaults.set(encoded, forKey: sharedURLsKey)
-            userDefaults.synchronize()
         }
     }
 
@@ -45,6 +51,5 @@ final class SharedStorage {
             return
         }
         userDefaults.removeObject(forKey: sharedURLsKey)
-        userDefaults.synchronize()
     }
 }

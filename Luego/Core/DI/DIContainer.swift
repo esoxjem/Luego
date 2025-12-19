@@ -9,8 +9,8 @@ final class DIContainer {
         self.modelContext = modelContext
     }
 
-    private lazy var userDefaultsDataSource: UserDefaultsDataSource = {
-        UserDefaultsDataSource()
+    private lazy var userDefaultsDataSource: UserDefaultsDataSourceProtocol = {
+        UserDefaultsDataSource(sharedStorage: SharedStorage.shared)
     }()
 
     private lazy var turndownDataSource: TurndownDataSource = {
