@@ -62,10 +62,11 @@ Example entry:
 
 ## Data Flow
 
-1. **Fetch Random Article**:
+1. **Fetch Random Article** (two-phase with progress callback):
    - `SmallWebRepository.randomArticleEntry()` returns a random `SmallWebArticleEntry`
    - Uses cached OPML data if valid (24-hour cache)
-   - `MetadataRepository.fetchContent()` fetches article content from the URL
+   - **Progress callback** fires immediately with the article URL (enables early UI feedback)
+   - `MetadataRepository.fetchContent()` fetches article content from the URL (slow, up to 10s)
    - Returns `EphemeralArticle` (not persisted until user saves)
 
 2. **Save to Reading List**:
@@ -101,16 +102,22 @@ Example entry:
 
 | File | Description |
 |------|-------------|
-| `UseCases/FetchRandomArticleUseCase.swift` | Gets random article from SmallWeb |
+| `UseCases/FetchRandomArticleUseCase.swift` | Gets random article from SmallWeb. Supports progress callback via `execute(onArticleEntryFetched:)` to report URL before content loads. |
 | `UseCases/SaveDiscoveredArticleUseCase.swift` | Converts ephemeral article to persisted Article |
 
 ### Views
 
 | File | Description |
 |------|-------------|
-| `Views/DiscoveryViewModel.swift` | State management with auto-retry on fetch errors (up to 5 attempts) |
-| `Views/DiscoveryReaderView.swift` | Main view with toolbar, loading, error states |
+| `Views/DiscoveryViewModel.swift` | State management with auto-retry on fetch errors (up to 5 attempts). Exposes `pendingArticleURL` for early loading feedback. |
+| `Views/DiscoveryReaderView.swift` | Main view with toolbar, loading, error states. Contains `LoadingDomainChip` with shimmer effect. |
 | `Views/DiscoveryArticleContentView.swift` | Article content display with markdown |
+
+### Shared UI
+
+| File | Description |
+|------|-------------|
+| `Core/UI/ShimmerModifier.swift` | Reusable animated gradient overlay for loading states. Apply via `.shimmer()` modifier. |
 
 ## Caching
 
@@ -160,9 +167,12 @@ func makeDiscoveryViewModel() -> DiscoveryViewModel
 
 ## UI Components
 
-- **DiscoveryLoadingView**: Spinner with "Finding something interesting..."
+- **DiscoveryLoadingView**: Spinner with "Finding something interesting..." and domain chip (when URL is known)
+- **LoadingDomainChip**: Displays target domain with shimmer animation during content fetch. Uses `Core/UI/ShimmerModifier`.
 - **DiscoveryErrorView**: Error message with "Try Another" button
 - **DiscoveryToolbar**: Menu with Save, Try Another (dice), Share, Open in Browser, Refresh Article Pool
+
+**Shimmer Effect**: The `ShimmerModifier` (`Core/UI/ShimmerModifier.swift`) creates an animated gradient highlight that sweeps across the chip, providing visual feedback that content is loading. Reusable across other views via `.shimmer()` modifier.
 
 ## Debug Logging
 
