@@ -6,19 +6,35 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ArticleListView: View {
     @Environment(\.diContainer) private var diContainer
     @Environment(\.scenePhase) private var scenePhase
+    @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
     @State private var viewModel: ArticleListViewModel?
+    @State private var discoveryViewModel: DiscoveryViewModel?
     @State private var showingAddArticle = false
     @State private var showingDiscovery = false
     let filter: ArticleFilter
 
+    private var filteredArticles: [Article] {
+        switch filter {
+        case .readingList:
+            return allArticles.filter { !$0.isArchived }
+        case .favorites:
+            return allArticles.filter { $0.isFavorite && !$0.isArchived }
+        case .archived:
+            return allArticles.filter { $0.isArchived }
+        }
+    }
+
     var body: some View {
         ArticleListContent(
+            articles: filteredArticles,
             viewModel: viewModel,
             diContainer: diContainer,
+            filter: filter,
             onAddArticle: { showingAddArticle = true }
         )
         .navigationTitle(navigationTitle)
@@ -44,16 +60,23 @@ struct ArticleListView: View {
         }
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
-                AddArticleView(viewModel: viewModel)
+                AddArticleView(viewModel: viewModel, existingArticles: allArticles)
             }
         }
         .fullScreenCover(isPresented: $showingDiscovery) {
-            if let container = diContainer {
-                DiscoveryReaderView(viewModel: container.makeDiscoveryViewModel())
+            if let vm = discoveryViewModel {
+                DiscoveryReaderView(viewModel: vm)
+            }
+        }
+        .onChange(of: showingDiscovery) { _, isShowing in
+            if isShowing, discoveryViewModel == nil, let container = diContainer {
+                discoveryViewModel = container.makeDiscoveryViewModel()
+            } else if !isShowing {
+                discoveryViewModel = nil
             }
         }
         .task {
-            await initializeViewModelIfNeeded()
+            initializeViewModelIfNeeded()
         }
         .onChange(of: scenePhase) { _, newPhase in
             Task {
@@ -62,11 +85,9 @@ struct ArticleListView: View {
         }
     }
 
-    private func initializeViewModelIfNeeded() async {
+    private func initializeViewModelIfNeeded() {
         guard viewModel == nil, let container = diContainer else { return }
         viewModel = container.makeArticleListViewModel()
-        viewModel?.setFilter(filter)
-        await viewModel?.loadArticles()
     }
 
     private func handleScenePhaseChange(_ phase: ScenePhase) async {
@@ -105,17 +126,19 @@ struct ArticleListView: View {
 }
 
 struct ArticleListContent: View {
+    let articles: [Article]
     let viewModel: ArticleListViewModel?
     let diContainer: DIContainer?
+    let filter: ArticleFilter
     let onAddArticle: () -> Void
 
     var body: some View {
         Group {
             if let viewModel {
-                if viewModel.filteredArticles.isEmpty {
-                    ArticleListEmptyState(onAddArticle: onAddArticle, filter: viewModel.filter)
+                if articles.isEmpty {
+                    ArticleListEmptyState(onAddArticle: onAddArticle, filter: filter)
                 } else {
-                    ArticleList(viewModel: viewModel, diContainer: diContainer)
+                    ArticleList(articles: articles, viewModel: viewModel, diContainer: diContainer)
                 }
             } else {
                 ProgressView()
@@ -125,12 +148,13 @@ struct ArticleListContent: View {
 }
 
 struct ArticleList: View {
+    let articles: [Article]
     let viewModel: ArticleListViewModel
     let diContainer: DIContainer?
 
     var body: some View {
         List {
-            ForEach(viewModel.filteredArticles) { article in
+            ForEach(articles) { article in
                 NavigationLink {
                     ArticleReaderDestination(article: article, diContainer: diContainer)
                 } label: {

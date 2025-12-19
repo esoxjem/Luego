@@ -4,6 +4,7 @@ struct AddArticleView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var urlText = ""
     @Bindable var viewModel: ArticleListViewModel
+    let existingArticles: [Article]
 
     var body: some View {
         NavigationStack {
@@ -43,7 +44,7 @@ struct AddArticleView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task {
-                            await viewModel.addArticle(from: urlText)
+                            await viewModel.addArticle(from: urlText, existingArticles: existingArticles)
 
                             if viewModel.errorMessage == nil {
                                 dismiss()

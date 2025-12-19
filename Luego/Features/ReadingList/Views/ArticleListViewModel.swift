@@ -11,21 +11,8 @@ enum ArticleFilter {
 @Observable
 @MainActor
 final class ArticleListViewModel {
-    var articles: [Article] = []
-    var filter: ArticleFilter = .readingList
     var isLoading = false
     var errorMessage: String?
-
-    var filteredArticles: [Article] {
-        switch filter {
-        case .readingList:
-            return articles.filter { !$0.isArchived }
-        case .favorites:
-            return articles.filter { $0.isFavorite && !$0.isArchived }
-        case .archived:
-            return articles.filter { $0.isArchived }
-        }
-    }
 
     private let getArticlesUseCase: GetArticlesUseCaseProtocol
     private let addArticleUseCase: AddArticleUseCaseProtocol
@@ -50,15 +37,7 @@ final class ArticleListViewModel {
         self.toggleArchiveUseCase = toggleArchiveUseCase
     }
 
-    func loadArticles() async {
-        do {
-            articles = try await getArticlesUseCase.execute()
-        } catch {
-            errorMessage = "Failed to load articles: \(error.localizedDescription)"
-        }
-    }
-
-    func addArticle(from urlString: String) async {
+    func addArticle(from urlString: String, existingArticles: [Article]) async {
         errorMessage = nil
 
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespaces)) else {
@@ -66,7 +45,7 @@ final class ArticleListViewModel {
             return
         }
 
-        if articles.contains(where: { $0.url == url }) {
+        if existingArticles.contains(where: { $0.url == url }) {
             errorMessage = "This article has already been saved"
             return
         }
@@ -75,8 +54,7 @@ final class ArticleListViewModel {
         defer { isLoading = false }
 
         do {
-            let newArticle = try await addArticleUseCase.execute(url: url)
-            articles.insert(newArticle, at: 0)
+            _ = try await addArticleUseCase.execute(url: url)
         } catch let error as ArticleMetadataError {
             errorMessage = error.localizedDescription
         } catch {
@@ -84,23 +62,9 @@ final class ArticleListViewModel {
         }
     }
 
-    func deleteArticle(at offsets: IndexSet) async {
-        for index in offsets {
-            let article = articles[index]
-            do {
-                try await deleteArticleUseCase.execute(articleId: article.id)
-                articles.remove(at: index)
-            } catch {
-                errorMessage = "Failed to delete article: \(error.localizedDescription)"
-                return
-            }
-        }
-    }
-
     func deleteArticle(_ article: Article) async {
         do {
             try await deleteArticleUseCase.execute(articleId: article.id)
-            articles.removeAll { $0.id == article.id }
         } catch {
             errorMessage = "Failed to delete article: \(error.localizedDescription)"
         }
@@ -108,10 +72,7 @@ final class ArticleListViewModel {
 
     func syncSharedArticles() async {
         do {
-            let newArticles = try await syncSharedArticlesUseCase.execute()
-            if !newArticles.isEmpty {
-                articles.insert(contentsOf: newArticles, at: 0)
-            }
+            _ = try await syncSharedArticlesUseCase.execute()
         } catch {
             errorMessage = "Failed to sync shared articles: \(error.localizedDescription)"
         }
@@ -124,7 +85,6 @@ final class ArticleListViewModel {
     func toggleFavorite(_ article: Article) async {
         do {
             try await toggleFavoriteUseCase.execute(articleId: article.id)
-            article.isFavorite.toggle()
         } catch {
             errorMessage = "Failed to toggle favorite: \(error.localizedDescription)"
         }
@@ -133,13 +93,8 @@ final class ArticleListViewModel {
     func toggleArchive(_ article: Article) async {
         do {
             try await toggleArchiveUseCase.execute(articleId: article.id)
-            article.isArchived.toggle()
         } catch {
             errorMessage = "Failed to toggle archive: \(error.localizedDescription)"
         }
-    }
-
-    func setFilter(_ newFilter: ArticleFilter) {
-        filter = newFilter
     }
 }
