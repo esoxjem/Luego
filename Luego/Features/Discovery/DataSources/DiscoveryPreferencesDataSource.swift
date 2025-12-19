@@ -11,7 +11,7 @@ final class DiscoveryPreferencesDataSource: DiscoveryPreferencesDataSourceProtoc
     func getSelectedSource() -> DiscoverySource {
         guard let rawValue = UserDefaults.standard.string(forKey: selectedSourceKey),
               let source = DiscoverySource(rawValue: rawValue) else {
-            return .kagiSmallWeb
+            return .surpriseMe
         }
         return source
     }
