@@ -45,6 +45,17 @@ Claude Code includes an `ios-build-fixer` agent that:
 - **Features/*/Repositories/**: Repository protocols and implementations
 - **Features/*/Views/**: ViewModels and Views using models
 
+## Feature Documentation
+
+**Detailed feature documentation is in `agent_docs/`**. Consult these docs before modifying a feature, and update them after making changes.
+
+| Document | Feature |
+|----------|---------|
+| [agent_docs/discovery.md](agent_docs/discovery.md) | Discovery - random article exploration from Kagi Small Web and Blogroll.org |
+| [agent_docs/reader.md](agent_docs/reader.md) | Reader - article reading with markdown rendering and position tracking |
+
+These docs cover architecture, data flow, caching strategies, error handling, and file references for each feature.
+
 ## Architecture & Patterns
 
 ### Pragmatic Architecture
