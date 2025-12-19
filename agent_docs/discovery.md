@@ -99,14 +99,14 @@ Example entry:
 
 | File | Description |
 |------|-------------|
-| `UseCases/FetchRandomArticleUseCase.swift` | Gets random article with retry logic (3 attempts) |
+| `UseCases/FetchRandomArticleUseCase.swift` | Gets random article from SmallWeb |
 | `UseCases/SaveDiscoveredArticleUseCase.swift` | Converts ephemeral article to persisted Article |
 
 ### Views
 
 | File | Description |
 |------|-------------|
-| `Views/DiscoveryViewModel.swift` | State management for discovery flow |
+| `Views/DiscoveryViewModel.swift` | State management with auto-retry on fetch errors (up to 5 attempts) |
 | `Views/DiscoveryReaderView.swift` | Main view with toolbar, loading, error states |
 | `Views/DiscoveryArticleContentView.swift` | Article content display with markdown |
 
@@ -121,12 +121,13 @@ Cache stores title, articleUrl, and htmlUrl for each entry.
 
 ## Error Handling
 
+**Auto-Skip Behavior**: When an article fails to load (timeout, dead URL, etc.), the ViewModel automatically tries another article. Errors are only shown after 5 consecutive failures, indicating a likely network issue.
+
 | Error | Cause | User Message |
 |-------|-------|--------------|
 | `SmallWebError.fetchFailed` | Network error fetching OPML | "Could not load the article list" |
 | `SmallWebError.parsingFailed` | Empty or invalid OPML | "Could not parse the article list" |
 | `SmallWebError.noArticlesAvailable` | Empty article list | "No articles available" |
-| `DiscoveryError.allAttemptsFailed` | 3 consecutive fetch failures | "Could not find a working article after multiple attempts" |
 | `DiscoveryError.contentFetchFailed` | Article content fetch failed | "Could not load article content" |
 
 ## Entry Points
@@ -156,5 +157,5 @@ func makeDiscoveryViewModel() -> DiscoveryViewModel
 
 - Mock `SmallWebRepositoryProtocol` to return controlled `SmallWebArticleEntry` values
 - Mock `MetadataRepositoryProtocol` to avoid network calls
-- Test retry logic in `FetchRandomArticleUseCase` by simulating failures
+- Test auto-retry logic in `DiscoveryViewModel` by simulating consecutive failures
 - Test cache expiration logic in `SmallWebRepository`

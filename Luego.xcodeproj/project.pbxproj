@@ -68,6 +68,11 @@
 			path = docs;
 			sourceTree = "<group>";
 		};
+		6060B4192EF509290021B178 /* agent_docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = agent_docs;
+			sourceTree = "<group>";
+		};
 		607598912EC1FC8D00BEE86E /* Luego */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -109,6 +114,7 @@
 		607598862EC1FC8D00BEE86E = {
 			isa = PBXGroup;
 			children = (
+				6060B4192EF509290021B178 /* agent_docs */,
 				600EEBCD2ED6C294005459C8 /* docs */,
 				601507252EC4B31A00CADAFB /* README.md */,
 				601505C22EC3650D00CADAFB /* ARCHITECTURE.md */,
