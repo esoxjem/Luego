@@ -1,5 +1,7 @@
 # Luego
-A minimal, offline read-it-later iOS app. I've built this app as an alternative to [Pocket](https://getpocket.com/) using [Claude Code](CLAUDE.md). [Try it on TestFlight](https://testflight.apple.com/join/XCNeNBsA).
+A minimal, offline read-it-later iOS app. I've built this app as an alternative to [Pocket](https://getpocket.com/). 
+
+[Download](https://apps.apple.com/us/app/luego/id6755436648) on the App Store or [Join Beta](https://testflight.apple.com/join/XCNeNBsA) on TestFlight.
 <p>
   <img src="docs/screenshots/App Store Screenshot 1.jpg" width="180" />
   <img src="docs/screenshots/App Store Screenshot 2.jpg" width="180" />
