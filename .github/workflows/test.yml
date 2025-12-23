@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: List available simulators
+        run: xcrun simctl list devices available | grep "iPhone"
+
+      - name: Boot Simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j | jq -r '.devices | to_entries | .[] | select(.key | contains("iOS")) | .value[] | select(.name == "iPhone 17 Pro") | .udid' | head -1)
+          echo "Booting simulator: $DEVICE_ID"
+          xcrun simctl boot "$DEVICE_ID" || true
+          xcrun simctl list devices | grep "iPhone 17 Pro"
+
+      - name: Build and Test
+        run: |
+          xcodebuild test \
+            -project Luego.xcodeproj \
+            -scheme Luego \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -resultBundlePath TestResults \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcpretty --color || exit ${PIPESTATUS[0]}
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults
+          retention-days: 7
