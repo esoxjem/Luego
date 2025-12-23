@@ -61,10 +61,26 @@ final class ArticleRepository: ArticleRepositoryProtocol {
     }
 
     func toggleFavorite(id: UUID) async throws {
+        let predicate = #Predicate<Article> { $0.id == id }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+
+        guard let article = try modelContext.fetch(descriptor).first else {
+            return
+        }
+
+        article.isFavorite.toggle()
         try modelContext.save()
     }
 
     func toggleArchive(id: UUID) async throws {
+        let predicate = #Predicate<Article> { $0.id == id }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+
+        guard let article = try modelContext.fetch(descriptor).first else {
+            return
+        }
+
+        article.isArchived.toggle()
         try modelContext.save()
     }
 }
