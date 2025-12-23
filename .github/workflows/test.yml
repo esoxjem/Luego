@@ -28,6 +28,12 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available | grep "iPhone"
 
+      - name: Lower iOS deployment target for CI
+        run: |
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 26\.0/IPHONEOS_DEPLOYMENT_TARGET = 18.2/g' Luego.xcodeproj/project.pbxproj
+          echo "Updated deployment targets:"
+          grep "IPHONEOS_DEPLOYMENT_TARGET" Luego.xcodeproj/project.pbxproj
+
       - name: Boot Simulator
         run: |
           DEVICE_ID=$(xcrun simctl list devices available -j | jq -r '.devices | to_entries | .[] | select(.key | contains("iOS")) | .value[] | select(.name == "iPhone 17 Pro") | .udid' | head -1)
@@ -44,7 +50,6 @@ jobs:
             -resultBundlePath TestResults \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            IPHONEOS_DEPLOYMENT_TARGET=18.2 \
             | xcpretty --color || exit ${PIPESTATUS[0]}
 
       - name: Upload Test Results
