@@ -28,15 +28,23 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available | grep "iPhone"
 
+      - name: Boot Simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j | jq -r '.devices | to_entries | .[] | select(.key | contains("iOS")) | .value[] | select(.name == "iPhone 17 Pro") | .udid' | head -1)
+          echo "Booting simulator: $DEVICE_ID"
+          xcrun simctl boot "$DEVICE_ID" || true
+          xcrun simctl list devices | grep "iPhone 17 Pro"
+
       - name: Build and Test
         run: |
           xcodebuild test \
             -project Luego.xcodeproj \
             -scheme Luego \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -resultBundlePath TestResults \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
+            IPHONEOS_DEPLOYMENT_TARGET=18.0 \
             | xcpretty --color || exit ${PIPESTATUS[0]}
 
       - name: Upload Test Results
