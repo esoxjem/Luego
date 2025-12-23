@@ -303,16 +303,98 @@ struct ReaderView: View {
 
 ## Testing
 
-Currently, no test targets are configured. When adding tests:
-1. Create a test target via Xcode: File → New → Target → Unit Testing Bundle
-2. Add test files with `XCTestCase` subclasses
-3. Run tests:
-   - **With Claude Code**: Ask "Run the tests" - the ios-build-fixer agent will handle simulator selection and test execution
-   - **In Xcode**: Press ⌘U
-   - **Manual command line**: `xcodebuild test -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=<SIMULATOR_NAME>'`
-     (Check available simulators first using `xcrun simctl list devices available | grep "iPhone"`)
+The project has comprehensive unit tests using Swift Testing framework (`@Suite`, `@Test`, `#expect`).
 
-**Recommended Test Coverage:**
-- ArticleMetadataService: URL validation, HTML parsing, error handling
-- ArticleListViewModel: Add/delete operations, state management
-- Article model: Codable conformance, domain computation
+### Running Tests
+- **With Claude Code**: Ask "Run the tests" - the ios-build-fixer agent handles simulator selection
+- **In Xcode**: Press ⌘U
+- **Command line**: `xcodebuild test -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=iPhone 17'`
+
+### Test Directory Structure
+
+Tests mirror the source structure for easy navigation:
+
+```
+LuegoTests/
+├── Features/                    # Feature tests (mirrors Luego/Features/)
+│   ├── ReadingList/
+│   │   ├── UseCases/           # AddArticleUseCaseTests, DeleteArticleUseCaseTests, etc.
+│   │   ├── Repositories/       # ArticleRepositoryTests
+│   │   └── ViewModels/         # ArticleListViewModelTests
+│   ├── Reader/
+│   │   ├── UseCases/           # FetchArticleContentUseCaseTests, etc.
+│   │   └── ViewModels/         # ReaderViewModelTests
+│   ├── Discovery/
+│   │   ├── UseCases/           # FetchRandomArticleUseCaseTests, etc.
+│   │   └── ViewModels/         # DiscoveryViewModelTests
+│   ├── Sharing/
+│   │   └── UseCases/           # SyncSharedArticlesUseCaseTests
+│   └── Settings/
+│       └── ViewModels/         # SettingsViewModelTests
+├── Core/                        # Core tests (mirrors Luego/Core/)
+│   ├── Models/                 # ArticleTests, EphemeralArticleTests, etc.
+│   ├── DataSources/            # SeenItemTrackerTests, XMLSanitizerTests
+│   └── UI/Readers/             # MarkdownUtilitiesTests
+└── TestSupport/                 # Shared test infrastructure
+    ├── Mocks/
+    │   ├── Repositories/       # MockArticleRepository, MockMetadataRepository, etc.
+    │   ├── UseCases/           # MockAddArticleUseCase, MockFetchRandomArticleUseCase, etc.
+    │   └── DataSources/        # MockDiscoveryPreferencesDataSource, etc.
+    └── Helpers/                # TestModelContainer, ArticleFixtures, etc.
+```
+
+### Test File Location Convention
+
+Tests are located at the same relative path as their source files:
+- `Luego/Features/ReadingList/UseCases/AddArticleUseCase.swift`
+- → `LuegoTests/Features/ReadingList/UseCases/AddArticleUseCaseTests.swift`
+
+### Adding New Tests
+
+1. Create test file in the mirrored location under `LuegoTests/`
+2. Name the file `<SourceFileName>Tests.swift`
+3. Add mocks to `TestSupport/Mocks/` if needed
+4. Use Swift Testing patterns:
+
+```swift
+import Testing
+import Foundation
+@testable import Luego
+
+@Suite("ComponentName Tests")
+@MainActor
+struct ComponentNameTests {
+    var mockDependency: MockDependency
+    var sut: SystemUnderTest
+
+    init() {
+        mockDependency = MockDependency()
+        sut = SystemUnderTest(dependency: mockDependency)
+    }
+
+    @Test("descriptive behavior")
+    func testBehavior() async throws {
+        #expect(result == expected)
+    }
+}
+```
+
+### Mock Pattern
+
+Mocks use call tracking, argument capture, and configurable behavior:
+
+```swift
+@MainActor
+final class MockArticleRepository: ArticleRepositoryProtocol {
+    var saveCallCount = 0
+    var shouldThrowOnSave = false
+    var lastSavedArticle: Article?
+
+    func save(_ article: Article) async throws -> Article {
+        saveCallCount += 1
+        if shouldThrowOnSave { throw TestError.mockError }
+        lastSavedArticle = article
+        return article
+    }
+}
+```
