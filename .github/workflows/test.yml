@@ -44,7 +44,7 @@ jobs:
             -resultBundlePath TestResults \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            IPHONEOS_DEPLOYMENT_TARGET=18.0 \
+            IPHONEOS_DEPLOYMENT_TARGET=18.2 \
             | xcpretty --color || exit ${PIPESTATUS[0]}
 
       - name: Upload Test Results
