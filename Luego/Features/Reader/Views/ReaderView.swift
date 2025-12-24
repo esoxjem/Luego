@@ -232,7 +232,8 @@ extension ReaderView {
 
             let maxScroll = max(1, contentHeight - viewHeight)
             let position = min(1.0, max(0.0, scrollPosition / maxScroll))
-            await viewModel.updateReadPosition(position)
+            let finalPosition = position >= 0.98 ? 1.0 : position
+            await viewModel.updateReadPosition(finalPosition)
         }
     }
 
@@ -240,6 +241,8 @@ extension ReaderView {
         guard !hasRestoredPosition else { return }
         guard viewModel.article.readPosition > 0 else { return }
         guard contentHeight > 0 && viewHeight > 0 else { return }
+
+        let savedPosition = viewModel.article.readPosition
 
         Task {
             try? await Task.sleep(nanoseconds: 100_000_000)
@@ -250,7 +253,7 @@ extension ReaderView {
 
                 let interpolatedAnchor = UnitPoint(
                     x: 0,
-                    y: topAnchor.y + (bottomAnchor.y - topAnchor.y) * viewModel.article.readPosition
+                    y: topAnchor.y + (bottomAnchor.y - topAnchor.y) * savedPosition
                 )
 
                 withAnimation(.easeOut(duration: 0.3)) {
@@ -263,10 +266,13 @@ extension ReaderView {
 
     private func handleDisappear() {
         saveTask?.cancel()
+
         let maxScroll = max(1, contentHeight - viewHeight)
         let position = min(1.0, max(0.0, scrollPosition / maxScroll))
+        let finalPosition = position >= 0.98 ? 1.0 : position
+
         Task {
-            await viewModel.updateReadPosition(position)
+            await viewModel.updateReadPosition(finalPosition)
         }
     }
 
