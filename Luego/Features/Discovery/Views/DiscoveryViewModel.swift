@@ -25,26 +25,21 @@ final class DiscoveryViewModel {
     var currentLoadingGif: String = KagiLoadingGifRotator.next()
     private var consecutiveFailures = 0
 
-    private let saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol
-    private let articleRepository: ArticleRepositoryProtocol
-    private let currentUseCase: FetchRandomArticleUseCaseProtocol
+    private let discoveryService: DiscoveryServiceProtocol
+    private let articleService: ArticleServiceProtocol
 
     var currentLoadingText: String {
         (activeSource ?? selectedSource).loadingText
     }
 
     init(
-        useCaseFactory: @escaping @MainActor (DiscoverySource) -> FetchRandomArticleUseCaseProtocol,
-        saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol,
-        articleRepository: ArticleRepositoryProtocol,
+        discoveryService: DiscoveryServiceProtocol,
+        articleService: ArticleServiceProtocol,
         preferencesDataSource: DiscoveryPreferencesDataSourceProtocol
     ) {
-        self.saveDiscoveredArticleUseCase = saveDiscoveredArticleUseCase
-        self.articleRepository = articleRepository
-
-        let savedSource = preferencesDataSource.getSelectedSource()
-        self.selectedSource = savedSource
-        self.currentUseCase = useCaseFactory(savedSource)
+        self.discoveryService = discoveryService
+        self.articleService = articleService
+        self.selectedSource = preferencesDataSource.getSelectedSource()
     }
 
     func fetchRandomArticle() async {
@@ -54,14 +49,14 @@ final class DiscoveryViewModel {
         pendingArticleURL = nil
         isSaved = false
 
-        activeSource = currentUseCase.prepareForFetch()
+        activeSource = discoveryService.prepareForFetch(source: selectedSource)
 
         if activeSource == .kagiSmallWeb {
             currentLoadingGif = KagiLoadingGifRotator.next()
         }
 
         do {
-            let article = try await currentUseCase.execute { [weak self] url in
+            let article = try await discoveryService.fetchRandomArticle(from: selectedSource) { [weak self] url in
                 self?.pendingArticleURL = url
             }
             consecutiveFailures = 0
@@ -85,7 +80,7 @@ final class DiscoveryViewModel {
         guard let article = ephemeralArticle else { return }
 
         do {
-            _ = try await saveDiscoveredArticleUseCase.execute(ephemeralArticle: article)
+            _ = try await articleService.saveEphemeralArticle(article)
             isSaved = true
         } catch {
             errorMessage = "Failed to save article"
@@ -98,7 +93,7 @@ final class DiscoveryViewModel {
 
     private func checkIfAlreadySaved(url: URL) async {
         do {
-            let articles = try await articleRepository.getAll()
+            let articles = try await articleService.getAllArticles()
             isSaved = articles.contains { $0.url == url }
         } catch {
             isSaved = false

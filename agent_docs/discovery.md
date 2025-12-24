@@ -52,21 +52,21 @@ This provides fresher content since it fetches the latest posts from each blog r
             ┌──────────────────┼──────────────────┐
             ▼                  ▼                  ▼
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│ FetchRandom     │  │ SaveDiscovered  │  │ Article         │
-│ ArticleUseCase  │  │ ArticleUseCase  │  │ Repository      │
+│ Discovery       │  │ Article         │  │ Preferences     │
+│ Service         │  │ Service         │  │ DataSource      │
 └─────────────────┘  └─────────────────┘  └─────────────────┘
-         │                    │                    │
-         ▼                    │                    │
-┌─────────────────┐           │                    │
-│ Discovery       │           └────────────────────┘
-│ Sources         │                    │
-│ (Protocol)      │                    ▼
-└─────────────────┘           ┌─────────────────┐
-    │         │               │ SwiftData       │
-    ▼         ▼               │ ModelContext    │
-┌───────┐ ┌───────┐           └─────────────────┘
+         │                    │
+         ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐
+│ Discovery       │  │ SwiftData       │
+│ DataSources     │  │ ModelContext    │
+│ (Protocol)      │  └─────────────────┘
+└─────────────────┘
+    │         │
+    ▼         ▼
+┌───────┐ ┌───────┐
 │ Kagi  │ │Blogroll│
-│ Repo  │ │ Repo  │
+│DataSrc│ │DataSrc│
 └───────┘ └───────┘
     │         │
     ▼         ▼
@@ -82,20 +82,20 @@ This provides fresher content since it fetches the latest posts from each blog r
    - `DiscoverySourceProtocol.randomArticleEntry()` returns a random `SmallWebArticleEntry`
    - Uses cached data if valid (24-hour cache per source)
    - **Progress callback** fires immediately with the article URL (enables early UI feedback)
-   - `MetadataRepository.fetchContent()` fetches article content from the URL (slow, up to 10s)
+   - `MetadataDataSource.fetchContent()` fetches article content from the URL (slow, up to 10s)
    - Returns `EphemeralArticle` (not persisted until user saves)
 
 2. **Save to Reading List**:
-   - `SaveDiscoveredArticleUseCase` converts `EphemeralArticle` to `Article`
-   - Persists via `ArticleRepository`
+   - `ArticleService.saveEphemeralArticle()` converts `EphemeralArticle` to `Article`
+   - Persists via SwiftData ModelContext
 
 3. **Check if Already Saved**:
-   - ViewModel queries `ArticleRepository.getAll()` to check URL match
+   - ViewModel queries `ArticleService.getAllArticles()` to check URL match
    - Updates `isSaved` state to show checkmark instead of save button
 
 4. **Source Selection**:
    - User preference stored via `DiscoveryPreferencesDataSource`
-   - `FetchRandomArticleUseCase` routes to appropriate repository based on selected source
+   - `DiscoveryService` routes to appropriate DataSource based on selected source
 
 ## Files
 
@@ -114,22 +114,16 @@ This provides fresher content since it fetches the latest posts from each blog r
 | `DataSources/OPMLDataSource.swift` | XML parser for Kagi OPML format with ampersand sanitization |
 | `DataSources/BlogrollRSSDataSource.swift` | RSS parser for blogroll.org feed (extracts blog feed URLs) |
 | `DataSources/GenericRSSDataSource.swift` | Generic RSS parser for individual blog feeds (extracts post URLs) |
+| `DataSources/KagiSmallWebDataSource.swift` | Fetches/caches Kagi OPML, provides random articles. Implements `DiscoverySourceProtocol`. |
+| `DataSources/BlogrollDataSource.swift` | Fetches/caches blogroll, fetches blog feeds, provides random posts. Implements `DiscoverySourceProtocol`. |
 | `DataSources/DiscoveryPreferencesDataSource.swift` | Stores user's selected discovery source preference |
 | `Core/DataSources/SeenItemTracker.swift` | Hash-based tracking of seen items with auto-reset |
 
-### Repositories
+### Services
 
 | File | Description |
 |------|-------------|
-| `Repositories/KagiSmallWebRepository.swift` | Fetches/caches Kagi OPML, provides random articles. Implements `DiscoverySourceProtocol`. |
-| `Repositories/BlogrollRepository.swift` | Fetches/caches blogroll, fetches blog feeds, provides random posts. Implements `DiscoverySourceProtocol`. |
-
-### UseCases
-
-| File | Description |
-|------|-------------|
-| `UseCases/FetchRandomArticleUseCase.swift` | Routes to appropriate source based on user preference. Supports progress callback via `execute(onArticleEntryFetched:)`. |
-| `UseCases/SaveDiscoveredArticleUseCase.swift` | Converts ephemeral article to persisted Article |
+| `Services/DiscoveryService.swift` | Orchestrates random article fetching from all sources. Supports progress callback via `fetchRandomArticle(from:onArticleEntryFetched:)`. |
 
 ### Views
 
@@ -195,11 +189,11 @@ private func stableHash(_ string: String) -> UInt64 {
 
 ### Force Refresh
 
-Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This calls `clearCache()` on the active repository, clearing both the article pool and seen-item hashes.
+Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This calls `clearCache()` on DiscoveryService, clearing both the article pool and seen-item hashes.
 
 ## Error Handling
 
-**10-Second Timeout**: Discovery article fetches use a 10-second timeout (passed via `FetchRandomArticleUseCase`). If an article doesn't respond in time, the system automatically moves to the next article. This timeout is specific to Discovery—the normal reader uses URLSession's default timeout.
+**10-Second Timeout**: Discovery article fetches use a 10-second timeout (passed to MetadataDataSource). If an article doesn't respond in time, the system automatically moves to the next article. This timeout is specific to Discovery—the normal reader uses URLSession's default timeout.
 
 **Auto-Skip Behavior**: When an article fails to load (timeout, dead URL, etc.), the ViewModel automatically tries another article. Errors are only shown after 5 consecutive failures, indicating a likely network issue.
 
@@ -221,7 +215,7 @@ Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This
 | `BlogrollError.blogFeedFetchFailed` | Failed to fetch individual blog's RSS | "Could not load the blog's feed" |
 | `BlogrollError.noPostsInBlogFeed` | Blog feed has no posts | "No posts found in this blog" |
 
-**Blogroll Retry Logic**: `BlogrollRepository` retries up to 5 times when fetching random articles, automatically skipping blogs with broken feeds.
+**Blogroll Retry Logic**: `BlogrollDataSource` retries up to 5 times when fetching random articles, automatically skipping blogs with broken feeds.
 
 ### General Errors
 
@@ -241,10 +235,9 @@ Users can clear the cache via "Refresh Article Pool" in the Discovery menu. This
 private lazy var opmlDataSource: OPMLDataSource
 private lazy var blogrollRSSDataSource: BlogrollRSSDataSource
 private lazy var genericRSSDataSource: GenericRSSDataSource
-private lazy var kagiSmallWebRepository: KagiSmallWebRepository
-private lazy var blogrollRepository: BlogrollRepository
-private lazy var fetchRandomArticleUseCase: FetchRandomArticleUseCaseProtocol
-private lazy var saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol
+private lazy var kagiSmallWebDataSource: KagiSmallWebDataSource
+private lazy var blogrollDataSource: BlogrollDataSource
+private lazy var discoveryService: DiscoveryServiceProtocol
 
 func makeDiscoveryViewModel() -> DiscoveryViewModel
 ```
@@ -269,10 +262,12 @@ Debug builds include logging (wrapped in `#if DEBUG`) for:
 
 ## Testing Considerations
 
+- Mock `DiscoveryServiceProtocol` to control article fetching behavior
+- Mock `ArticleServiceProtocol` to control save operations
 - Mock `DiscoverySourceProtocol` to return controlled `SmallWebArticleEntry` values
-- Mock `MetadataRepositoryProtocol` to avoid network calls
+- Mock `MetadataDataSourceProtocol` to avoid network calls
 - Test auto-retry logic in `DiscoveryViewModel` by simulating consecutive failures
-- Test cache expiration logic in both `KagiSmallWebRepository` and `BlogrollRepository`
+- Test cache expiration logic in both `KagiSmallWebDataSource` and `BlogrollDataSource`
 - Test XML sanitization with malformed ampersands in `OPMLDataSource`
 - Test `SeenItemTracker` hash persistence and auto-reset behavior
 - Test blogroll's two-step fetch (blogroll → blog feed → random post)

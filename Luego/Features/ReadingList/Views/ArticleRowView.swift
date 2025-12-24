@@ -42,17 +42,9 @@ struct ArticleContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                Text(title)
-                    .font(.system(.headline, design: .serif))
-                    .lineLimit(2)
-
-                if isFavorite {
-                    Image(systemName: "heart.fill")
-                        .font(.caption)
-                        .foregroundStyle(.pink)
-                }
-            }
+            titleWithFavoriteIndicator
+                .font(.system(.headline, design: .serif))
+                .lineLimit(2)
 
             Text(domain)
                 .font(.subheadline)
@@ -69,6 +61,17 @@ struct ArticleContentView: View {
                 hasContent: hasContent
             )
         }
+    }
+
+    private var titleWithFavoriteIndicator: Text {
+        let titleText = Text(title)
+        guard isFavorite else { return titleText }
+
+        let heartIcon = Text(" \(Image(systemName: "heart.fill"))")
+            .font(.caption)
+            .foregroundStyle(.pink)
+
+        return titleText + heartIcon
     }
 }
 

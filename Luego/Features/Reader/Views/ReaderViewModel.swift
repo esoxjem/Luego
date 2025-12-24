@@ -9,19 +9,16 @@ final class ReaderViewModel {
     var isLoading: Bool
     var errorMessage: String?
 
-    private let fetchContentUseCase: FetchArticleContentUseCaseProtocol
-    private let updateReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol
+    private let readerService: ReaderServiceProtocol
 
     init(
         article: Article,
-        fetchContentUseCase: FetchArticleContentUseCaseProtocol,
-        updateReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol
+        readerService: ReaderServiceProtocol
     ) {
         self.article = article
         self.articleContent = article.content
         self.isLoading = article.content == nil
-        self.fetchContentUseCase = fetchContentUseCase
-        self.updateReadPositionUseCase = updateReadPositionUseCase
+        self.readerService = readerService
     }
 
     func loadContent() async {
@@ -31,7 +28,7 @@ final class ReaderViewModel {
         errorMessage = nil
 
         do {
-            let updatedArticle = try await fetchContentUseCase.execute(article: article, forceRefresh: false)
+            let updatedArticle = try await readerService.fetchContent(for: article, forceRefresh: false)
             article = updatedArticle
             articleContent = updatedArticle.content
             isLoading = false
@@ -46,7 +43,7 @@ final class ReaderViewModel {
         errorMessage = nil
 
         do {
-            let updatedArticle = try await fetchContentUseCase.execute(article: article, forceRefresh: true)
+            let updatedArticle = try await readerService.fetchContent(for: article, forceRefresh: true)
             article = updatedArticle
             articleContent = updatedArticle.content
             isLoading = false
@@ -61,7 +58,7 @@ final class ReaderViewModel {
         article.readPosition = clampedPosition
 
         do {
-            try await updateReadPositionUseCase.execute(articleId: article.id, position: clampedPosition)
+            try await readerService.updateReadPosition(articleId: article.id, position: clampedPosition)
         } catch {
             errorMessage = "Failed to save read position: \(error.localizedDescription)"
         }

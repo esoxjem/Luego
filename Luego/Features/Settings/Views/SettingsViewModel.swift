@@ -7,14 +7,14 @@ final class SettingsViewModel {
     var didRefreshPool = false
 
     private let preferencesDataSource: DiscoveryPreferencesDataSourceProtocol
-    private let discoveryRepositories: [DiscoverySourceProtocol]
+    private let discoveryService: DiscoveryServiceProtocol
 
     init(
         preferencesDataSource: DiscoveryPreferencesDataSourceProtocol,
-        discoveryRepositories: [DiscoverySourceProtocol]
+        discoveryService: DiscoveryServiceProtocol
     ) {
         self.preferencesDataSource = preferencesDataSource
-        self.discoveryRepositories = discoveryRepositories
+        self.discoveryService = discoveryService
         self.selectedDiscoverySource = preferencesDataSource.getSelectedSource()
     }
 
@@ -24,7 +24,7 @@ final class SettingsViewModel {
     }
 
     func refreshArticlePool() {
-        discoveryRepositories.forEach { $0.clearCache() }
+        discoveryService.clearAllCaches()
         didRefreshPool = true
     }
 }

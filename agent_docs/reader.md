@@ -15,17 +15,16 @@ The Reader feature displays saved articles in a clean, distraction-free reading 
 │                       ReaderViewModel                            │
 └─────────────────────────────────────────────────────────────────┘
                                │
+                               ▼
+                    ┌─────────────────────┐
+                    │   ReaderService     │
+                    └─────────────────────┘
+                               │
             ┌──────────────────┴──────────────────┐
             ▼                                     ▼
 ┌─────────────────────┐              ┌─────────────────────┐
-│ FetchArticleContent │              │ UpdateArticleRead   │
-│ UseCase             │              │ PositionUseCase     │
-└─────────────────────┘              └─────────────────────┘
-            │                                     │
-            ▼                                     ▼
-┌─────────────────────┐              ┌─────────────────────┐
-│ Metadata            │              │ Article             │
-│ Repository          │              │ Repository          │
+│ Metadata            │              │ SwiftData           │
+│ DataSource          │              │ ModelContext        │
 └─────────────────────┘              └─────────────────────┘
 ```
 
@@ -33,23 +32,22 @@ The Reader feature displays saved articles in a clean, distraction-free reading 
 
 1. **Load Content**:
    - `ReaderViewModel.loadContent()` checks if article already has content
-   - If not, `FetchArticleContentUseCase` fetches markdown via `MetadataRepository`
+   - If not, `ReaderService.fetchContent()` fetches markdown via `MetadataDataSource`
    - Content is persisted to the `Article` model for future access
 
 2. **Read Position Tracking**:
    - `ScrollPositionTracker` monitors scroll position via GeometryReader
    - Position updates are debounced (1 second delay) to avoid excessive writes
-   - `UpdateArticleReadPositionUseCase` persists position (0.0 to 1.0)
+   - `ReaderService.updateReadPosition()` persists position (0.0 to 1.0)
    - On view appear, scroll position is restored from saved value
 
 ## Files
 
-### UseCases
+### Services
 
 | File | Description |
 |------|-------------|
-| `UseCases/FetchArticleContentUseCase.swift` | Fetches article markdown content, supports force refresh |
-| `UseCases/UpdateArticleReadPositionUseCase.swift` | Persists read position (0.0-1.0) to article |
+| `Services/ReaderService.swift` | Fetches article markdown content (supports force refresh), persists read position (0.0-1.0) to article |
 
 ### Views
 
@@ -115,8 +113,7 @@ The `stripFirstH1FromMarkdown(_:matchingTitle:)` function removes duplicate titl
 
 ```swift
 // In DIContainer.swift
-private lazy var fetchArticleContentUseCase: FetchArticleContentUseCaseProtocol
-private lazy var updateArticleReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol
+private lazy var readerService: ReaderServiceProtocol
 
 func makeReaderViewModel(article: Article) -> ReaderViewModel
 ```
@@ -130,8 +127,7 @@ func makeReaderViewModel(article: Article) -> ReaderViewModel
 
 ## Testing Considerations
 
-- Mock `FetchArticleContentUseCaseProtocol` for content loading tests
-- Mock `UpdateArticleReadPositionUseCaseProtocol` for position persistence tests
+- Mock `ReaderServiceProtocol` for content loading and position update tests
 - Test debouncing logic with rapid scroll position changes
 - Test position restoration with various saved positions
 - Test H1 stripping with various title formats and edge cases

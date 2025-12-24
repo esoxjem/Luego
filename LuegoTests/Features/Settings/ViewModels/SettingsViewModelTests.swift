@@ -6,18 +6,16 @@ import Foundation
 @MainActor
 struct SettingsViewModelTests {
     var mockPreferencesDataSource: MockDiscoveryPreferencesDataSource
-    var mockDiscoveryRepository1: MockDiscoverySourceRepository
-    var mockDiscoveryRepository2: MockDiscoverySourceRepository
+    var mockDiscoveryService: MockDiscoveryService
     var viewModel: SettingsViewModel
 
     init() {
         mockPreferencesDataSource = MockDiscoveryPreferencesDataSource()
         mockPreferencesDataSource.selectedSource = .kagiSmallWeb
-        mockDiscoveryRepository1 = MockDiscoverySourceRepository(source: .kagiSmallWeb)
-        mockDiscoveryRepository2 = MockDiscoverySourceRepository(source: .blogroll)
+        mockDiscoveryService = MockDiscoveryService()
         viewModel = SettingsViewModel(
             preferencesDataSource: mockPreferencesDataSource,
-            discoveryRepositories: [mockDiscoveryRepository1, mockDiscoveryRepository2]
+            discoveryService: mockDiscoveryService
         )
     }
 
@@ -26,7 +24,7 @@ struct SettingsViewModelTests {
         mockPreferencesDataSource.selectedSource = .blogroll
         let vm = SettingsViewModel(
             preferencesDataSource: mockPreferencesDataSource,
-            discoveryRepositories: []
+            discoveryService: mockDiscoveryService
         )
 
         #expect(vm.selectedDiscoverySource == .blogroll)
@@ -47,12 +45,11 @@ struct SettingsViewModelTests {
         #expect(viewModel.selectedDiscoverySource == .blogroll)
     }
 
-    @Test("refreshArticlePool clears all repository caches")
+    @Test("refreshArticlePool clears all caches")
     func refreshArticlePoolClearsCaches() {
         viewModel.refreshArticlePool()
 
-        #expect(mockDiscoveryRepository1.clearCacheCallCount == 1)
-        #expect(mockDiscoveryRepository2.clearCacheCallCount == 1)
+        #expect(mockDiscoveryService.clearAllCachesCallCount == 1)
     }
 
     @Test("refreshArticlePool sets didRefreshPool to true")
@@ -62,17 +59,5 @@ struct SettingsViewModelTests {
         viewModel.refreshArticlePool()
 
         #expect(viewModel.didRefreshPool == true)
-    }
-
-    @Test("refreshArticlePool handles empty repository list")
-    func refreshArticlePoolHandlesEmpty() {
-        let vm = SettingsViewModel(
-            preferencesDataSource: mockPreferencesDataSource,
-            discoveryRepositories: []
-        )
-
-        vm.refreshArticlePool()
-
-        #expect(vm.didRefreshPool == true)
     }
 }

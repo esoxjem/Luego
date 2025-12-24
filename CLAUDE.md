@@ -34,15 +34,16 @@ Claude Code includes an `ios-build-fixer` agent that:
 
 ## Project Structure
 
-**Luego follows Clean Architecture principles organized by feature. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.**
+**Luego uses a service-based architecture organized by feature. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.**
 
 ### Key Files
 - **App/LuegoApp.swift**: App entry point with DIContainer initialization and environment injection
 - **App/ContentView.swift**: Main article list view using ArticleListViewModel from DI
-- **Core/DI/DIContainer.swift**: Manages all dependencies (repositories, use cases, ViewModels)
+- **Core/DI/DIContainer.swift**: Manages all dependencies (services, data sources, ViewModels)
 - **Core/Models/**: SwiftData models and DTOs
-- **Features/*/UseCases/**: Business logic operations (testable, minimal framework dependencies)
-- **Features/*/Repositories/**: Repository protocols and implementations
+- **Core/DataSources/**: Shared data access (MetadataDataSource, TurndownDataSource)
+- **Features/*/Services/**: Business logic operations (ArticleService, ReaderService, etc.)
+- **Features/*/DataSources/**: Feature-specific data sources
 - **Features/*/Views/**: ViewModels and Views using models
 
 ## Feature Documentation
@@ -58,33 +59,40 @@ These docs cover architecture, data flow, caching strategies, error handling, an
 
 ## Architecture & Patterns
 
-### Pragmatic Architecture
-The app follows a **pragmatic architecture** organized by feature with shared infrastructure:
+### Service-Based Architecture
+The app follows a **service-based architecture** organized by feature with shared infrastructure:
 
 **Organization Strategy:**
-- **Features/**: Vertical slices by feature (ReadingList, Reader, Sharing)
+- **Features/**: Vertical slices by feature (ReadingList, Reader, Discovery, Sharing, Settings)
 - **Core/**: Shared infrastructure (DI, Configuration, Models, DataSources)
 - **App/**: Application entry point
 
 **Dependency Flow**:
 ```
-Feature Views → Feature UseCases → Feature Repositories → Core Models
-                    ↓
-            Core DataSources
+Feature Views → Feature ViewModels → Feature Services → Core DataSources
+                                         ↓
+                                   Core Models
 ```
 
 **Architecture Principles:**
-1. **Feature Cohesion**: Related use cases and views grouped together
-2. **Shared Models**: SwiftData models used throughout the app
-3. **Direct Model Usage**: No mapping layer between persistence and domain
-4. **Repository Pattern**: Data access abstracted behind protocols
+1. **Service Layer**: Business logic consolidated into cohesive services per domain
+2. **Feature Cohesion**: Services and views grouped together by feature
+3. **Shared Models**: SwiftData models used throughout the app
+4. **Direct Model Usage**: No mapping layer between persistence and domain
+5. **Protocol-Based**: Services abstracted behind protocols for testability
+
+**Services:**
+- **ArticleService**: Add, delete, update, toggle favorite/archive articles
+- **ReaderService**: Fetch content, update read position
+- **DiscoveryService**: Fetch random articles, cache management
+- **SharingService**: Sync shared articles from share extension
 
 **Key Benefits:**
-- **Feature Locality**: All feature code in one place (use cases + views)
-- **Testability**: Use cases testable with mock repositories
-- **Maintainability**: Clear boundaries, single responsibility
-- **Simplicity**: No boilerplate mapping code
-- **Scalability**: Easy to add features, understand scope
+- **Simplicity**: 3 layers (Views → ViewModels → Services) vs 4+ layers
+- **Feature Locality**: All feature code in one place (services + views)
+- **Testability**: Services testable with mock data sources
+- **Maintainability**: Clear boundaries, related operations grouped together
+- **Fewer Files**: Consolidated business logic reduces file count
 
 ### Modern Swift Features
 - **@Observable**: Modern observation framework (replaces ObservableObject)
@@ -95,9 +103,9 @@ Feature Views → Feature UseCases → Feature Repositories → Core Models
 
 ### State Management
 - **ViewModels** use @Observable for reactive state
-- **Dependency Injection**: ViewModels receive dependencies via constructor
+- **Dependency Injection**: ViewModels receive services via constructor
 - **Direct Models**: Views work with SwiftData models directly
-- **Use Cases**: Business logic encapsulated in single-purpose use cases
+- **Services**: Business logic encapsulated in domain-focused services
 - No singletons in presentation layer
 
 ### Dependency Injection Pattern
@@ -134,25 +142,22 @@ The project uses SwiftSPM for dependency management. Dependencies are declared i
 
 ### Adding New Features (Feature-Based Approach)
 1. **Update Model** in `/Core/Models/` if needed (add properties to SwiftData model)
-2. **Create/Update Repository** in `/Features/<FeatureName>/Repositories/` with protocol and implementation (mark class with `@MainActor`)
-3. **Create Use Case** in `/Features/<FeatureName>/UseCases/` for business logic (mark class with `@MainActor`)
-4. **Create Data Source** in `/Core/DataSources/` or `/Features/<FeatureName>/DataSources/` if needed
-5. **Create/Update ViewModel** in `/Features/<FeatureName>/Views/` with injected use cases
-6. **Create View** in `/Features/<FeatureName>/Views/` using models
-7. **Wire up in DIContainer** - add repository, use case, and ViewModel factory methods
-8. Update FEATURES.md to track implementation progress
+2. **Create/Update Service** in `/Features/<FeatureName>/Services/` with protocol and implementation (mark class with `@MainActor`)
+3. **Create Data Source** in `/Core/DataSources/` or `/Features/<FeatureName>/DataSources/` if external data fetching is needed
+4. **Create/Update ViewModel** in `/Features/<FeatureName>/Views/` with injected services
+5. **Create View** in `/Features/<FeatureName>/Views/` using models
+6. **Wire up in DIContainer** - add service and ViewModel factory methods
+7. Update FEATURES.md to track implementation progress
 
-**Important**: Always mark use case and repository classes with `@MainActor` for thread-safe SwiftData operations.
+**Important**: Always mark service classes with `@MainActor` for thread-safe SwiftData operations.
 
-**Example**: Adding "Favorite Articles" feature
+**Example**: Adding a new feature method
 ```
-1. Core/Models/: Add `isFavorite: Bool` to Article model
-2. Features/ReadingList/Repositories/: Add `toggleFavorite(id:)` to ArticleRepositoryProtocol
-3. Features/ReadingList/UseCases/: Create ToggleFavoriteUseCase.swift
-4. Features/ReadingList/Repositories/: Implement `toggleFavorite` in ArticleRepository
-5. Core/DI/: Add toggleFavoriteUseCase to DIContainer
-6. Features/ReadingList/Views/: Use case in ArticleListViewModel
-7. Features/ReadingList/Views/: Add favorite button to ArticleRowView
+1. Core/Models/: Add property to model if needed
+2. Features/ReadingList/Services/: Add method to ArticleServiceProtocol
+3. Features/ReadingList/Services/: Implement method in ArticleService
+4. Features/ReadingList/Views/: Call service method from ViewModel
+5. Features/ReadingList/Views/: Add UI to trigger the action
 ```
 
 ### Coding Guidelines
@@ -318,17 +323,11 @@ Tests mirror the source structure for easy navigation:
 LuegoTests/
 ├── Features/                    # Feature tests (mirrors Luego/Features/)
 │   ├── ReadingList/
-│   │   ├── UseCases/           # AddArticleUseCaseTests, DeleteArticleUseCaseTests, etc.
-│   │   ├── Repositories/       # ArticleRepositoryTests
 │   │   └── ViewModels/         # ArticleListViewModelTests
 │   ├── Reader/
-│   │   ├── UseCases/           # FetchArticleContentUseCaseTests, etc.
 │   │   └── ViewModels/         # ReaderViewModelTests
 │   ├── Discovery/
-│   │   ├── UseCases/           # FetchRandomArticleUseCaseTests, etc.
 │   │   └── ViewModels/         # DiscoveryViewModelTests
-│   ├── Sharing/
-│   │   └── UseCases/           # SyncSharedArticlesUseCaseTests
 │   └── Settings/
 │       └── ViewModels/         # SettingsViewModelTests
 ├── Core/                        # Core tests (mirrors Luego/Core/)
@@ -337,8 +336,7 @@ LuegoTests/
 │   └── UI/Readers/             # MarkdownUtilitiesTests
 └── TestSupport/                 # Shared test infrastructure
     ├── Mocks/
-    │   ├── Repositories/       # MockArticleRepository, MockMetadataRepository, etc.
-    │   ├── UseCases/           # MockAddArticleUseCase, MockFetchRandomArticleUseCase, etc.
+    │   ├── Services/           # MockArticleService, MockReaderService, etc.
     │   └── DataSources/        # MockDiscoveryPreferencesDataSource, etc.
     └── Helpers/                # TestModelContainer, ArticleFixtures, etc.
 ```
@@ -346,8 +344,8 @@ LuegoTests/
 ### Test File Location Convention
 
 Tests are located at the same relative path as their source files:
-- `Luego/Features/ReadingList/UseCases/AddArticleUseCase.swift`
-- → `LuegoTests/Features/ReadingList/UseCases/AddArticleUseCaseTests.swift`
+- `Luego/Features/ReadingList/Services/ArticleService.swift`
+- → `LuegoTests/Features/ReadingList/Services/ArticleServiceTests.swift` (if needed)
 
 ### Adding New Tests
 

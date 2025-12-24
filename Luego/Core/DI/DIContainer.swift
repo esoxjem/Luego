@@ -17,58 +17,8 @@ final class DIContainer {
         TurndownDataSource()
     }()
 
-    private lazy var articleRepository: ArticleRepositoryProtocol = {
-        ArticleRepository(modelContext: modelContext)
-    }()
-
-    private lazy var metadataRepository: MetadataRepositoryProtocol = {
-        MetadataRepository(turndownDataSource: turndownDataSource)
-    }()
-
-    private lazy var sharedStorageRepository: SharedStorageRepositoryProtocol = {
-        SharedStorageRepository(userDefaultsDataSource: userDefaultsDataSource)
-    }()
-
-    private lazy var addArticleUseCase: AddArticleUseCaseProtocol = {
-        AddArticleUseCase(
-            articleRepository: articleRepository,
-            metadataRepository: metadataRepository
-        )
-    }()
-
-    private lazy var getArticlesUseCase: GetArticlesUseCaseProtocol = {
-        GetArticlesUseCase(articleRepository: articleRepository)
-    }()
-
-    private lazy var deleteArticleUseCase: DeleteArticleUseCaseProtocol = {
-        DeleteArticleUseCase(articleRepository: articleRepository)
-    }()
-
-    private lazy var fetchArticleContentUseCase: FetchArticleContentUseCaseProtocol = {
-        FetchArticleContentUseCase(
-            articleRepository: articleRepository,
-            metadataRepository: metadataRepository
-        )
-    }()
-
-    private lazy var updateArticleReadPositionUseCase: UpdateArticleReadPositionUseCaseProtocol = {
-        UpdateArticleReadPositionUseCase(articleRepository: articleRepository)
-    }()
-
-    private lazy var syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol = {
-        SyncSharedArticlesUseCase(
-            sharedStorageRepository: sharedStorageRepository,
-            articleRepository: articleRepository,
-            metadataRepository: metadataRepository
-        )
-    }()
-
-    private lazy var toggleFavoriteUseCase: ToggleFavoriteUseCaseProtocol = {
-        ToggleFavoriteUseCase(articleRepository: articleRepository)
-    }()
-
-    private lazy var toggleArchiveUseCase: ToggleArchiveUseCaseProtocol = {
-        ToggleArchiveUseCase(articleRepository: articleRepository)
+    private lazy var metadataDataSource: MetadataDataSourceProtocol = {
+        MetadataDataSource(turndownDataSource: turndownDataSource)
     }()
 
     private lazy var opmlDataSource: OPMLDataSource = {
@@ -83,12 +33,12 @@ final class DIContainer {
         GenericRSSDataSource()
     }()
 
-    private lazy var kagiSmallWebRepository: DiscoverySourceProtocol = {
-        KagiSmallWebRepository(opmlDataSource: opmlDataSource)
+    private lazy var kagiSmallWebDataSource: DiscoverySourceProtocol = {
+        KagiSmallWebDataSource(opmlDataSource: opmlDataSource)
     }()
 
-    private lazy var blogrollRepository: DiscoverySourceProtocol = {
-        BlogrollRepository(
+    private lazy var blogrollDataSource: DiscoverySourceProtocol = {
+        BlogrollDataSource(
             blogrollRSSDataSource: blogrollRSSDataSource,
             genericRSSDataSource: genericRSSDataSource
         )
@@ -98,56 +48,54 @@ final class DIContainer {
         DiscoveryPreferencesDataSource()
     }()
 
-    private lazy var saveDiscoveredArticleUseCase: SaveDiscoveredArticleUseCaseProtocol = {
-        SaveDiscoveredArticleUseCase(articleRepository: articleRepository)
+    private lazy var articleService: ArticleServiceProtocol = {
+        ArticleService(
+            modelContext: modelContext,
+            metadataDataSource: metadataDataSource
+        )
     }()
 
-    private func makeFetchRandomArticleUseCase(for source: DiscoverySource) -> FetchRandomArticleUseCaseProtocol {
-        switch source {
-        case .kagiSmallWeb:
-            return FetchRandomArticleUseCase(
-                source: .kagiSmallWeb,
-                sourceRepository: kagiSmallWebRepository,
-                metadataRepository: metadataRepository
-            )
-        case .blogroll:
-            return FetchRandomArticleUseCase(
-                source: .blogroll,
-                sourceRepository: blogrollRepository,
-                metadataRepository: metadataRepository
-            )
-        case .surpriseMe:
-            return SurpriseMeFetchRandomArticleUseCase(
-                kagiUseCase: makeFetchRandomArticleUseCase(for: .kagiSmallWeb),
-                blogrollUseCase: makeFetchRandomArticleUseCase(for: .blogroll)
-            )
-        }
-    }
+    private lazy var readerService: ReaderServiceProtocol = {
+        ReaderService(
+            modelContext: modelContext,
+            metadataDataSource: metadataDataSource
+        )
+    }()
+
+    private lazy var discoveryService: DiscoveryServiceProtocol = {
+        DiscoveryService(
+            kagiSmallWebDataSource: kagiSmallWebDataSource,
+            blogrollDataSource: blogrollDataSource,
+            metadataDataSource: metadataDataSource
+        )
+    }()
+
+    private lazy var sharingService: SharingServiceProtocol = {
+        SharingService(
+            modelContext: modelContext,
+            metadataDataSource: metadataDataSource,
+            userDefaultsDataSource: userDefaultsDataSource
+        )
+    }()
 
     func makeArticleListViewModel() -> ArticleListViewModel {
         ArticleListViewModel(
-            getArticlesUseCase: getArticlesUseCase,
-            addArticleUseCase: addArticleUseCase,
-            deleteArticleUseCase: deleteArticleUseCase,
-            syncSharedArticlesUseCase: syncSharedArticlesUseCase,
-            toggleFavoriteUseCase: toggleFavoriteUseCase,
-            toggleArchiveUseCase: toggleArchiveUseCase
+            articleService: articleService,
+            sharingService: sharingService
         )
     }
 
     func makeReaderViewModel(article: Article) -> ReaderViewModel {
         ReaderViewModel(
             article: article,
-            fetchContentUseCase: fetchArticleContentUseCase,
-            updateReadPositionUseCase: updateArticleReadPositionUseCase
+            readerService: readerService
         )
     }
 
     func makeDiscoveryViewModel() -> DiscoveryViewModel {
         DiscoveryViewModel(
-            useCaseFactory: makeFetchRandomArticleUseCase,
-            saveDiscoveredArticleUseCase: saveDiscoveredArticleUseCase,
-            articleRepository: articleRepository,
+            discoveryService: discoveryService,
+            articleService: articleService,
             preferencesDataSource: discoveryPreferencesDataSource
         )
     }
@@ -155,7 +103,7 @@ final class DIContainer {
     func makeSettingsViewModel() -> SettingsViewModel {
         SettingsViewModel(
             preferencesDataSource: discoveryPreferencesDataSource,
-            discoveryRepositories: [kagiSmallWebRepository, blogrollRepository]
+            discoveryService: discoveryService
         )
     }
 }

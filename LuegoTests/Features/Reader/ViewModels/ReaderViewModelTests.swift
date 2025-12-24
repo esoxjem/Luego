@@ -5,19 +5,16 @@ import Foundation
 @Suite("ReaderViewModel Tests")
 @MainActor
 struct ReaderViewModelTests {
-    var mockFetchContentUseCase: MockFetchArticleContentUseCase
-    var mockUpdateReadPositionUseCase: MockUpdateArticleReadPositionUseCase
+    var mockReaderService: MockReaderService
 
     init() {
-        mockFetchContentUseCase = MockFetchArticleContentUseCase()
-        mockUpdateReadPositionUseCase = MockUpdateArticleReadPositionUseCase()
+        mockReaderService = MockReaderService()
     }
 
     func createViewModel(article: Article) -> ReaderViewModel {
         ReaderViewModel(
             article: article,
-            fetchContentUseCase: mockFetchContentUseCase,
-            updateReadPositionUseCase: mockUpdateReadPositionUseCase
+            readerService: mockReaderService
         )
     }
 
@@ -55,7 +52,7 @@ struct ReaderViewModelTests {
 
         await viewModel.loadContent()
 
-        #expect(mockFetchContentUseCase.executeCallCount == 0)
+        #expect(mockReaderService.fetchContentCallCount == 0)
     }
 
     @Test("loadContent fetches content when content is nil")
@@ -65,15 +62,16 @@ struct ReaderViewModelTests {
 
         await viewModel.loadContent()
 
-        #expect(mockFetchContentUseCase.executeCallCount == 1)
-        #expect(mockFetchContentUseCase.lastForceRefresh == false)
+        #expect(mockReaderService.fetchContentCallCount == 1)
+        #expect(mockReaderService.lastForceRefresh == false)
     }
 
     @Test("loadContent sets articleContent after fetch")
     func loadContentSetsContentAfterFetch() async {
         let article = ArticleFixtures.createArticle(content: nil)
         let viewModel = createViewModel(article: article)
-        mockFetchContentUseCase.contentToSet = "Fetched content"
+        let returnArticle = ArticleFixtures.createArticle(content: "Fetched content")
+        mockReaderService.articleToReturn = returnArticle
 
         await viewModel.loadContent()
 
@@ -94,7 +92,7 @@ struct ReaderViewModelTests {
     func loadContentSetsErrorOnFailure() async {
         let article = ArticleFixtures.createArticle(content: nil)
         let viewModel = createViewModel(article: article)
-        mockFetchContentUseCase.shouldThrow = true
+        mockReaderService.shouldThrowOnFetchContent = true
 
         await viewModel.loadContent()
 
@@ -109,15 +107,16 @@ struct ReaderViewModelTests {
 
         await viewModel.refreshContent()
 
-        #expect(mockFetchContentUseCase.executeCallCount == 1)
-        #expect(mockFetchContentUseCase.lastForceRefresh == true)
+        #expect(mockReaderService.fetchContentCallCount == 1)
+        #expect(mockReaderService.lastForceRefresh == true)
     }
 
     @Test("refreshContent updates content after fetch")
     func refreshContentUpdatesContent() async {
         let article = ArticleFixtures.createArticle(content: "Old content")
         let viewModel = createViewModel(article: article)
-        mockFetchContentUseCase.contentToSet = "New content"
+        let returnArticle = ArticleFixtures.createArticle(content: "New content")
+        mockReaderService.articleToReturn = returnArticle
 
         await viewModel.refreshContent()
 
@@ -131,7 +130,7 @@ struct ReaderViewModelTests {
 
         await viewModel.updateReadPosition(-0.5)
 
-        #expect(mockUpdateReadPositionUseCase.lastPosition == 0.0)
+        #expect(mockReaderService.lastUpdatedPosition == 0.0)
         #expect(viewModel.article.readPosition == 0.0)
     }
 
@@ -142,27 +141,27 @@ struct ReaderViewModelTests {
 
         await viewModel.updateReadPosition(1.5)
 
-        #expect(mockUpdateReadPositionUseCase.lastPosition == 1.0)
+        #expect(mockReaderService.lastUpdatedPosition == 1.0)
         #expect(viewModel.article.readPosition == 1.0)
     }
 
-    @Test("updateReadPosition calls use case with clamped value")
-    func updateReadPositionCallsUseCase() async {
+    @Test("updateReadPosition calls service with clamped value")
+    func updateReadPositionCallsService() async {
         let article = ArticleFixtures.createArticle()
         let viewModel = createViewModel(article: article)
 
         await viewModel.updateReadPosition(0.75)
 
-        #expect(mockUpdateReadPositionUseCase.executeCallCount == 1)
-        #expect(mockUpdateReadPositionUseCase.lastArticleId == article.id)
-        #expect(mockUpdateReadPositionUseCase.lastPosition == 0.75)
+        #expect(mockReaderService.updateReadPositionCallCount == 1)
+        #expect(mockReaderService.lastUpdatedArticleId == article.id)
+        #expect(mockReaderService.lastUpdatedPosition == 0.75)
     }
 
     @Test("updateReadPosition sets error on failure")
     func updateReadPositionSetsErrorOnFailure() async {
         let article = ArticleFixtures.createArticle()
         let viewModel = createViewModel(article: article)
-        mockUpdateReadPositionUseCase.shouldThrow = true
+        mockReaderService.shouldThrowOnUpdateReadPosition = true
 
         await viewModel.updateReadPosition(0.5)
 

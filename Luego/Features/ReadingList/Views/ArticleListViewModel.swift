@@ -14,27 +14,15 @@ final class ArticleListViewModel {
     var isLoading = false
     var errorMessage: String?
 
-    private let getArticlesUseCase: GetArticlesUseCaseProtocol
-    private let addArticleUseCase: AddArticleUseCaseProtocol
-    private let deleteArticleUseCase: DeleteArticleUseCaseProtocol
-    private let syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol
-    private let toggleFavoriteUseCase: ToggleFavoriteUseCaseProtocol
-    private let toggleArchiveUseCase: ToggleArchiveUseCaseProtocol
+    private let articleService: ArticleServiceProtocol
+    private let sharingService: SharingServiceProtocol
 
     init(
-        getArticlesUseCase: GetArticlesUseCaseProtocol,
-        addArticleUseCase: AddArticleUseCaseProtocol,
-        deleteArticleUseCase: DeleteArticleUseCaseProtocol,
-        syncSharedArticlesUseCase: SyncSharedArticlesUseCaseProtocol,
-        toggleFavoriteUseCase: ToggleFavoriteUseCaseProtocol,
-        toggleArchiveUseCase: ToggleArchiveUseCaseProtocol
+        articleService: ArticleServiceProtocol,
+        sharingService: SharingServiceProtocol
     ) {
-        self.getArticlesUseCase = getArticlesUseCase
-        self.addArticleUseCase = addArticleUseCase
-        self.deleteArticleUseCase = deleteArticleUseCase
-        self.syncSharedArticlesUseCase = syncSharedArticlesUseCase
-        self.toggleFavoriteUseCase = toggleFavoriteUseCase
-        self.toggleArchiveUseCase = toggleArchiveUseCase
+        self.articleService = articleService
+        self.sharingService = sharingService
     }
 
     func addArticle(from urlString: String, existingArticles: [Article]) async {
@@ -54,7 +42,7 @@ final class ArticleListViewModel {
         defer { isLoading = false }
 
         do {
-            _ = try await addArticleUseCase.execute(url: url)
+            _ = try await articleService.addArticle(url: url)
         } catch let error as ArticleMetadataError {
             errorMessage = error.localizedDescription
         } catch {
@@ -64,7 +52,7 @@ final class ArticleListViewModel {
 
     func deleteArticle(_ article: Article) async {
         do {
-            try await deleteArticleUseCase.execute(articleId: article.id)
+            try await articleService.deleteArticle(id: article.id)
         } catch {
             errorMessage = "Failed to delete article: \(error.localizedDescription)"
         }
@@ -72,7 +60,7 @@ final class ArticleListViewModel {
 
     func syncSharedArticles() async {
         do {
-            _ = try await syncSharedArticlesUseCase.execute()
+            _ = try await sharingService.syncSharedArticles()
         } catch {
             errorMessage = "Failed to sync shared articles: \(error.localizedDescription)"
         }
@@ -84,7 +72,7 @@ final class ArticleListViewModel {
 
     func toggleFavorite(_ article: Article) async {
         do {
-            try await toggleFavoriteUseCase.execute(articleId: article.id)
+            try await articleService.toggleFavorite(id: article.id)
         } catch {
             errorMessage = "Failed to toggle favorite: \(error.localizedDescription)"
         }
@@ -92,7 +80,7 @@ final class ArticleListViewModel {
 
     func toggleArchive(_ article: Article) async {
         do {
-            try await toggleArchiveUseCase.execute(articleId: article.id)
+            try await articleService.toggleArchive(id: article.id)
         } catch {
             errorMessage = "Failed to toggle archive: \(error.localizedDescription)"
         }

@@ -1,6 +1,6 @@
 # Luego Architecture
 
-Luego follows a **pragmatic architecture** organized by feature with shared infrastructure for maintainability and simplicity.
+Luego follows a **service-based architecture** organized by feature with shared infrastructure for maintainability and simplicity.
 
 ## Architecture Overview
 
@@ -8,12 +8,12 @@ Luego follows a **pragmatic architecture** organized by feature with shared infr
 ┌────────────────────────────────────────────────────────┐
 │                  Feature Modules                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │  Reading     │  │    Reader    │  │   Sharing    │  │
+│  │  Reading     │  │    Reader    │  │  Discovery   │  │
 │  │    List      │  │              │  │              │  │
 │  ├──────────────┤  ├──────────────┤  ├──────────────┤  │
-│  │ • UseCases   │  │ • UseCases   │  │ • UseCases   │  │
-│  │ • Views      │  │ • Views      │  │ • Views      │  │
-│  │ • ViewModels │  │ • ViewModels │  │ • Repos*     │  │
+│  │ • Services   │  │ • Services   │  │ • Services   │  │
+│  │ • Views      │  │ • Views      │  │ • DataSources│  │
+│  │ • ViewModels │  │ • ViewModels │  │ • Views      │  │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  │
 │         │                 │                 │          │
 └─────────┼─────────────────┼─────────────────┼──────────┘
@@ -25,14 +25,16 @@ Luego follows a **pragmatic architecture** organized by feature with shared infr
 │  ┌─────────────────────────────────────────────────┐   │
 │  │ Models: SwiftData @Model classes                │   │
 │  ├─────────────────────────────────────────────────┤   │
+│  │ DataSources: Shared data access                 │   │
+│  ├─────────────────────────────────────────────────┤   │
 │  │ DI Container, App Configuration                 │   │
 │  └─────────────────────────────────────────────────┘   │
 └────────────────────────────────────────────────────────┘
 ```
 
 **Organization Strategy:**
-- **Vertical Slices** (Features/): Group related use cases and views by feature
-- **Horizontal Slice** (Core/): Common models, infrastructure, and data sources
+- **Vertical Slices** (Features/): Group services and views by feature
+- **Horizontal Slice** (Core/): Common models, infrastructure, and shared data sources
 - **Direct Model Usage**: Use SwiftData models throughout for simplicity
 
 ## Project Structure
@@ -41,40 +43,52 @@ Luego follows a **pragmatic architecture** organized by feature with shared infr
 Luego/
 ├── Features/                          # Feature modules (vertical slices)
 │   ├── ReadingList/                   # Save, list, and delete articles
-│   │   ├── UseCases/
-│   │   │   ├── AddArticleUseCase.swift
-│   │   │   ├── GetArticlesUseCase.swift
-│   │   │   └── DeleteArticleUseCase.swift
-│   │   ├── Repositories/
-│   │   │   ├── ArticleRepository.swift    # Protocol + implementation
-│   │   │   └── MetadataRepository.swift   # Protocol + implementation
+│   │   ├── Services/
+│   │   │   └── ArticleService.swift   # CRUD operations for articles
 │   │   └── Views/
 │   │       ├── ArticleListViewModel.swift
 │   │       ├── ArticleRowView.swift
 │   │       └── AddArticleView.swift
 │   │
 │   ├── Reader/                        # Read articles with position tracking
-│   │   ├── UseCases/
-│   │   │   ├── FetchArticleContentUseCase.swift
-│   │   │   └── UpdateArticleReadPositionUseCase.swift
+│   │   ├── Services/
+│   │   │   └── ReaderService.swift    # Content fetching, position updates
 │   │   └── Views/
 │   │       ├── ReaderViewModel.swift
 │   │       └── ReaderView.swift
 │   │
-│   └── Sharing/                       # Share extension integration
-│       ├── UseCases/
-│       │   └── SyncSharedArticlesUseCase.swift
-│       ├── Repositories/
-│       │   └── SharedStorageRepository.swift  # Protocol + implementation
-│       └── DataSources/
-│           ├── UserDefaultsDataSource.swift
-│           └── SharedStorage.swift
+│   ├── Discovery/                     # Random article exploration
+│   │   ├── Services/
+│   │   │   └── DiscoveryService.swift # Random article fetching
+│   │   ├── DataSources/
+│   │   │   ├── KagiSmallWebDataSource.swift
+│   │   │   └── BlogrollDataSource.swift
+│   │   └── Views/
+│   │       ├── DiscoveryViewModel.swift
+│   │       └── DiscoveryView.swift
+│   │
+│   ├── Sharing/                       # Share extension integration
+│   │   ├── Services/
+│   │   │   └── SharingService.swift   # Sync shared articles
+│   │   └── DataSources/
+│   │       ├── UserDefaultsDataSource.swift
+│   │       └── SharedStorage.swift
+│   │
+│   └── Settings/                      # App settings
+│       └── Views/
+│           ├── SettingsViewModel.swift
+│           └── SettingsView.swift
 │
 ├── Core/                              # Shared infrastructure (horizontal slice)
 │   ├── Models/                        # SwiftData models & DTOs
 │   │   ├── Article.swift              # @Model class (persistence)
-│   │   ├── ArticleMetadata.swift      # DTO struct
-│   │   └── ArticleContent.swift       # DTO struct
+│   │   ├── ArticleMetadata.swift      # DTO struct + errors
+│   │   ├── ArticleContent.swift       # DTO struct
+│   │   ├── EphemeralArticle.swift     # Non-persisted article
+│   │   └── DiscoverySource.swift      # Discovery source enum
+│   ├── DataSources/                   # Shared data access
+│   │   ├── MetadataDataSource.swift   # URL validation, content fetching
+│   │   └── SeenItemTracker.swift      # Track seen items
 │   ├── DI/
 │   │   └── DIContainer.swift
 │   └── Configuration/
@@ -93,9 +107,9 @@ Luego/
 
 **Rules**:
 - Each feature is a self-contained module
-- Contains use cases specific to that feature
+- Contains services specific to that feature
 - Contains views and view models for that feature
-- May contain feature-specific repositories (e.g., Sharing)
+- May contain feature-specific data sources (e.g., Discovery, Sharing)
 
 
 ### 🟩 Core (Horizontal Slice)
@@ -104,11 +118,12 @@ Luego/
 
 **Rules**:
 - NO feature-specific logic
-- Common models, infrastructure, and data sources
+- Common models, infrastructure, and shared data sources
 - Shared persistence and data transfer objects
 
 **Components**:
-- **Models**: SwiftData @Model classes
+- **Models**: SwiftData @Model classes and DTOs
+- **DataSources**: Shared data access (MetadataDataSource)
 - **DI**: Dependency injection container
 - **Configuration**: App-wide configuration
 
@@ -116,32 +131,30 @@ Luego/
 
 The architecture maintains separation of concerns with a pragmatic approach:
 
-**Business Logic (Use Cases)**:
-- Located in Features/*/UseCases/
-- Minimal framework dependencies
-- Depend on repository protocols from Features/*/Repositories/
-- Coordinate operations between repositories
-- All use case classes marked with `@MainActor` for main thread execution
-
-**Data Access (Repositories)**:
-- Located in Features/*/Repositories/
-- Each repository contains both protocol and implementation
+**Business Logic & Data Access (Services)**:
+- Located in Features/*/Services/
+- Combine business logic with data access for simplicity
 - Work directly with SwiftData models
 - Handle persistence and external data
-- All repository classes marked with `@MainActor` (required for SwiftData's ModelContext)
+- All service classes marked with `@MainActor` (required for SwiftData's ModelContext)
+
+**Data Sources**:
+- Located in Core/DataSources/ (shared) or Features/*/DataSources/ (feature-specific)
+- Handle external data fetching (network, APIs)
+- Protocol-based for testability
 
 **Presentation (Views & ViewModels)**:
 - Located in Features/*/Views/
-- Depend on use cases and models
+- Depend on services and models
 - Use dependency injection for testability
 
 ## Data Flow
 
 ### Reading Articles
 ```
-View → ViewModel → Use Case → Repository → Data Source → Database
-                                                            ↓
-View ← ViewModel ← Use Case ← Repository ← Data Source ← [Article]
+View → ViewModel → Service → SwiftData
+                                  ↓
+View ← ViewModel ← Service ← [Article]
 ```
 
 ### Adding an Article
@@ -152,12 +165,27 @@ AddArticleView
     ↓
 ArticleListViewModel.addArticle(url)
     ↓
-AddArticleUseCase.execute(url)
-    ├→ MetadataRepository.validateURL()
-    ├→ MetadataRepository.fetchMetadata()
-    └→ ArticleRepository.save()
+ArticleService.addArticle(url)
+    ├→ MetadataDataSource.validateURL()
+    ├→ MetadataDataSource.fetchMetadata()
+    └→ ModelContext.insert() + save()
            ↓
        SwiftData
+```
+
+### Discovery Flow
+```
+DiscoveryView
+    ↓
+DiscoveryViewModel.fetchRandomArticle()
+    ↓
+DiscoveryService.fetchRandomArticle()
+    ├→ KagiSmallWebDataSource.randomArticleEntry()
+    └→ MetadataDataSource.fetchContent()
+           ↓
+    EphemeralArticle (non-persisted)
+           ↓
+    [User saves] → ArticleService.saveEphemeralArticle()
 ```
 
 ## Dependency Injection
@@ -183,3 +211,52 @@ struct LuegoApp: App {
     }
 }
 ```
+
+## Service Protocols
+
+### ArticleService
+```swift
+protocol ArticleServiceProtocol: Sendable {
+    func getAllArticles() async throws -> [Article]
+    func addArticle(url: URL) async throws -> Article
+    func deleteArticle(id: UUID) async throws
+    func updateArticle(_ article: Article) async throws
+    func toggleFavorite(id: UUID) async throws
+    func toggleArchive(id: UUID) async throws
+    func saveEphemeralArticle(_ ephemeralArticle: EphemeralArticle) async throws -> Article
+}
+```
+
+### ReaderService
+```swift
+protocol ReaderServiceProtocol: Sendable {
+    func fetchContent(for article: Article, forceRefresh: Bool) async throws -> Article
+    func updateReadPosition(articleId: UUID, position: Double) async throws
+}
+```
+
+### DiscoveryService
+```swift
+protocol DiscoveryServiceProtocol: Sendable {
+    func fetchRandomArticle(from source: DiscoverySource, onArticleEntryFetched: @escaping @MainActor (URL) -> Void) async throws -> EphemeralArticle
+    func prepareForFetch(source: DiscoverySource) -> DiscoverySource
+    func clearCache(for source: DiscoverySource)
+    func clearAllCaches()
+}
+```
+
+### SharingService
+```swift
+protocol SharingServiceProtocol: Sendable {
+    func syncSharedArticles() async throws -> [Article]
+}
+```
+
+## ViewModel Dependencies
+
+| ViewModel | Dependencies |
+|-----------|--------------|
+| ArticleListViewModel | ArticleService, SharingService |
+| ReaderViewModel | ReaderService |
+| DiscoveryViewModel | DiscoveryService, ArticleService, PreferencesDataSource |
+| SettingsViewModel | DiscoveryService, PreferencesDataSource |

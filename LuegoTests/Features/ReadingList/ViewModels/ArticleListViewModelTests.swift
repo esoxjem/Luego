@@ -5,28 +5,16 @@ import Foundation
 @Suite("ArticleListViewModel Tests")
 @MainActor
 struct ArticleListViewModelTests {
-    var mockGetArticlesUseCase: MockGetArticlesUseCase
-    var mockAddArticleUseCase: MockAddArticleUseCase
-    var mockDeleteArticleUseCase: MockDeleteArticleUseCase
-    var mockSyncSharedArticlesUseCase: MockSyncSharedArticlesUseCase
-    var mockToggleFavoriteUseCase: MockToggleFavoriteUseCase
-    var mockToggleArchiveUseCase: MockToggleArchiveUseCase
+    var mockArticleService: MockArticleService
+    var mockSharingService: MockSharingService
     var viewModel: ArticleListViewModel
 
     init() {
-        mockGetArticlesUseCase = MockGetArticlesUseCase()
-        mockAddArticleUseCase = MockAddArticleUseCase()
-        mockDeleteArticleUseCase = MockDeleteArticleUseCase()
-        mockSyncSharedArticlesUseCase = MockSyncSharedArticlesUseCase()
-        mockToggleFavoriteUseCase = MockToggleFavoriteUseCase()
-        mockToggleArchiveUseCase = MockToggleArchiveUseCase()
+        mockArticleService = MockArticleService()
+        mockSharingService = MockSharingService()
         viewModel = ArticleListViewModel(
-            getArticlesUseCase: mockGetArticlesUseCase,
-            addArticleUseCase: mockAddArticleUseCase,
-            deleteArticleUseCase: mockDeleteArticleUseCase,
-            syncSharedArticlesUseCase: mockSyncSharedArticlesUseCase,
-            toggleFavoriteUseCase: mockToggleFavoriteUseCase,
-            toggleArchiveUseCase: mockToggleArchiveUseCase
+            articleService: mockArticleService,
+            sharingService: mockSharingService
         )
     }
 
@@ -35,7 +23,7 @@ struct ArticleListViewModelTests {
         await viewModel.addArticle(from: "http://[::1", existingArticles: [])
 
         #expect(viewModel.errorMessage == "Please enter a valid URL")
-        #expect(mockAddArticleUseCase.executeCallCount == 0)
+        #expect(mockArticleService.addArticleCallCount == 0)
     }
 
     @Test("addArticle sets error for empty string")
@@ -61,21 +49,21 @@ struct ArticleListViewModelTests {
         await viewModel.addArticle(from: "https://example.com", existingArticles: [existingArticle])
 
         #expect(viewModel.errorMessage == "This article has already been saved")
-        #expect(mockAddArticleUseCase.executeCallCount == 0)
+        #expect(mockArticleService.addArticleCallCount == 0)
     }
 
     @Test("addArticle trims whitespace from URL")
     func addArticleTrimsWhitespace() async {
         await viewModel.addArticle(from: "  https://example.com  ", existingArticles: [])
 
-        #expect(mockAddArticleUseCase.lastURL == URL(string: "https://example.com")!)
+        #expect(mockArticleService.lastAddedURL == URL(string: "https://example.com")!)
     }
 
-    @Test("addArticle calls use case for valid new URL")
-    func addArticleCallsUseCase() async {
+    @Test("addArticle calls service for valid new URL")
+    func addArticleCallsService() async {
         await viewModel.addArticle(from: "https://example.com", existingArticles: [])
 
-        #expect(mockAddArticleUseCase.executeCallCount == 1)
+        #expect(mockArticleService.addArticleCallCount == 1)
     }
 
     @Test("addArticle clears error before adding")
@@ -87,10 +75,9 @@ struct ArticleListViewModelTests {
         #expect(viewModel.errorMessage == nil)
     }
 
-    @Test("addArticle sets error on use case failure")
+    @Test("addArticle sets error on service failure")
     func addArticleSetsErrorOnFailure() async {
-        mockAddArticleUseCase.shouldThrow = true
-        mockAddArticleUseCase.errorToThrow = ArticleMetadataError.networkError(NSError(domain: "Test", code: 1))
+        mockArticleService.shouldThrowOnAddArticle = true
 
         await viewModel.addArticle(from: "https://example.com", existingArticles: [])
 
@@ -104,19 +91,19 @@ struct ArticleListViewModelTests {
         #expect(viewModel.isLoading == false)
     }
 
-    @Test("deleteArticle calls use case with correct id")
-    func deleteArticleCallsUseCase() async {
+    @Test("deleteArticle calls service with correct id")
+    func deleteArticleCallsService() async {
         let article = ArticleFixtures.createArticle()
 
         await viewModel.deleteArticle(article)
 
-        #expect(mockDeleteArticleUseCase.executeCallCount == 1)
-        #expect(mockDeleteArticleUseCase.lastDeletedId == article.id)
+        #expect(mockArticleService.deleteArticleCallCount == 1)
+        #expect(mockArticleService.lastDeletedId == article.id)
     }
 
     @Test("deleteArticle sets error on failure")
     func deleteArticleSetsErrorOnFailure() async {
-        mockDeleteArticleUseCase.shouldThrow = true
+        mockArticleService.shouldThrowOnDeleteArticle = true
         let article = ArticleFixtures.createArticle()
 
         await viewModel.deleteArticle(article)
@@ -124,19 +111,19 @@ struct ArticleListViewModelTests {
         #expect(viewModel.errorMessage != nil)
     }
 
-    @Test("toggleFavorite calls use case with correct id")
-    func toggleFavoriteCallsUseCase() async {
+    @Test("toggleFavorite calls service with correct id")
+    func toggleFavoriteCallsService() async {
         let article = ArticleFixtures.createArticle()
 
         await viewModel.toggleFavorite(article)
 
-        #expect(mockToggleFavoriteUseCase.executeCallCount == 1)
-        #expect(mockToggleFavoriteUseCase.lastToggledId == article.id)
+        #expect(mockArticleService.toggleFavoriteCallCount == 1)
+        #expect(mockArticleService.lastToggledFavoriteId == article.id)
     }
 
     @Test("toggleFavorite sets error on failure")
     func toggleFavoriteSetsErrorOnFailure() async {
-        mockToggleFavoriteUseCase.shouldThrow = true
+        mockArticleService.shouldThrowOnToggleFavorite = true
         let article = ArticleFixtures.createArticle()
 
         await viewModel.toggleFavorite(article)
@@ -144,19 +131,19 @@ struct ArticleListViewModelTests {
         #expect(viewModel.errorMessage != nil)
     }
 
-    @Test("toggleArchive calls use case with correct id")
-    func toggleArchiveCallsUseCase() async {
+    @Test("toggleArchive calls service with correct id")
+    func toggleArchiveCallsService() async {
         let article = ArticleFixtures.createArticle()
 
         await viewModel.toggleArchive(article)
 
-        #expect(mockToggleArchiveUseCase.executeCallCount == 1)
-        #expect(mockToggleArchiveUseCase.lastToggledId == article.id)
+        #expect(mockArticleService.toggleArchiveCallCount == 1)
+        #expect(mockArticleService.lastToggledArchiveId == article.id)
     }
 
     @Test("toggleArchive sets error on failure")
     func toggleArchiveSetsErrorOnFailure() async {
-        mockToggleArchiveUseCase.shouldThrow = true
+        mockArticleService.shouldThrowOnToggleArchive = true
         let article = ArticleFixtures.createArticle()
 
         await viewModel.toggleArchive(article)
@@ -164,16 +151,16 @@ struct ArticleListViewModelTests {
         #expect(viewModel.errorMessage != nil)
     }
 
-    @Test("syncSharedArticles calls use case")
-    func syncSharedArticlesCallsUseCase() async {
+    @Test("syncSharedArticles calls service")
+    func syncSharedArticlesCallsService() async {
         await viewModel.syncSharedArticles()
 
-        #expect(mockSyncSharedArticlesUseCase.executeCallCount == 1)
+        #expect(mockSharingService.syncSharedArticlesCallCount == 1)
     }
 
     @Test("syncSharedArticles sets error on failure")
     func syncSharedArticlesSetsErrorOnFailure() async {
-        mockSyncSharedArticlesUseCase.shouldThrow = true
+        mockSharingService.shouldThrowOnSyncSharedArticles = true
 
         await viewModel.syncSharedArticles()
 
