@@ -237,6 +237,60 @@ struct ArticleServiceTests {
         try await sut.toggleArchive(id: nonExistentId)
     }
 
+    @Test("favoriting archived article clears archive flag")
+    func favoritingArchivedArticleClearsArchive() async throws {
+        let article = try await sut.addArticle(url: URL(string: "https://example.com/article")!)
+        article.isArchived = true
+        try modelContext.save()
+
+        try await sut.toggleFavorite(id: article.id)
+
+        let articles = try await sut.getAllArticles()
+        #expect(articles.first?.isFavorite == true)
+        #expect(articles.first?.isArchived == false)
+    }
+
+    @Test("archiving favorited article clears favorite flag")
+    func archivingFavoritedArticleClearsFavorite() async throws {
+        let article = try await sut.addArticle(url: URL(string: "https://example.com/article")!)
+        article.isFavorite = true
+        try modelContext.save()
+
+        try await sut.toggleArchive(id: article.id)
+
+        let articles = try await sut.getAllArticles()
+        #expect(articles.first?.isArchived == true)
+        #expect(articles.first?.isFavorite == false)
+    }
+
+    @Test("unfavoriting article does not affect archive status")
+    func unfavoritingArticlePreservesArchiveStatus() async throws {
+        let article = try await sut.addArticle(url: URL(string: "https://example.com/article")!)
+        article.isFavorite = true
+        article.isArchived = false
+        try modelContext.save()
+
+        try await sut.toggleFavorite(id: article.id)
+
+        let articles = try await sut.getAllArticles()
+        #expect(articles.first?.isFavorite == false)
+        #expect(articles.first?.isArchived == false)
+    }
+
+    @Test("unarchiving article does not affect favorite status")
+    func unarchivingArticlePreservesFavoriteStatus() async throws {
+        let article = try await sut.addArticle(url: URL(string: "https://example.com/article")!)
+        article.isArchived = true
+        article.isFavorite = false
+        try modelContext.save()
+
+        try await sut.toggleArchive(id: article.id)
+
+        let articles = try await sut.getAllArticles()
+        #expect(articles.first?.isArchived == false)
+        #expect(articles.first?.isFavorite == false)
+    }
+
     @Test("saveEphemeralArticle converts and persists to SwiftData")
     func saveEphemeralArticleConvertsAndPersists() async throws {
         let ephemeralArticle = EphemeralArticleFixtures.createEphemeralArticle(

@@ -49,12 +49,7 @@ final class ArticleService: ArticleServiceProtocol {
     }
 
     func deleteArticle(id: UUID) async throws {
-        let predicate = #Predicate<Article> { $0.id == id }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-
-        guard let article = try modelContext.fetch(descriptor).first else {
-            return
-        }
+        guard let article = try fetchArticle(by: id) else { return }
 
         modelContext.delete(article)
         try modelContext.save()
@@ -65,27 +60,29 @@ final class ArticleService: ArticleServiceProtocol {
     }
 
     func toggleFavorite(id: UUID) async throws {
-        let predicate = #Predicate<Article> { $0.id == id }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-
-        guard let article = try modelContext.fetch(descriptor).first else {
-            return
-        }
+        guard let article = try fetchArticle(by: id) else { return }
 
         article.isFavorite.toggle()
+        if article.isFavorite {
+            article.isArchived = false
+        }
         try modelContext.save()
     }
 
     func toggleArchive(id: UUID) async throws {
-        let predicate = #Predicate<Article> { $0.id == id }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-
-        guard let article = try modelContext.fetch(descriptor).first else {
-            return
-        }
+        guard let article = try fetchArticle(by: id) else { return }
 
         article.isArchived.toggle()
+        if article.isArchived {
+            article.isFavorite = false
+        }
         try modelContext.save()
+    }
+
+    private func fetchArticle(by id: UUID) throws -> Article? {
+        let predicate = #Predicate<Article> { $0.id == id }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+        return try modelContext.fetch(descriptor).first
     }
 
     func saveEphemeralArticle(_ ephemeralArticle: EphemeralArticle) async throws -> Article {

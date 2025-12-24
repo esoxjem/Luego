@@ -20,14 +20,7 @@ struct ArticleListView: View {
     let filter: ArticleFilter
 
     private var filteredArticles: [Article] {
-        switch filter {
-        case .readingList:
-            return allArticles.filter { !$0.isArchived }
-        case .favorites:
-            return allArticles.filter { $0.isFavorite && !$0.isArchived }
-        case .archived:
-            return allArticles.filter { $0.isArchived }
-        }
+        filter.filtered(allArticles)
     }
 
     var body: some View {
@@ -38,7 +31,7 @@ struct ArticleListView: View {
             filter: filter,
             onDiscover: { showingDiscovery = true }
         )
-        .navigationTitle(navigationTitle)
+        .navigationTitle(filter.title)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -126,16 +119,6 @@ struct ArticleListView: View {
         )
     }
 
-    private var navigationTitle: String {
-        switch filter {
-        case .readingList:
-            return "Luego"
-        case .favorites:
-            return "Favourites"
-        case .archived:
-            return "Archived"
-        }
-    }
 }
 
 struct ArticleListContent: View {
@@ -151,7 +134,7 @@ struct ArticleListContent: View {
                 if articles.isEmpty {
                     ArticleListEmptyState(onDiscover: onDiscover, filter: filter)
                 } else {
-                    ArticleList(articles: articles, viewModel: viewModel, diContainer: diContainer)
+                    ArticleList(articles: articles, viewModel: viewModel, diContainer: diContainer, filter: filter)
                 }
             } else {
                 ProgressView()
@@ -164,6 +147,7 @@ struct ArticleList: View {
     let articles: [Article]
     let viewModel: ArticleListViewModel
     let diContainer: DIContainer?
+    let filter: ArticleFilter
 
     var body: some View {
         List {
@@ -186,28 +170,30 @@ struct ArticleList: View {
     }
 
     private func favoriteButton(for article: Article) -> some View {
-        Button {
+        let isFavorited = filter == .favorites
+        return Button {
             Task {
                 await viewModel.toggleFavorite(article)
             }
         } label: {
             Label(
-                article.isFavorite ? "Unfavorite" : "Favorite",
-                systemImage: article.isFavorite ? "heart.slash.fill" : "heart.fill"
+                isFavorited ? "Unfavorite" : "Favorite",
+                systemImage: isFavorited ? "heart.slash.fill" : "heart.fill"
             )
         }
-        .tint(article.isFavorite ? .gray : .red)
+        .tint(isFavorited ? .gray : .red)
     }
 
     private func archiveButton(for article: Article) -> some View {
-        Button {
+        let isArchived = filter == .archived
+        return Button {
             Task {
                 await viewModel.toggleArchive(article)
             }
         } label: {
             Label(
-                article.isArchived ? "Unarchive" : "Archive",
-                systemImage: article.isArchived ? "tray.and.arrow.up.fill" : "archivebox.fill"
+                isArchived ? "Unarchive" : "Archive",
+                systemImage: isArchived ? "tray.and.arrow.up.fill" : "archivebox.fill"
             )
         }
         .tint(.blue)
@@ -243,15 +229,15 @@ struct ArticleListEmptyState: View {
     var body: some View {
         ContentUnavailableView {
             VStack(spacing: 8) {
-                Image(systemName: emptyStateIcon)
+                Image(systemName: filter.emptyStateIcon)
                     .font(.system(size: 64))
-                    .foregroundStyle(iconColor)
-                Text(emptyStateTitle)
+                    .foregroundStyle(filter.emptyStateIconColor)
+                Text(filter.emptyStateTitle)
                     .font(.title2)
                     .fontWeight(.semibold)
             }
         } description: {
-            Text(emptyStateDescription)
+            Text(filter.emptyStateDescription)
         } actions: {
             if filter == .readingList {
                 Button("Inspire Me") {
@@ -260,50 +246,6 @@ struct ArticleListEmptyState: View {
                 .buttonStyle(.glassProminent)
                 .tint(.purple)
             }
-        }
-    }
-
-    private var iconColor: Color {
-        switch filter {
-        case .readingList:
-            return .gray
-        case .favorites:
-            return .pink
-        case .archived:
-            return .blue
-        }
-    }
-
-    private var emptyStateTitle: String {
-        switch filter {
-        case .readingList:
-            return "No Articles"
-        case .favorites:
-            return "No Favorites"
-        case .archived:
-            return "No Archived Articles"
-        }
-    }
-
-    private var emptyStateIcon: String {
-        switch filter {
-        case .readingList:
-            return "doc.text.fill"
-        case .favorites:
-            return "heart.fill"
-        case .archived:
-            return "archivebox.fill"
-        }
-    }
-
-    private var emptyStateDescription: String {
-        switch filter {
-        case .readingList:
-            return "Save your first article to get started"
-        case .favorites:
-            return "Articles you favorite will appear here"
-        case .archived:
-            return "Archived articles will appear here"
         }
     }
 }

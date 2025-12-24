@@ -1,12 +1,5 @@
 import Foundation
-import SwiftUI
 import Observation
-
-enum ArticleFilter {
-    case readingList
-    case favorites
-    case archived
-}
 
 @Observable
 @MainActor
