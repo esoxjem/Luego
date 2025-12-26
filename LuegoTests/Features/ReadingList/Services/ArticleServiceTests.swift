@@ -49,6 +49,7 @@ struct ArticleServiceTests {
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Custom Title",
             thumbnailURL: thumbnailURL,
+            faviconURL: nil,
             description: "Custom description",
             publishedDate: publishedDate
         )
@@ -109,6 +110,7 @@ struct ArticleServiceTests {
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Older Article",
             thumbnailURL: nil,
+            faviconURL: nil,
             description: nil,
             publishedDate: nil
         )
@@ -120,6 +122,7 @@ struct ArticleServiceTests {
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Newer Article",
             thumbnailURL: nil,
+            faviconURL: nil,
             description: nil,
             publishedDate: nil
         )
@@ -337,6 +340,7 @@ struct ArticleServiceTests {
             mockMetadataDataSource.metadataToReturn = ArticleMetadata(
                 title: "Article \(index + 1)",
                 thumbnailURL: nil,
+                faviconURL: nil,
                 description: nil,
                 publishedDate: nil
             )

@@ -7,6 +7,7 @@ enum EphemeralArticleFixtures {
         title: String = "Discovered Article",
         content: String = "This is the content of the discovered article with enough words to test reading time calculation accurately.",
         thumbnailURL: URL? = nil,
+        faviconURL: URL? = nil,
         publishedDate: Date? = nil,
         feedTitle: String = "Example Feed"
     ) -> EphemeralArticle {
@@ -15,6 +16,7 @@ enum EphemeralArticleFixtures {
             title: title,
             content: content,
             thumbnailURL: thumbnailURL,
+            faviconURL: faviconURL,
             publishedDate: publishedDate,
             feedTitle: feedTitle
         )

@@ -75,6 +75,7 @@ struct SharingServiceTests {
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Shared Article",
             thumbnailURL: URL(string: "https://example.com/thumb.jpg"),
+            faviconURL: nil,
             description: "Description",
             publishedDate: Date()
         )
@@ -156,6 +157,7 @@ struct SharingServiceTests {
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Full Metadata Article",
             thumbnailURL: thumbnailURL,
+            faviconURL: nil,
             description: "Full description",
             publishedDate: publishedDate
         )

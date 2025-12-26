@@ -45,11 +45,13 @@ final class MetadataDataSource: MetadataDataSourceProtocol {
         let title = ogTitle ?? htmlTitle ?? url.host() ?? url.absoluteString
         let imageURL = ogImage ?? extractFirstImageURL(from: document)
         let thumbnailURL = buildThumbnailURL(from: imageURL, baseURL: url)
+        let faviconURL = extractFaviconURL(from: document, baseURL: url)
         let description = ogDescription ?? metaDescription
 
         return ArticleMetadata(
             title: title,
             thumbnailURL: thumbnailURL,
+            faviconURL: faviconURL,
             description: description,
             publishedDate: publishedDate
         )
@@ -60,6 +62,7 @@ final class MetadataDataSource: MetadataDataSourceProtocol {
         let htmlContent = try await fetchHTMLContent(from: url, timeout: timeout)
         let document = try parseHTML(htmlContent)
 
+        let faviconURL = extractFaviconURL(from: document, baseURL: url)
         try removeUnwantedElements(from: document)
 
         let (ogTitle, ogImage, ogDescription) = extractOpenGraphMetadata(from: document)
@@ -75,6 +78,7 @@ final class MetadataDataSource: MetadataDataSourceProtocol {
         return ArticleContent(
             title: title,
             thumbnailURL: thumbnailURL,
+            faviconURL: faviconURL,
             description: description,
             content: content,
             publishedDate: publishedDate
@@ -226,6 +230,52 @@ final class MetadataDataSource: MetadataDataSourceProtocol {
         let iconKeywords = ["icon", "logo", "avatar", "pixel", "tracking", "badge", "button"]
 
         return iconKeywords.contains { srcValue.contains($0) }
+    }
+
+    private func extractFaviconURL(from document: Document, baseURL: URL) -> URL? {
+        let faviconSelectors = [
+            "link[rel='apple-touch-icon']",
+            "link[rel='apple-touch-icon-precomposed']",
+            "link[rel='icon'][type='image/png']",
+            "link[rel='icon']",
+            "link[rel='shortcut icon']"
+        ]
+
+        for selector in faviconSelectors {
+            if let href = try? document.select(selector).first()?.attr("href"),
+               !href.isEmpty,
+               let faviconURL = buildFaviconURL(from: href, baseURL: baseURL) {
+                return faviconURL
+            }
+        }
+
+        return buildDefaultFaviconURL(baseURL: baseURL)
+    }
+
+    private func buildFaviconURL(from href: String, baseURL: URL) -> URL? {
+        if href.hasPrefix("http://") || href.hasPrefix("https://") {
+            return URL(string: href)
+        }
+
+        if href.hasPrefix("//") {
+            return URL(string: "https:" + href)
+        }
+
+        if href.hasPrefix("/") {
+            var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+            components?.path = href
+            components?.query = nil
+            return components?.url
+        }
+
+        return nil
+    }
+
+    private func buildDefaultFaviconURL(baseURL: URL) -> URL? {
+        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+        components?.path = "/favicon.ico"
+        components?.query = nil
+        return components?.url
     }
 
     private func parseDateString(_ dateString: String) -> Date? {

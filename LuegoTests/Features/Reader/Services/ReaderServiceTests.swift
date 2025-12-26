@@ -54,6 +54,7 @@ struct ReaderServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Fetched Title",
             thumbnailURL: nil,
+            faviconURL: nil,
             description: nil,
             content: "Fetched content from the web",
             publishedDate: nil
@@ -82,6 +83,7 @@ struct ReaderServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "New Title",
             thumbnailURL: nil,
+            faviconURL: nil,
             description: nil,
             content: "New content from refresh",
             publishedDate: nil
@@ -99,6 +101,7 @@ struct ReaderServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Title",
             thumbnailURL: nil,
+            faviconURL: nil,
             description: nil,
             content: "Persisted content",
             publishedDate: nil

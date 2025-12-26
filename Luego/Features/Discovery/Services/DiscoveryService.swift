@@ -124,6 +124,7 @@ final class DiscoveryService: DiscoveryServiceProtocol {
                 title: articleContent.title,
                 content: articleContent.content,
                 thumbnailURL: articleContent.thumbnailURL,
+                faviconURL: articleContent.faviconURL,
                 publishedDate: articleContent.publishedDate,
                 feedTitle: domain
             )

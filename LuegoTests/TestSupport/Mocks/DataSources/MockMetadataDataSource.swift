@@ -44,6 +44,7 @@ final class MockMetadataDataSource: MetadataDataSourceProtocol {
         return metadataToReturn ?? ArticleMetadata(
             title: "Mock Title",
             thumbnailURL: nil,
+            faviconURL: nil,
             description: "Mock description",
             publishedDate: Date()
         )
@@ -59,6 +60,7 @@ final class MockMetadataDataSource: MetadataDataSourceProtocol {
         return contentToReturn ?? ArticleContent(
             title: "Mock Title",
             thumbnailURL: nil,
+            faviconURL: nil,
             description: "Mock description",
             content: "Mock content that is long enough to pass validation checks in the real implementation",
             publishedDate: Date()

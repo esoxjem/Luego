@@ -10,6 +10,7 @@ import Foundation
 struct ArticleMetadata {
     let title: String
     let thumbnailURL: URL?
+    let faviconURL: URL?
     let description: String?
     let publishedDate: Date?
 }
