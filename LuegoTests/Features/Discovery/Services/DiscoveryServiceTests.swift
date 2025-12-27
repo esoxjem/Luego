@@ -53,7 +53,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Kagi Article Title",
             thumbnailURL: URL(string: "https://example.com/thumb.jpg"),
-            faviconURL: nil,
             description: "Description",
             content: "Article content",
             publishedDate: Date()
@@ -81,7 +80,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Blogroll Article Title",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Blogroll content",
             publishedDate: nil
@@ -105,7 +103,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Valid Article",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Valid content",
             publishedDate: nil
@@ -129,7 +126,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Valid Article",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Valid content",
             publishedDate: nil
@@ -158,7 +154,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Valid",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content",
             publishedDate: nil
@@ -184,7 +179,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "YouTube Video",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content",
             publishedDate: nil
@@ -207,7 +201,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Title",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content",
             publishedDate: nil
@@ -274,7 +267,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Title",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content",
             publishedDate: nil
@@ -332,7 +324,6 @@ struct DiscoveryServiceTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Title",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content",
             publishedDate: nil

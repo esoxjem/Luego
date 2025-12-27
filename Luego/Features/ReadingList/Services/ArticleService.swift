@@ -39,7 +39,6 @@ final class ArticleService: ArticleServiceProtocol {
             content: nil,
             savedDate: Date(),
             thumbnailURL: metadata.thumbnailURL,
-            faviconURL: metadata.faviconURL,
             publishedDate: metadata.publishedDate,
             readPosition: 0
         )
@@ -92,7 +91,6 @@ final class ArticleService: ArticleServiceProtocol {
             title: ephemeralArticle.title,
             content: ephemeralArticle.content,
             thumbnailURL: ephemeralArticle.thumbnailURL,
-            faviconURL: ephemeralArticle.faviconURL,
             publishedDate: ephemeralArticle.publishedDate
         )
 

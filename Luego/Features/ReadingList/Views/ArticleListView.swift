@@ -164,7 +164,6 @@ struct ArticleList: View {
                     archiveButton(for: article)
                     deleteButton(for: article)
                 }
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
         }
         .scrollContentBackground(.hidden)

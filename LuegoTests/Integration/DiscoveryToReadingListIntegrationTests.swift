@@ -54,7 +54,6 @@ struct DiscoveryToReadingListIntegrationTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Discovered Article Title",
             thumbnailURL: thumbnailURL,
-            faviconURL: nil,
             description: "Description",
             content: "Full article content from discovery",
             publishedDate: publishedDate
@@ -87,7 +86,6 @@ struct DiscoveryToReadingListIntegrationTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Article 1",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content 1",
             publishedDate: nil
@@ -98,7 +96,6 @@ struct DiscoveryToReadingListIntegrationTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Article 2",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content 2",
             publishedDate: nil
@@ -124,7 +121,6 @@ struct DiscoveryToReadingListIntegrationTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Complete Title",
             thumbnailURL: thumbnail,
-            faviconURL: nil,
             description: "Complete description",
             content: "Complete content body",
             publishedDate: pubDate
@@ -150,7 +146,6 @@ struct DiscoveryToReadingListIntegrationTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Title",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content",
             publishedDate: nil
@@ -174,7 +169,6 @@ struct DiscoveryToReadingListIntegrationTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Title",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Pre-fetched content from discovery",
             publishedDate: nil
@@ -199,7 +193,6 @@ struct DiscoveryToReadingListIntegrationTests {
         mockMetadataDataSource.contentToReturn = ArticleContent(
             title: "Blogroll Article",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: nil,
             content: "Content from blogroll source",
             publishedDate: nil
@@ -255,7 +248,6 @@ struct ShareExtensionToReadingListIntegrationTests {
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Shared Article",
             thumbnailURL: nil,
-            faviconURL: nil,
             description: "Shared description",
             publishedDate: nil
         )

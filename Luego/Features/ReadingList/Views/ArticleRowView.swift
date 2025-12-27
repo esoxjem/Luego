@@ -6,7 +6,7 @@ struct ArticleRowView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            ArticleThumbnailView(thumbnailURL: article.thumbnailURL, faviconURL: article.faviconURL)
+            ArticleThumbnailView(thumbnailURL: article.thumbnailURL)
                 .frame(width: 60, height: 60)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
@@ -98,7 +98,6 @@ struct ArticleMetadataFooter: View {
 
 struct ArticleThumbnailView: View {
     let thumbnailURL: URL?
-    let faviconURL: URL?
 
     var body: some View {
         if let thumbnailURL {
@@ -108,35 +107,9 @@ struct ArticleThumbnailView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } else {
-                    FaviconFallbackView(faviconURL: faviconURL)
+                    ThumbnailPlaceholder()
                 }
             }
-        } else {
-            FaviconFallbackView(faviconURL: faviconURL)
-        }
-    }
-}
-
-struct FaviconFallbackView: View {
-    let faviconURL: URL?
-
-    var body: some View {
-        if let faviconURL {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.15))
-                .overlay {
-                    NetworkImage(url: faviconURL) { state in
-                        if let image = state.image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 32, height: 32)
-                        } else {
-                            Image(systemName: "doc.text")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
         } else {
             ThumbnailPlaceholder()
         }

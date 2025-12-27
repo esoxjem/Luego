@@ -10,7 +10,6 @@ import Foundation
 struct ArticleContent {
     let title: String
     let thumbnailURL: URL?
-    let faviconURL: URL?
     let description: String?
     let content: String
     let publishedDate: Date?

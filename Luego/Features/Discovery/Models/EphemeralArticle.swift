@@ -5,7 +5,6 @@ struct EphemeralArticle: Sendable {
     let title: String
     let content: String
     let thumbnailURL: URL?
-    let faviconURL: URL?
     let publishedDate: Date?
     let feedTitle: String
 

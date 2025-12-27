@@ -16,7 +16,6 @@ final class Article {
     var content: String?
     var savedDate: Date
     var thumbnailURL: URL?
-    var faviconURL: URL?
     var publishedDate: Date?
     var readPosition: Double = 0.0
     var isFavorite: Bool = false
@@ -40,14 +39,13 @@ final class Article {
         return "\(minutes) min"
     }
 
-    init(id: UUID = UUID(), url: URL, title: String, content: String? = nil, savedDate: Date = Date(), thumbnailURL: URL? = nil, faviconURL: URL? = nil, publishedDate: Date? = nil, readPosition: Double = 0.0, isFavorite: Bool = false, isArchived: Bool = false) {
+    init(id: UUID = UUID(), url: URL, title: String, content: String? = nil, savedDate: Date = Date(), thumbnailURL: URL? = nil, publishedDate: Date? = nil, readPosition: Double = 0.0, isFavorite: Bool = false, isArchived: Bool = false) {
         self.id = id
         self.url = url
         self.title = title
         self.content = content
         self.savedDate = savedDate
         self.thumbnailURL = thumbnailURL
-        self.faviconURL = faviconURL
         self.publishedDate = publishedDate
         self.readPosition = readPosition
         self.isFavorite = isFavorite
