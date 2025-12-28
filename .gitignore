@@ -66,6 +66,9 @@ fastlane/test_output
 # Build directory
 build/
 
+# Secrets (API keys - use Secrets.swift.template as reference)
+Luego/Core/Configuration/Secrets.swift
+
 # Claude Code settings (personal configuration)
 .claude/settings.local.json
 .claude/*.local.*

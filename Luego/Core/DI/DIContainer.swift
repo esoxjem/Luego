@@ -17,8 +17,19 @@ final class DIContainer {
         TurndownDataSource()
     }()
 
-    private lazy var metadataDataSource: MetadataDataSourceProtocol = {
+    private lazy var luegoAPIDataSource: LuegoAPIDataSourceProtocol = {
+        LuegoAPIDataSource()
+    }()
+
+    private lazy var localMetadataDataSource: MetadataDataSourceProtocol = {
         MetadataDataSource(turndownDataSource: turndownDataSource)
+    }()
+
+    private lazy var metadataDataSource: MetadataDataSourceProtocol = {
+        ContentDataSource(
+            luegoAPIDataSource: luegoAPIDataSource,
+            metadataDataSource: localMetadataDataSource
+        )
     }()
 
     private lazy var opmlDataSource: OPMLDataSource = {

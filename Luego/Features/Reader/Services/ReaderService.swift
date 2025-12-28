@@ -24,6 +24,13 @@ final class ReaderService: ReaderServiceProtocol {
         let content = try await metadataDataSource.fetchContent(for: article.url)
         article.content = content.content
 
+        if article.author == nil, let author = content.author {
+            article.author = author
+        }
+        if article.wordCount == nil, let wordCount = content.wordCount {
+            article.wordCount = wordCount
+        }
+
         try modelContext.save()
         return article
     }
