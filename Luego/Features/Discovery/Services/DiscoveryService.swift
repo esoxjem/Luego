@@ -98,11 +98,11 @@ final class DiscoveryService: DiscoveryServiceProtocol {
             if isYouTubeURL(articleEntry.articleUrl) {
                 continue
             }
-            await onArticleEntryFetched(articleEntry.articleUrl)
+            onArticleEntryFetched(articleEntry.articleUrl)
             return try await fetchArticleContent(for: articleEntry)
         }
         let articleEntry = try await sourceDataSource.randomArticleEntry()
-        await onArticleEntryFetched(articleEntry.articleUrl)
+        onArticleEntryFetched(articleEntry.articleUrl)
         return try await fetchArticleContent(for: articleEntry)
     }
 
@@ -116,7 +116,12 @@ final class DiscoveryService: DiscoveryServiceProtocol {
         let discoveryTimeoutSeconds: TimeInterval = 10
 
         do {
-            let articleContent = try await metadataDataSource.fetchContent(for: articleEntry.articleUrl, timeout: discoveryTimeoutSeconds)
+            let articleContent = try await metadataDataSource.fetchContent(
+                for: articleEntry.articleUrl,
+                timeout: discoveryTimeoutSeconds,
+                forceRefresh: false,
+                skipCache: true
+            )
             let domain = articleEntry.articleUrl.host() ?? "Unknown"
 
             return EphemeralArticle(

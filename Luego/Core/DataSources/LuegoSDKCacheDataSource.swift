@@ -1,0 +1,130 @@
+import Foundation
+
+protocol LuegoSDKCacheDataSourceProtocol: Sendable {
+    func loadBundle(name: String) -> Data?
+    func saveBundle(name: String, data: Data)
+    func loadRules() -> Data?
+    func saveRules(_ data: Data)
+    func loadVersions() -> SDKVersionsResponse?
+    func saveVersions(_ versions: SDKVersionsResponse)
+    func getRulesTimestamp() -> Date?
+    func setRulesTimestamp(_ date: Date)
+    func bundleExists(name: String) -> Bool
+    func allBundlesExist() -> Bool
+    func clearAll()
+}
+
+@MainActor
+final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
+    private let fileManager = FileManager.default
+    private let rulesTimestampKey = "luego_sdk_rules_timestamp"
+
+    private var sdkDirectory: URL {
+        guard let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return fileManager.temporaryDirectory.appendingPathComponent("LuegoSDK")
+        }
+        return appSupport.appendingPathComponent("LuegoSDK")
+    }
+
+    private var bundlesDirectory: URL {
+        sdkDirectory.appendingPathComponent("bundles")
+    }
+
+    private var rulesFileURL: URL {
+        sdkDirectory.appendingPathComponent("rules.json")
+    }
+
+    private var versionsFileURL: URL {
+        sdkDirectory.appendingPathComponent("versions.json")
+    }
+
+    init() {
+        ensureDirectoriesExist()
+    }
+
+    private func ensureDirectoriesExist() {
+        do {
+            try fileManager.createDirectory(at: bundlesDirectory, withIntermediateDirectories: true)
+        } catch {
+            #if DEBUG
+            print("[SDK] ⚠ Failed to create directories: \(error)")
+            #endif
+        }
+    }
+
+    func loadBundle(name: String) -> Data? {
+        let fileURL = bundlesDirectory.appendingPathComponent("\(name).js")
+        return try? Data(contentsOf: fileURL)
+    }
+
+    func saveBundle(name: String, data: Data) {
+        let fileURL = bundlesDirectory.appendingPathComponent("\(name).js")
+        do {
+            try data.write(to: fileURL)
+        } catch {
+            #if DEBUG
+            print("[SDK] ⚠ Failed to save bundle '\(name)': \(error)")
+            #endif
+        }
+    }
+
+    func loadRules() -> Data? {
+        try? Data(contentsOf: rulesFileURL)
+    }
+
+    func saveRules(_ data: Data) {
+        do {
+            try data.write(to: rulesFileURL)
+            setRulesTimestamp(Date())
+        } catch {
+            #if DEBUG
+            print("[SDK] ⚠ Failed to save rules: \(error)")
+            #endif
+        }
+    }
+
+    func loadVersions() -> SDKVersionsResponse? {
+        guard let data = try? Data(contentsOf: versionsFileURL) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(SDKVersionsResponse.self, from: data)
+    }
+
+    func saveVersions(_ versions: SDKVersionsResponse) {
+        do {
+            let data = try JSONEncoder().encode(versions)
+            try data.write(to: versionsFileURL)
+        } catch {
+            #if DEBUG
+            print("[SDK] ⚠ Failed to save versions: \(error)")
+            #endif
+        }
+    }
+
+    func getRulesTimestamp() -> Date? {
+        UserDefaults.standard.object(forKey: rulesTimestampKey) as? Date
+    }
+
+    func setRulesTimestamp(_ date: Date) {
+        UserDefaults.standard.set(date, forKey: rulesTimestampKey)
+    }
+
+    func bundleExists(name: String) -> Bool {
+        let fileURL = bundlesDirectory.appendingPathComponent("\(name).js")
+        return fileManager.fileExists(atPath: fileURL.path)
+    }
+
+    func allBundlesExist() -> Bool {
+        AppConfiguration.sdkBundleNames.allSatisfy { bundleExists(name: $0) }
+    }
+
+    func clearAll() {
+        try? fileManager.removeItem(at: sdkDirectory)
+        UserDefaults.standard.removeObject(forKey: rulesTimestampKey)
+        ensureDirectoriesExist()
+
+        #if DEBUG
+        print("[SDK] Cache cleared")
+        #endif
+    }
+}

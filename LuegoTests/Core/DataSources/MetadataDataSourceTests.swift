@@ -5,12 +5,10 @@ import Foundation
 @Suite("MetadataDataSource Tests")
 @MainActor
 struct MetadataDataSourceTests {
-    var turndownDataSource: TurndownDataSource
     var sut: MetadataDataSource
 
     init() {
-        turndownDataSource = TurndownDataSource()
-        sut = MetadataDataSource(turndownDataSource: turndownDataSource)
+        sut = MetadataDataSource()
     }
 
     @Test("validateURL returns same URL for valid HTTPS URL")
@@ -99,12 +97,10 @@ struct MetadataDataSourceTests {
 @Suite("MetadataDataSource URL Validation Edge Cases")
 @MainActor
 struct MetadataDataSourceURLEdgeCaseTests {
-    var turndownDataSource: TurndownDataSource
     var sut: MetadataDataSource
 
     init() {
-        turndownDataSource = TurndownDataSource()
-        sut = MetadataDataSource(turndownDataSource: turndownDataSource)
+        sut = MetadataDataSource()
     }
 
     @Test("validateURL handles URL with special characters")

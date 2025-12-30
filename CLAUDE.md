@@ -41,7 +41,7 @@ Claude Code includes an `ios-build-fixer` agent that:
 - **App/ContentView.swift**: Main article list view using ArticleListViewModel from DI
 - **Core/DI/DIContainer.swift**: Manages all dependencies (services, data sources, ViewModels)
 - **Core/Models/**: SwiftData models and DTOs
-- **Core/DataSources/**: Shared data access (MetadataDataSource, TurndownDataSource)
+- **Core/DataSources/**: Shared data access (MetadataDataSource, LuegoSDK components)
 - **Features/*/Services/**: Business logic operations (ArticleService, ReaderService, etc.)
 - **Features/*/DataSources/**: Feature-specific data sources
 - **Features/*/Views/**: ViewModels and Views using models

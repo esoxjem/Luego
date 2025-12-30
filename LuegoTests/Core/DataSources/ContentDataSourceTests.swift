@@ -5,24 +5,80 @@ import Foundation
 @Suite("ContentDataSource Tests")
 @MainActor
 struct ContentDataSourceTests {
+    var mockParserDataSource: MockLuegoParserDataSource
+    var mockCache: MockParsedContentCacheDataSource
     var mockAPIDataSource: MockLuegoAPIDataSource
     var mockMetadataDataSource: MockMetadataDataSource
+    var mockSDKManager: MockLuegoSDKManager
     var sut: ContentDataSource
 
     init() {
+        mockParserDataSource = MockLuegoParserDataSource()
+        mockCache = MockParsedContentCacheDataSource()
         mockAPIDataSource = MockLuegoAPIDataSource()
         mockMetadataDataSource = MockMetadataDataSource()
+        mockSDKManager = MockLuegoSDKManager()
         sut = ContentDataSource(
+            parserDataSource: mockParserDataSource,
+            parsedContentCache: mockCache,
             luegoAPIDataSource: mockAPIDataSource,
-            metadataDataSource: mockMetadataDataSource
+            metadataDataSource: mockMetadataDataSource,
+            sdkManager: mockSDKManager
         )
     }
 
-    @Test("fetchContent returns API response when successful")
-    func fetchContentReturnsAPIResponseWhenSuccessful() async throws {
+    @Test("fetchContent returns cached content when available")
+    func fetchContentReturnsCachedContent() async throws {
         let testURL = URL(string: "https://example.com/article")!
+        let cachedContent = ArticleContent(
+            title: "Cached Title",
+            content: "Cached content"
+        )
+        mockCache.cachedContent[testURL] = cachedContent
+
+        let result = try await sut.fetchContent(for: testURL, timeout: nil)
+
+        #expect(result.title == "Cached Title")
+        #expect(result.content == "Cached content")
+        #expect(mockCache.getCallCount == 1)
+        #expect(mockParserDataSource.parseCallCount == 0)
+        #expect(mockAPIDataSource.fetchArticleCallCount == 0)
+    }
+
+    @Test("fetchContent uses SDK parser when ready and succeeds")
+    func fetchContentUsesSDKParserWhenReady() async throws {
+        let testURL = URL(string: "https://example.com/article")!
+        mockParserDataSource.mockIsReady = true
+        mockParserDataSource.resultToReturn = ParserResult(
+            success: true,
+            content: "# Parsed Content",
+            metadata: ParserMetadata(
+                title: "Parsed Title",
+                author: "Author",
+                publishedDate: nil,
+                excerpt: "Excerpt",
+                siteName: nil
+            ),
+            error: nil
+        )
+        mockMetadataDataSource.htmlToReturn = "<html><body>Test</body></html>"
+
+        let result = try await sut.fetchContent(for: testURL, timeout: nil)
+
+        #expect(result.title == "Parsed Title")
+        #expect(result.content == "# Parsed Content")
+        #expect(mockParserDataSource.parseCallCount == 1)
+        #expect(mockMetadataDataSource.fetchHTMLCallCount == 1)
+        #expect(mockAPIDataSource.fetchArticleCallCount == 0)
+        #expect(mockCache.saveCallCount == 1)
+    }
+
+    @Test("fetchContent falls back to API when SDK not ready")
+    func fetchContentFallsBackToAPIWhenSDKNotReady() async throws {
+        let testURL = URL(string: "https://example.com/article")!
+        mockParserDataSource.mockIsReady = false
         mockAPIDataSource.responseToReturn = LuegoAPIResponse(
-            content: "# Test Content",
+            content: "# API Content",
             metadata: LuegoAPIMetadata(
                 title: "API Title",
                 author: "Test Author",
@@ -36,72 +92,78 @@ struct ContentDataSourceTests {
 
         let result = try await sut.fetchContent(for: testURL, timeout: nil)
 
-        #expect(result.content == "# Test Content")
+        #expect(result.content == "# API Content")
         #expect(result.title == "API Title")
-        #expect(result.author == "Test Author")
-        #expect(result.wordCount == 1000)
+        #expect(mockParserDataSource.parseCallCount == 0)
         #expect(mockAPIDataSource.fetchArticleCallCount == 1)
-        #expect(mockMetadataDataSource.fetchContentCallCount == 0)
+        #expect(mockCache.saveCallCount == 1)
     }
 
-    @Test("fetchContent falls back to local parsing when API fails")
-    func fetchContentFallsBackWhenAPIFails() async throws {
+    @Test("fetchContent falls back to API when SDK parsing fails")
+    func fetchContentFallsBackToAPIWhenSDKFails() async throws {
         let testURL = URL(string: "https://example.com/article")!
-        mockAPIDataSource.shouldThrowError = true
-        mockAPIDataSource.errorToThrow = .serviceUnavailable
-
-        mockMetadataDataSource.contentToReturn = ArticleContent(
-            title: "Local Title",
-            thumbnailURL: nil,
-            description: nil,
-            content: "Local content from MetadataDataSource",
-            publishedDate: Date()
+        mockParserDataSource.mockIsReady = true
+        mockParserDataSource.resultToReturn = ParserResult(
+            success: false,
+            content: nil,
+            metadata: nil,
+            error: "Parse error"
+        )
+        mockMetadataDataSource.htmlToReturn = "<html><body>Test</body></html>"
+        mockAPIDataSource.responseToReturn = LuegoAPIResponse(
+            content: "# API Content",
+            metadata: LuegoAPIMetadata(
+                title: "API Title",
+                author: nil,
+                publishedDate: nil,
+                estimatedReadTimeMinutes: nil,
+                wordCount: nil,
+                sourceUrl: testURL.absoluteString,
+                domain: "example.com"
+            )
         )
 
         let result = try await sut.fetchContent(for: testURL, timeout: nil)
 
-        #expect(result.content == "Local content from MetadataDataSource")
-        #expect(result.title == "Local Title")
+        #expect(result.content == "# API Content")
+        #expect(mockParserDataSource.parseCallCount == 1)
         #expect(mockAPIDataSource.fetchArticleCallCount == 1)
-        #expect(mockMetadataDataSource.fetchContentCallCount == 1)
     }
 
-    @Test("fetchContent falls back when API returns network error")
-    func fetchContentFallsBackOnNetworkError() async throws {
+    @Test("fetchContent falls back to API when HTML fetch fails")
+    func fetchContentFallsBackToAPIWhenHTMLFetchFails() async throws {
         let testURL = URL(string: "https://example.com/article")!
-        mockAPIDataSource.shouldThrowError = true
-        mockAPIDataSource.errorToThrow = .networkError(URLError(.notConnectedToInternet))
+        mockParserDataSource.mockIsReady = true
+        mockMetadataDataSource.shouldThrowOnFetchHTML = true
+        mockAPIDataSource.responseToReturn = LuegoAPIResponse(
+            content: "# API Content",
+            metadata: LuegoAPIMetadata(
+                title: "API Title",
+                author: nil,
+                publishedDate: nil,
+                estimatedReadTimeMinutes: nil,
+                wordCount: nil,
+                sourceUrl: testURL.absoluteString,
+                domain: "example.com"
+            )
+        )
 
         let result = try await sut.fetchContent(for: testURL, timeout: nil)
 
+        #expect(result.content == "# API Content")
         #expect(mockAPIDataSource.fetchArticleCallCount == 1)
-        #expect(mockMetadataDataSource.fetchContentCallCount == 1)
     }
 
-    @Test("fetchContent falls back when API returns unauthorized")
-    func fetchContentFallsBackOnUnauthorized() async throws {
+    @Test("fetchContent throws when API fails")
+    func fetchContentThrowsWhenAPIFails() async throws {
         let testURL = URL(string: "https://example.com/article")!
+        mockParserDataSource.mockIsReady = false
         mockAPIDataSource.shouldThrowError = true
-        mockAPIDataSource.errorToThrow = .unauthorized
+        mockAPIDataSource.errorToThrow = .serviceUnavailable
 
-        let result = try await sut.fetchContent(for: testURL, timeout: nil)
-
-        #expect(mockAPIDataSource.fetchArticleCallCount == 1)
-        #expect(mockMetadataDataSource.fetchContentCallCount == 1)
-    }
-
-    @Test("fetchContent throws when both API and local fail")
-    func fetchContentThrowsWhenBothFail() async throws {
-        let testURL = URL(string: "https://example.com/article")!
-        mockAPIDataSource.shouldThrowError = true
-        mockMetadataDataSource.shouldThrowOnFetchContent = true
-
-        await #expect(throws: ArticleMetadataError.self) {
+        await #expect(throws: LuegoAPIError.self) {
             try await sut.fetchContent(for: testURL, timeout: nil)
         }
-
-        #expect(mockAPIDataSource.fetchArticleCallCount == 1)
-        #expect(mockMetadataDataSource.fetchContentCallCount == 1)
     }
 
     @Test("validateURL delegates to MetadataDataSource")
@@ -122,7 +184,16 @@ struct ContentDataSourceTests {
 
         #expect(mockMetadataDataSource.fetchMetadataCallCount == 1)
         #expect(mockMetadataDataSource.lastFetchMetadataURL == testURL)
-        #expect(mockAPIDataSource.fetchArticleCallCount == 0)
+    }
+
+    @Test("fetchHTML delegates to MetadataDataSource")
+    func fetchHTMLDelegatesToMetadataDataSource() async throws {
+        let testURL = URL(string: "https://example.com/article")!
+
+        let result = try await sut.fetchHTML(from: testURL, timeout: 30)
+
+        #expect(mockMetadataDataSource.fetchHTMLCallCount == 1)
+        #expect(mockMetadataDataSource.lastFetchHTMLURL == testURL)
     }
 
     @Test("fetchContent uses fallback title from URL when API returns nil title")

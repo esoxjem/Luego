@@ -21,7 +21,7 @@ final class ReaderService: ReaderServiceProtocol {
             return article
         }
 
-        let content = try await metadataDataSource.fetchContent(for: article.url)
+        let content = try await metadataDataSource.fetchContent(for: article.url, timeout: nil, forceRefresh: forceRefresh)
         article.content = content.content
 
         if article.author == nil, let author = content.author {

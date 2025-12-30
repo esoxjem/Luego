@@ -13,24 +13,52 @@ final class DIContainer {
         UserDefaultsDataSource(sharedStorage: SharedStorage.shared)
     }()
 
-    private lazy var turndownDataSource: TurndownDataSource = {
-        TurndownDataSource()
-    }()
-
     private lazy var luegoAPIDataSource: LuegoAPIDataSourceProtocol = {
         LuegoAPIDataSource()
     }()
 
+    private lazy var luegoSDKDataSource: LuegoSDKDataSourceProtocol = {
+        LuegoSDKDataSource(
+            baseURL: AppConfiguration.luegoAPIBaseURL,
+            apiKey: AppConfiguration.luegoAPIKey,
+            timeout: AppConfiguration.luegoAPITimeout
+        )
+    }()
+
+    private lazy var luegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol = {
+        LuegoSDKCacheDataSource()
+    }()
+
+    private lazy var luegoSDKManager: LuegoSDKManagerProtocol = {
+        LuegoSDKManager(
+            sdkDataSource: luegoSDKDataSource,
+            cacheDataSource: luegoSDKCacheDataSource
+        )
+    }()
+
+    private lazy var luegoParserDataSource: LuegoParserDataSourceProtocol = {
+        LuegoParserDataSource(sdkManager: luegoSDKManager)
+    }()
+
+    private lazy var parsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol = {
+        ParsedContentCacheDataSource()
+    }()
+
     private lazy var localMetadataDataSource: MetadataDataSourceProtocol = {
-        MetadataDataSource(turndownDataSource: turndownDataSource)
+        MetadataDataSource()
     }()
 
     private lazy var metadataDataSource: MetadataDataSourceProtocol = {
         ContentDataSource(
+            parserDataSource: luegoParserDataSource,
+            parsedContentCache: parsedContentCacheDataSource,
             luegoAPIDataSource: luegoAPIDataSource,
-            metadataDataSource: localMetadataDataSource
+            metadataDataSource: localMetadataDataSource,
+            sdkManager: luegoSDKManager
         )
     }()
+
+    var sdkManager: LuegoSDKManagerProtocol { luegoSDKManager }
 
     private lazy var opmlDataSource: OPMLDataSource = {
         OPMLDataSource()

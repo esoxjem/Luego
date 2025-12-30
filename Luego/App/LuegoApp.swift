@@ -32,6 +32,9 @@ struct LuegoApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.diContainer, diContainer)
+                .task(id: "sdkInit") {
+                    await diContainer.sdkManager.ensureSDKReady()
+                }
         }
         .modelContainer(sharedModelContainer)
     }

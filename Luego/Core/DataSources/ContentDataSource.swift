@@ -1,15 +1,24 @@
 import Foundation
 
 final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
+    private let parserDataSource: LuegoParserDataSourceProtocol
+    private let parsedContentCache: ParsedContentCacheDataSourceProtocol
     private let luegoAPIDataSource: LuegoAPIDataSourceProtocol
     private let metadataDataSource: MetadataDataSourceProtocol
+    private let sdkManager: LuegoSDKManagerProtocol
 
     init(
+        parserDataSource: LuegoParserDataSourceProtocol,
+        parsedContentCache: ParsedContentCacheDataSourceProtocol,
         luegoAPIDataSource: LuegoAPIDataSourceProtocol,
-        metadataDataSource: MetadataDataSourceProtocol
+        metadataDataSource: MetadataDataSourceProtocol,
+        sdkManager: LuegoSDKManagerProtocol
     ) {
+        self.parserDataSource = parserDataSource
+        self.parsedContentCache = parsedContentCache
         self.luegoAPIDataSource = luegoAPIDataSource
         self.metadataDataSource = metadataDataSource
+        self.sdkManager = sdkManager
     }
 
     func validateURL(_ url: URL) async throws -> URL {
@@ -20,32 +29,97 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
         try await metadataDataSource.fetchMetadata(for: url, timeout: timeout)
     }
 
-    func fetchContent(for url: URL, timeout: TimeInterval?) async throws -> ArticleContent {
+    func fetchHTML(from url: URL, timeout: TimeInterval?) async throws -> String {
+        try await metadataDataSource.fetchHTML(from: url, timeout: timeout)
+    }
+
+    func fetchContent(for url: URL, timeout: TimeInterval?, forceRefresh: Bool, skipCache: Bool) async throws -> ArticleContent {
+        #if DEBUG
+        logFetchStart(url: url, forceRefresh: forceRefresh, skipCache: skipCache)
+        #endif
+
+        if skipCache {
+            return try await fetchContentWithoutCaching(url: url, timeout: timeout)
+        }
+
+        if forceRefresh {
+            parsedContentCache.remove(for: url)
+            #if DEBUG
+            print("[ContentDataSource] Cache cleared (forceRefresh)")
+            #endif
+        } else if let cached = parsedContentCache.get(for: url) {
+            #if DEBUG
+            print("[ContentDataSource] ✓ Cache HIT")
+            #endif
+            return cached
+        }
+
+        if parserDataSource.isReady {
+            if let result = await tryLocalParsing(url: url, timeout: timeout) {
+                parsedContentCache.save(result, for: url)
+                return result
+            }
+        }
+
+        let result = try await fetchFromAPI(url: url)
+        parsedContentCache.save(result, for: url)
+        return result
+    }
+
+    private func fetchContentWithoutCaching(url: URL, timeout: TimeInterval?) async throws -> ArticleContent {
+        if parserDataSource.isReady {
+            if let result = await tryLocalParsing(url: url, timeout: timeout) {
+                return result
+            }
+        }
+        return try await fetchFromAPI(url: url)
+    }
+
+    private func tryLocalParsing(url: URL, timeout: TimeInterval?) async -> ArticleContent? {
         do {
-            let response = try await luegoAPIDataSource.fetchArticle(for: url)
+            let html = try await metadataDataSource.fetchHTML(from: url, timeout: timeout)
+
+            guard let result = await parserDataSource.parse(html: html, url: url),
+                  result.success,
+                  let content = result.content,
+                  !content.isEmpty else {
+                #if DEBUG
+                print("[ContentDataSource] ✗ Local SDK parsing failed → falling back to API")
+                #endif
+                return nil
+            }
 
             #if DEBUG
-            print("[ContentDataSource] API success for: \(url.absoluteString)")
+            print("[ContentDataSource] ✓ Local SDK parsing SUCCESS")
             #endif
 
-            let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
-
-            return ArticleContent(
-                title: response.metadata.title ?? url.host() ?? url.absoluteString,
-                thumbnailURL: nil,
-                description: nil,
-                content: response.content,
-                publishedDate: publishedDate,
-                author: response.metadata.author,
-                wordCount: response.metadata.wordCount
-            )
+            return ArticleContent(from: result, url: url)
         } catch {
             #if DEBUG
-            print("[ContentDataSource] API failed, falling back to local parsing: \(error.localizedDescription)")
+            print("[ContentDataSource] ✗ HTML fetch failed: \(error.localizedDescription) → falling back to API")
             #endif
-
-            return try await metadataDataSource.fetchContent(for: url, timeout: timeout)
+            return nil
         }
+    }
+
+    private func fetchFromAPI(url: URL) async throws -> ArticleContent {
+        let response = try await luegoAPIDataSource.fetchArticle(for: url)
+
+        #if DEBUG
+        print("[ContentDataSource] ✓ API fetch SUCCESS")
+        #endif
+
+        let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
+
+        return ArticleContent(
+            title: response.metadata.title ?? url.host() ?? url.absoluteString,
+            thumbnailURL: nil,
+            description: nil,
+            content: response.content,
+            publishedDate: publishedDate,
+            author: response.metadata.author,
+            wordCount: response.metadata.wordCount
+        )
     }
 
     private func parsePublishedDate(from dateString: String?) -> Date? {
@@ -61,4 +135,38 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
         formatter.formatOptions = [.withInternetDateTime]
         return formatter.date(from: dateString)
     }
+
+    #if DEBUG
+    private func logFetchStart(url: URL, forceRefresh: Bool, skipCache: Bool) {
+        let host = url.host() ?? url.absoluteString
+        let sdkReady = parserDataSource.isReady
+        let versionString = formatVersionString()
+        let cacheMode = formatCacheMode(forceRefresh: forceRefresh, skipCache: skipCache)
+
+        print("""
+        [ContentDataSource] ─────────────────────────────────
+        URL: \(host)
+        SDK: \(sdkReady ? "Ready" : "Not available") \(versionString)
+        Cache: \(cacheMode)
+        ────────────────────────────────────────────────────
+        """)
+    }
+
+    private func formatVersionString() -> String {
+        guard let info = sdkManager.getVersionInfo() else {
+            return ""
+        }
+        return "(v\(info.parserVersion), rules: \(info.rulesVersion))"
+    }
+
+    private func formatCacheMode(forceRefresh: Bool, skipCache: Bool) -> String {
+        if skipCache {
+            return "SKIP (no read/write)"
+        } else if forceRefresh {
+            return "FORCE REFRESH (clear → fetch → save)"
+        } else {
+            return "NORMAL (read → fetch if miss → save)"
+        }
+    }
+    #endif
 }

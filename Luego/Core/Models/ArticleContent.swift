@@ -1,13 +1,6 @@
-//
-//  ArticleContent.swift
-//  Luego
-//
-//  Created by Claude on 2025-11-10.
-//
-
 import Foundation
 
-struct ArticleContent {
+struct ArticleContent: Codable {
     let title: String
     let thumbnailURL: URL?
     let description: String?
@@ -32,5 +25,40 @@ struct ArticleContent {
         self.publishedDate = publishedDate
         self.author = author
         self.wordCount = wordCount
+    }
+}
+
+extension ArticleContent {
+    init(from result: ParserResult, url: URL) {
+        self.init(
+            title: result.metadata?.title ?? url.host() ?? url.absoluteString,
+            thumbnailURL: nil,
+            description: result.metadata?.excerpt,
+            content: result.content ?? "",
+            publishedDate: Self.parseDate(result.metadata?.publishedDate),
+            author: result.metadata?.author,
+            wordCount: Self.calculateWordCount(result.content)
+        )
+    }
+
+    private static func parseDate(_ dateString: String?) -> Date? {
+        guard let dateString else { return nil }
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        if let date = formatter.date(from: dateString) {
+            return date
+        }
+
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: dateString)
+    }
+
+    private static func calculateWordCount(_ content: String?) -> Int? {
+        guard let content, !content.isEmpty else { return nil }
+        return content.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .count
     }
 }
