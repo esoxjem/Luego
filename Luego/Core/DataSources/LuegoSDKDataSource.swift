@@ -29,6 +29,7 @@ final class LuegoSDKDataSource: LuegoSDKDataSourceProtocol {
         request.httpMethod = "GET"
         request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
         request.timeoutInterval = timeout
+        request.cachePolicy = .reloadIgnoringLocalCacheData
 
         let (data, response) = try await performRequest(request)
 
