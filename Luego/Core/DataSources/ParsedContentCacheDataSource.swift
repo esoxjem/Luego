@@ -45,11 +45,6 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
             return nil
         }
 
-        guard !cached.isExpired else {
-            remove(for: url)
-            return nil
-        }
-
         #if DEBUG
         print("[ParsedContentCache] Cache hit for: \(url.absoluteString)")
         #endif
@@ -58,7 +53,7 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
     }
 
     func save(_ content: ArticleContent, for url: URL) {
-        let cached = CachedContent(content: content, timestamp: Date())
+        let cached = CachedContent(content: content)
         let fileURL = cacheFileURL(for: url)
 
         do {
@@ -103,9 +98,4 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
 
 private struct CachedContent: Codable {
     let content: ArticleContent
-    let timestamp: Date
-
-    var isExpired: Bool {
-        Date().timeIntervalSince(timestamp) > AppConfiguration.parsedContentCacheExpiration
-    }
 }

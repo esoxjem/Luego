@@ -10,5 +10,4 @@ struct AppConfiguration {
     static let luegoAPITimeout: TimeInterval = 30
 
     static let sdkBundleNames = ["linkedom", "readability", "turndown", "parser"]
-    static let parsedContentCacheExpiration: TimeInterval = 7 * 24 * 3600
 }
