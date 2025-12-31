@@ -98,6 +98,7 @@ struct ArticleReaderModeView: View {
                         )
                     )
                 }
+                .coordinateSpace(name: "scrollView")
                 .background(Color.gitHubBackground)
                 .onDisappear(perform: onDisappear)
             }
@@ -196,7 +197,7 @@ struct ScrollPositionTracker: View {
     var body: some View {
         GeometryReader { geo in
             Color.clear
-                .onChange(of: geo.frame(in: .global).minY) { oldValue, newValue in
+                .onChange(of: geo.frame(in: .named("scrollView")).minY) { oldValue, newValue in
                     contentHeight = geo.size.height
                     viewHeight = outerGeometry.size.height
                     scrollPosition = max(0, -newValue)
@@ -230,10 +231,8 @@ extension ReaderView {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             guard !Task.isCancelled else { return }
 
-            let maxScroll = max(1, contentHeight - viewHeight)
-            let position = min(1.0, max(0.0, scrollPosition / maxScroll))
-            let finalPosition = position >= 0.98 ? 1.0 : position
-            await viewModel.updateReadPosition(finalPosition)
+            let position = calculateReadPosition()
+            await viewModel.updateReadPosition(position)
         }
     }
 
@@ -267,13 +266,20 @@ extension ReaderView {
     private func handleDisappear() {
         saveTask?.cancel()
 
-        let maxScroll = max(1, contentHeight - viewHeight)
-        let position = min(1.0, max(0.0, scrollPosition / maxScroll))
-        let finalPosition = position >= 0.98 ? 1.0 : position
-
+        let position = calculateReadPosition()
         Task {
-            await viewModel.updateReadPosition(finalPosition)
+            await viewModel.updateReadPosition(position)
         }
+    }
+
+    private func calculateReadPosition() -> Double {
+        guard contentHeight > 0 else { return 0.0 }
+
+        let visibleBottomPosition = scrollPosition + viewHeight
+        let rawPosition = visibleBottomPosition / contentHeight
+        let clampedPosition = min(1.0, max(0.0, rawPosition))
+
+        return clampedPosition >= 0.95 ? 1.0 : clampedPosition
     }
 
     private func refreshContent() {
