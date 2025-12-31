@@ -9,7 +9,6 @@ struct AppConfiguration {
     static let luegoAPIKey = Secrets.luegoAPIKey
     static let luegoAPITimeout: TimeInterval = 30
 
-    static let sdkRulesRefreshInterval: TimeInterval = 3600
     static let sdkBundleNames = ["linkedom", "readability", "turndown", "parser"]
     static let parsedContentCacheExpiration: TimeInterval = 7 * 24 * 3600
 }

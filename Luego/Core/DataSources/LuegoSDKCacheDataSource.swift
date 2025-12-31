@@ -7,9 +7,8 @@ protocol LuegoSDKCacheDataSourceProtocol: Sendable {
     func saveRules(_ data: Data)
     func loadVersions() -> SDKVersionsResponse?
     func saveVersions(_ versions: SDKVersionsResponse)
-    func getRulesTimestamp() -> Date?
-    func setRulesTimestamp(_ date: Date)
     func bundleExists(name: String) -> Bool
+    func rulesExist() -> Bool
     func allBundlesExist() -> Bool
     func clearAll()
 }
@@ -17,7 +16,6 @@ protocol LuegoSDKCacheDataSourceProtocol: Sendable {
 @MainActor
 final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
     private let fileManager = FileManager.default
-    private let rulesTimestampKey = "luego_sdk_rules_timestamp"
 
     private var sdkDirectory: URL {
         guard let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
@@ -75,7 +73,6 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
     func saveRules(_ data: Data) {
         do {
             try data.write(to: rulesFileURL)
-            setRulesTimestamp(Date())
         } catch {
             #if DEBUG
             print("[SDK] ⚠ Failed to save rules: \(error)")
@@ -101,17 +98,13 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
         }
     }
 
-    func getRulesTimestamp() -> Date? {
-        UserDefaults.standard.object(forKey: rulesTimestampKey) as? Date
-    }
-
-    func setRulesTimestamp(_ date: Date) {
-        UserDefaults.standard.set(date, forKey: rulesTimestampKey)
-    }
-
     func bundleExists(name: String) -> Bool {
         let fileURL = bundlesDirectory.appendingPathComponent("\(name).js")
         return fileManager.fileExists(atPath: fileURL.path)
+    }
+
+    func rulesExist() -> Bool {
+        fileManager.fileExists(atPath: rulesFileURL.path)
     }
 
     func allBundlesExist() -> Bool {
@@ -120,7 +113,6 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
 
     func clearAll() {
         try? fileManager.removeItem(at: sdkDirectory)
-        UserDefaults.standard.removeObject(forKey: rulesTimestampKey)
         ensureDirectoriesExist()
 
         #if DEBUG

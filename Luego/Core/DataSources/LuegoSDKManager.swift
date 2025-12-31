@@ -1,5 +1,4 @@
 import Foundation
-import CryptoKit
 
 protocol LuegoSDKManagerProtocol: Sendable {
     func ensureSDKReady() async
@@ -12,7 +11,6 @@ protocol LuegoSDKManagerProtocol: Sendable {
 struct SDKVersionInfo: Sendable {
     let parserVersion: String
     let rulesVersion: String
-    let generatedAt: String
 }
 
 @MainActor
@@ -46,12 +44,12 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
             var skippedBundles: [String] = []
 
             for bundleName in AppConfiguration.sdkBundleNames {
-                let remoteChecksum = remoteVersions.bundles[bundleName]?.checksum
-                let localChecksum = localVersions?.bundles[bundleName]?.checksum
+                let remoteVersion = remoteVersions.bundles[bundleName]?.version
+                let localVersion = localVersions?.bundles[bundleName]?.version
                 let fileExists = cacheDataSource.bundleExists(name: bundleName)
 
-                let checksumMismatch = localChecksum != remoteChecksum
-                let needsDownload = checksumMismatch || !fileExists
+                let versionMismatch = localVersion != remoteVersion
+                let needsDownload = versionMismatch || !fileExists
 
                 if needsDownload {
                     #if DEBUG
@@ -60,20 +58,6 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
                     #endif
 
                     let data = try await sdkDataSource.downloadBundle(name: bundleName)
-
-                    guard let expectedChecksum = remoteChecksum else {
-                        #if DEBUG
-                        print("[SDK] ⚠ No checksum for bundle: \(bundleName), saving without validation")
-                        #endif
-                        cacheDataSource.saveBundle(name: bundleName, data: data)
-                        downloadedBundles.append(bundleName)
-                        continue
-                    }
-
-                    guard validateChecksum(data: data, expected: expectedChecksum) else {
-                        throw LuegoSDKError.checksumMismatch(bundleName: bundleName)
-                    }
-
                     cacheDataSource.saveBundle(name: bundleName, data: data)
                     downloadedBundles.append(bundleName)
                 } else {
@@ -81,7 +65,10 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
                 }
             }
 
-            let rulesRefreshed = await refreshRulesIfNeeded()
+            let rulesRefreshed = await refreshRulesIfNeeded(
+                remoteVersion: remoteVersions.rules.version,
+                localVersion: localVersions?.rules.version
+            )
             cacheDataSource.saveVersions(remoteVersions)
 
             #if DEBUG
@@ -100,8 +87,16 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
         }
     }
 
-    private func refreshRulesIfNeeded() async -> Bool {
-        guard shouldRefreshRules() else { return false }
+    private func refreshRulesIfNeeded(remoteVersion: String, localVersion: String?) async -> Bool {
+        let versionMismatch = localVersion != remoteVersion
+        let fileExists = cacheDataSource.rulesExist()
+
+        guard versionMismatch || !fileExists else { return false }
+
+        #if DEBUG
+        let reason = !fileExists ? "missing" : "outdated"
+        print("[SDK] ↓ Downloading rules (\(reason))")
+        #endif
 
         do {
             let rules = try await sdkDataSource.fetchRules()
@@ -113,28 +108,6 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
             #endif
             return false
         }
-    }
-
-    private func shouldRefreshRules() -> Bool {
-        guard let lastRefresh = cacheDataSource.getRulesTimestamp() else {
-            return true
-        }
-        return Date().timeIntervalSince(lastRefresh) > AppConfiguration.sdkRulesRefreshInterval
-    }
-
-    private func validateChecksum(data: Data, expected: String) -> Bool {
-        let hash = SHA256.hash(data: data)
-        let fullHash = hash.compactMap { String(format: "%02x", $0) }.joined()
-
-        let isValid = fullHash == expected || fullHash.hasPrefix(expected)
-
-        #if DEBUG
-        if !isValid {
-            print("[SDK] ⚠ Checksum mismatch: expected \(expected), got \(fullHash)")
-        }
-        #endif
-
-        return isValid
     }
 
     func isSDKAvailable() -> Bool {
@@ -170,8 +143,7 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
 
         return SDKVersionInfo(
             parserVersion: parserInfo.version,
-            rulesVersion: versions.rules.version,
-            generatedAt: versions.generatedAt
+            rulesVersion: versions.rules.version
         )
     }
 
