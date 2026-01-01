@@ -26,7 +26,12 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
     }
 
     func fetchMetadata(for url: URL, timeout: TimeInterval?) async throws -> ArticleMetadata {
-        try await metadataDataSource.fetchMetadata(for: url, timeout: timeout)
+        if parserDataSource.isReady {
+            if let metadata = await tryLocalMetadataParsing(url: url, timeout: timeout) {
+                return metadata
+            }
+        }
+        return try await fetchMetadataFromAPI(url: url)
     }
 
     func fetchHTML(from url: URL, timeout: TimeInterval?) async throws -> String {
@@ -110,15 +115,60 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
         #endif
 
         let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
+        let thumbnailURL = response.metadata.thumbnail.flatMap { URL(string: $0) }
 
         return ArticleContent(
             title: response.metadata.title ?? url.host() ?? url.absoluteString,
-            thumbnailURL: nil,
+            thumbnailURL: thumbnailURL,
             description: nil,
             content: response.content,
             publishedDate: publishedDate,
             author: response.metadata.author,
             wordCount: response.metadata.wordCount
+        )
+    }
+
+    private func tryLocalMetadataParsing(url: URL, timeout: TimeInterval?) async -> ArticleMetadata? {
+        do {
+            let html = try await metadataDataSource.fetchHTML(from: url, timeout: timeout)
+
+            guard let result = await parserDataSource.parse(html: html, url: url),
+                  result.success,
+                  let metadata = result.metadata else {
+                return nil
+            }
+
+            return buildMetadataFromParserResult(metadata, url: url)
+        } catch {
+            return nil
+        }
+    }
+
+    private func fetchMetadataFromAPI(url: URL) async throws -> ArticleMetadata {
+        let response = try await luegoAPIDataSource.fetchArticle(for: url)
+        let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
+        let thumbnailURL = response.metadata.thumbnail.flatMap { URL(string: $0) }
+
+        return ArticleMetadata(
+            title: response.metadata.title ?? url.host() ?? url.absoluteString,
+            thumbnailURL: thumbnailURL,
+            description: nil,
+            publishedDate: publishedDate,
+            author: response.metadata.author,
+            wordCount: response.metadata.wordCount
+        )
+    }
+
+    private func buildMetadataFromParserResult(_ metadata: ParserMetadata, url: URL) -> ArticleMetadata {
+        let publishedDate = parsePublishedDate(from: metadata.publishedDate)
+        let thumbnailURL = metadata.thumbnail.flatMap { URL(string: $0) }
+
+        return ArticleMetadata(
+            title: metadata.title ?? url.host() ?? url.absoluteString,
+            thumbnailURL: thumbnailURL,
+            description: metadata.excerpt,
+            publishedDate: publishedDate,
+            author: metadata.author
         )
     }
 

@@ -28,7 +28,8 @@ final class MockLuegoAPIDataSource: LuegoAPIDataSourceProtocol {
                 estimatedReadTimeMinutes: 5,
                 wordCount: 1000,
                 sourceUrl: url.absoluteString,
-                domain: url.host() ?? "example.com"
+                domain: url.host() ?? "example.com",
+                thumbnail: nil
             )
         )
     }

@@ -57,7 +57,8 @@ struct ContentDataSourceTests {
                 author: "Author",
                 publishedDate: nil,
                 excerpt: "Excerpt",
-                siteName: nil
+                siteName: nil,
+                thumbnail: nil
             ),
             error: nil
         )
@@ -86,7 +87,8 @@ struct ContentDataSourceTests {
                 estimatedReadTimeMinutes: 5,
                 wordCount: 1000,
                 sourceUrl: testURL.absoluteString,
-                domain: "example.com"
+                domain: "example.com",
+                thumbnail: nil
             )
         )
 
@@ -119,7 +121,8 @@ struct ContentDataSourceTests {
                 estimatedReadTimeMinutes: nil,
                 wordCount: nil,
                 sourceUrl: testURL.absoluteString,
-                domain: "example.com"
+                domain: "example.com",
+                thumbnail: nil
             )
         )
 
@@ -144,7 +147,8 @@ struct ContentDataSourceTests {
                 estimatedReadTimeMinutes: nil,
                 wordCount: nil,
                 sourceUrl: testURL.absoluteString,
-                domain: "example.com"
+                domain: "example.com",
+                thumbnail: nil
             )
         )
 
@@ -176,14 +180,92 @@ struct ContentDataSourceTests {
         #expect(mockMetadataDataSource.lastValidatedURL == testURL)
     }
 
-    @Test("fetchMetadata delegates to MetadataDataSource")
-    func fetchMetadataDelegatesToMetadataDataSource() async throws {
+    @Test("fetchMetadata uses SDK parser when ready")
+    func fetchMetadataUsesSDKParserWhenReady() async throws {
         let testURL = URL(string: "https://example.com/article")!
+        mockParserDataSource.mockIsReady = true
+        mockParserDataSource.resultToReturn = ParserResult(
+            success: true,
+            content: "# Content",
+            metadata: ParserMetadata(
+                title: "SDK Title",
+                author: "Author",
+                publishedDate: "2024-01-01T00:00:00Z",
+                excerpt: "Excerpt",
+                siteName: nil,
+                thumbnail: "https://example.com/image.jpg"
+            ),
+            error: nil
+        )
+        mockMetadataDataSource.htmlToReturn = "<html><body>Test</body></html>"
 
         let result = try await sut.fetchMetadata(for: testURL, timeout: 30)
 
-        #expect(mockMetadataDataSource.fetchMetadataCallCount == 1)
-        #expect(mockMetadataDataSource.lastFetchMetadataURL == testURL)
+        #expect(result.title == "SDK Title")
+        #expect(result.author == "Author")
+        #expect(result.description == "Excerpt")
+        #expect(mockMetadataDataSource.fetchHTMLCallCount == 1)
+        #expect(mockParserDataSource.parseCallCount == 1)
+        #expect(mockAPIDataSource.fetchArticleCallCount == 0)
+    }
+
+    @Test("fetchMetadata falls back to API when SDK not ready")
+    func fetchMetadataFallsBackToAPIWhenSDKNotReady() async throws {
+        let testURL = URL(string: "https://example.com/article")!
+        mockParserDataSource.mockIsReady = false
+        mockAPIDataSource.responseToReturn = LuegoAPIResponse(
+            content: "# Content",
+            metadata: LuegoAPIMetadata(
+                title: "API Title",
+                author: "API Author",
+                publishedDate: nil,
+                estimatedReadTimeMinutes: nil,
+                wordCount: 500,
+                sourceUrl: testURL.absoluteString,
+                domain: "example.com",
+                thumbnail: nil
+            )
+        )
+
+        let result = try await sut.fetchMetadata(for: testURL, timeout: 30)
+
+        #expect(result.title == "API Title")
+        #expect(result.author == "API Author")
+        #expect(result.wordCount == 500)
+        #expect(mockParserDataSource.parseCallCount == 0)
+        #expect(mockAPIDataSource.fetchArticleCallCount == 1)
+    }
+
+    @Test("fetchMetadata falls back to API when SDK parsing fails")
+    func fetchMetadataFallsBackToAPIWhenSDKFails() async throws {
+        let testURL = URL(string: "https://example.com/article")!
+        mockParserDataSource.mockIsReady = true
+        mockParserDataSource.resultToReturn = ParserResult(
+            success: false,
+            content: nil,
+            metadata: nil,
+            error: "Parse error"
+        )
+        mockMetadataDataSource.htmlToReturn = "<html><body>Test</body></html>"
+        mockAPIDataSource.responseToReturn = LuegoAPIResponse(
+            content: "# Content",
+            metadata: LuegoAPIMetadata(
+                title: "API Title",
+                author: nil,
+                publishedDate: nil,
+                estimatedReadTimeMinutes: nil,
+                wordCount: nil,
+                sourceUrl: testURL.absoluteString,
+                domain: "example.com",
+                thumbnail: nil
+            )
+        )
+
+        let result = try await sut.fetchMetadata(for: testURL, timeout: 30)
+
+        #expect(result.title == "API Title")
+        #expect(mockParserDataSource.parseCallCount == 1)
+        #expect(mockAPIDataSource.fetchArticleCallCount == 1)
     }
 
     @Test("fetchHTML delegates to MetadataDataSource")
@@ -208,7 +290,8 @@ struct ContentDataSourceTests {
                 estimatedReadTimeMinutes: nil,
                 wordCount: nil,
                 sourceUrl: testURL.absoluteString,
-                domain: "example.com"
+                domain: "example.com",
+                thumbnail: nil
             )
         )
 

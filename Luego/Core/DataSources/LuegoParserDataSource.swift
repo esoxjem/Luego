@@ -164,13 +164,15 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         let publishedDate = metadataValue.objectForKeyedSubscript("publishedDate")?.toString()
         let excerpt = metadataValue.objectForKeyedSubscript("excerpt")?.toString()
         let siteName = metadataValue.objectForKeyedSubscript("siteName")?.toString()
+        let thumbnail = metadataValue.objectForKeyedSubscript("thumbnail")?.toString()
 
         return ParserMetadata(
             title: normalizeJSString(title),
             author: normalizeJSString(author),
             publishedDate: normalizeJSString(publishedDate),
             excerpt: normalizeJSString(excerpt),
-            siteName: normalizeJSString(siteName)
+            siteName: normalizeJSString(siteName),
+            thumbnail: normalizeJSString(thumbnail)
         )
     }
 

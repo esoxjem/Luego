@@ -45,9 +45,10 @@ struct LuegoAPIMetadata: Decodable {
     let wordCount: Int?
     let sourceUrl: String
     let domain: String
+    let thumbnail: String?
 
     enum CodingKeys: String, CodingKey {
-        case title, author, domain
+        case title, author, domain, thumbnail
         case publishedDate = "published_date"
         case estimatedReadTimeMinutes = "estimated_read_time_minutes"
         case wordCount = "word_count"

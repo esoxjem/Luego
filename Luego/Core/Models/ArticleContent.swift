@@ -32,13 +32,18 @@ extension ArticleContent {
     init(from result: ParserResult, url: URL) {
         self.init(
             title: result.metadata?.title ?? url.host() ?? url.absoluteString,
-            thumbnailURL: nil,
+            thumbnailURL: Self.parseThumbnailURL(result.metadata?.thumbnail),
             description: result.metadata?.excerpt,
             content: result.content ?? "",
             publishedDate: Self.parseDate(result.metadata?.publishedDate),
             author: result.metadata?.author,
             wordCount: Self.calculateWordCount(result.content)
         )
+    }
+
+    private static func parseThumbnailURL(_ urlString: String?) -> URL? {
+        guard let urlString else { return nil }
+        return URL(string: urlString)
     }
 
     private static func parseDate(_ dateString: String?) -> Date? {

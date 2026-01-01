@@ -27,6 +27,7 @@ struct ParserMetadata: Sendable {
     let publishedDate: String?
     let excerpt: String?
     let siteName: String?
+    let thumbnail: String?
 }
 
 enum LuegoSDKError: LocalizedError {
