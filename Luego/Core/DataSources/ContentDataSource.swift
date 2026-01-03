@@ -149,6 +149,10 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
         let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
         let thumbnailURL = response.metadata.thumbnail.flatMap { URL(string: $0) }
 
+        #if DEBUG
+        print("[ThumbnailDebug] API URL Conversion - Input: '\(response.metadata.thumbnail ?? "nil")' → URL: \(thumbnailURL?.absoluteString ?? "nil")")
+        #endif
+
         return ArticleMetadata(
             title: response.metadata.title ?? url.host() ?? url.absoluteString,
             thumbnailURL: thumbnailURL,
@@ -162,6 +166,10 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
     private func buildMetadataFromParserResult(_ metadata: ParserMetadata, url: URL) -> ArticleMetadata {
         let publishedDate = parsePublishedDate(from: metadata.publishedDate)
         let thumbnailURL = metadata.thumbnail.flatMap { URL(string: $0) }
+
+        #if DEBUG
+        print("[ThumbnailDebug] SDK URL Conversion - Input: '\(metadata.thumbnail ?? "nil")' → URL: \(thumbnailURL?.absoluteString ?? "nil")")
+        #endif
 
         return ArticleMetadata(
             title: metadata.title ?? url.host() ?? url.absoluteString,

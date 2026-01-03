@@ -166,6 +166,11 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         let siteName = metadataValue.objectForKeyedSubscript("siteName")?.toString()
         let thumbnail = metadataValue.objectForKeyedSubscript("thumbnail")?.toString()
 
+        #if DEBUG
+        print("[ThumbnailDebug] SDK Parser - Raw JS value: '\(thumbnail ?? "nil")'")
+        print("[ThumbnailDebug] SDK Parser - After normalize: '\(normalizeJSString(thumbnail) ?? "nil")'")
+        #endif
+
         return ParserMetadata(
             title: normalizeJSString(title),
             author: normalizeJSString(author),

@@ -100,8 +100,16 @@ struct ArticleThumbnailView: View {
     let thumbnailURL: URL?
 
     var body: some View {
+        #if DEBUG
+        let _ = print("[ThumbnailDebug] View - URL: \(thumbnailURL?.absoluteString ?? "nil")")
+        #endif
+
         if let thumbnailURL {
             NetworkImage(url: thumbnailURL) { state in
+                #if DEBUG
+                let _ = print("[ThumbnailDebug] NetworkImage - hasImage: \(state.image != nil), url: \(thumbnailURL.absoluteString)")
+                #endif
+
                 if let image = state.image {
                     image
                         .resizable()

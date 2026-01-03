@@ -43,6 +43,11 @@ final class ArticleService: ArticleServiceProtocol {
             readPosition: 0
         )
 
+        #if DEBUG
+        print("[ThumbnailDebug] Article Storage - URL: \(validatedURL.absoluteString)")
+        print("[ThumbnailDebug] Article Storage - thumbnailURL: \(metadata.thumbnailURL?.absoluteString ?? "nil")")
+        #endif
+
         modelContext.insert(article)
         try modelContext.save()
         return article

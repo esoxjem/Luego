@@ -77,7 +77,11 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
     private func decodeResponse(from data: Data) throws -> LuegoAPIResponse {
         do {
             let decoder = JSONDecoder()
-            return try decoder.decode(LuegoAPIResponse.self, from: data)
+            let response = try decoder.decode(LuegoAPIResponse.self, from: data)
+            #if DEBUG
+            print("[ThumbnailDebug] API Response - thumbnail: '\(response.metadata.thumbnail ?? "nil")'")
+            #endif
+            return response
         } catch {
             #if DEBUG
             print("[LuegoAPI] Decoding error: \(error)")
