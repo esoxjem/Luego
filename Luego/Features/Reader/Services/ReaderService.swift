@@ -30,6 +30,9 @@ final class ReaderService: ReaderServiceProtocol {
         if article.wordCount == nil, let wordCount = content.wordCount {
             article.wordCount = wordCount
         }
+        if article.thumbnailURL == nil, let thumbnailURL = content.thumbnailURL {
+            article.thumbnailURL = thumbnailURL
+        }
 
         try modelContext.save()
         return article
