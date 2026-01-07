@@ -39,9 +39,7 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
     }
 
     func fetchContent(for url: URL, timeout: TimeInterval?, forceRefresh: Bool, skipCache: Bool) async throws -> ArticleContent {
-        #if DEBUG
         logFetchStart(url: url, forceRefresh: forceRefresh, skipCache: skipCache)
-        #endif
 
         if skipCache {
             return try await fetchContentWithoutCaching(url: url, timeout: timeout)
@@ -49,13 +47,9 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
 
         if forceRefresh {
             parsedContentCache.remove(for: url)
-            #if DEBUG
-            print("[ContentDataSource] Cache cleared (forceRefresh)")
-            #endif
+            Logger.content.debug("Cache cleared (forceRefresh)")
         } else if let cached = parsedContentCache.get(for: url) {
-            #if DEBUG
-            print("[ContentDataSource] ✓ Cache HIT")
-            #endif
+            Logger.content.debug("✓ Cache HIT")
             return cached
         }
 
@@ -88,21 +82,15 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
                   result.success,
                   let content = result.content,
                   !content.isEmpty else {
-                #if DEBUG
-                print("[ContentDataSource] ✗ Local SDK parsing failed → falling back to API")
-                #endif
+                Logger.content.debug("✗ Local SDK parsing failed → falling back to API")
                 return nil
             }
 
-            #if DEBUG
-            print("[ContentDataSource] ✓ Local SDK parsing SUCCESS")
-            #endif
+            Logger.content.debug("✓ Local SDK parsing SUCCESS")
 
             return ArticleContent(from: result, url: url)
         } catch {
-            #if DEBUG
-            print("[ContentDataSource] ✗ HTML fetch failed: \(error.localizedDescription) → falling back to API")
-            #endif
+            Logger.content.debug("✗ HTML fetch failed: \(error.localizedDescription) → falling back to API")
             return nil
         }
     }
@@ -110,9 +98,7 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
     private func fetchFromAPI(url: URL) async throws -> ArticleContent {
         let response = try await luegoAPIDataSource.fetchArticle(for: url)
 
-        #if DEBUG
-        print("[ContentDataSource] ✓ API fetch SUCCESS")
-        #endif
+        Logger.content.debug("✓ API fetch SUCCESS")
 
         let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
         let thumbnailURL = response.metadata.thumbnail.flatMap { URL(string: $0) }
@@ -149,9 +135,7 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
         let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
         let thumbnailURL = response.metadata.thumbnail.flatMap { URL(string: $0) }
 
-        #if DEBUG
-        print("[ThumbnailDebug] API URL Conversion - Input: '\(response.metadata.thumbnail ?? "nil")' → URL: \(thumbnailURL?.absoluteString ?? "nil")")
-        #endif
+        Logger.content.debug("[ThumbnailDebug] API URL Conversion - Input: '\(response.metadata.thumbnail ?? "nil")' → URL: \(thumbnailURL?.absoluteString ?? "nil")")
 
         return ArticleMetadata(
             title: response.metadata.title ?? url.host() ?? url.absoluteString,
@@ -167,9 +151,7 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
         let publishedDate = parsePublishedDate(from: metadata.publishedDate)
         let thumbnailURL = metadata.thumbnail.flatMap { URL(string: $0) }
 
-        #if DEBUG
-        print("[ThumbnailDebug] SDK URL Conversion - Input: '\(metadata.thumbnail ?? "nil")' → URL: \(thumbnailURL?.absoluteString ?? "nil")")
-        #endif
+        Logger.content.debug("[ThumbnailDebug] SDK URL Conversion - Input: '\(metadata.thumbnail ?? "nil")' → URL: \(thumbnailURL?.absoluteString ?? "nil")")
 
         return ArticleMetadata(
             title: metadata.title ?? url.host() ?? url.absoluteString,
@@ -194,15 +176,14 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
         return formatter.date(from: dateString)
     }
 
-    #if DEBUG
     private func logFetchStart(url: URL, forceRefresh: Bool, skipCache: Bool) {
         let host = url.host() ?? url.absoluteString
         let sdkReady = parserDataSource.isReady
         let versionString = formatVersionString()
         let cacheMode = formatCacheMode(forceRefresh: forceRefresh, skipCache: skipCache)
 
-        print("""
-        [ContentDataSource] ─────────────────────────────────
+        Logger.content.debug("""
+        ─────────────────────────────────
         URL: \(host)
         SDK: \(sdkReady ? "Ready" : "Not available") \(versionString)
         Cache: \(cacheMode)
@@ -226,5 +207,4 @@ final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
             return "NORMAL (read → fetch if miss → save)"
         }
     }
-    #endif
 }

@@ -44,9 +44,7 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
         do {
             try fileManager.createDirectory(at: bundlesDirectory, withIntermediateDirectories: true)
         } catch {
-            #if DEBUG
-            print("[SDK] ⚠ Failed to create directories: \(error)")
-            #endif
+            Logger.cache.error("⚠ Failed to create directories: \(error)")
         }
     }
 
@@ -60,9 +58,7 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
         do {
             try data.write(to: fileURL)
         } catch {
-            #if DEBUG
-            print("[SDK] ⚠ Failed to save bundle '\(name)': \(error)")
-            #endif
+            Logger.cache.error("⚠ Failed to save bundle '\(name)': \(error)")
         }
     }
 
@@ -74,9 +70,7 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
         do {
             try data.write(to: rulesFileURL)
         } catch {
-            #if DEBUG
-            print("[SDK] ⚠ Failed to save rules: \(error)")
-            #endif
+            Logger.cache.error("⚠ Failed to save rules: \(error)")
         }
     }
 
@@ -92,9 +86,7 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
             let data = try JSONEncoder().encode(versions)
             try data.write(to: versionsFileURL)
         } catch {
-            #if DEBUG
-            print("[SDK] ⚠ Failed to save versions: \(error)")
-            #endif
+            Logger.cache.error("⚠ Failed to save versions: \(error)")
         }
     }
 
@@ -115,8 +107,6 @@ final class LuegoSDKCacheDataSource: LuegoSDKCacheDataSourceProtocol {
         try? fileManager.removeItem(at: sdkDirectory)
         ensureDirectoriesExist()
 
-        #if DEBUG
-        print("[SDK] Cache cleared")
-        #endif
+        Logger.cache.info("Cache cleared")
     }
 }

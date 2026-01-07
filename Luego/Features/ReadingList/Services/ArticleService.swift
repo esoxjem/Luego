@@ -43,10 +43,8 @@ final class ArticleService: ArticleServiceProtocol {
             readPosition: 0
         )
 
-        #if DEBUG
-        print("[ThumbnailDebug] Article Storage - URL: \(validatedURL.absoluteString)")
-        print("[ThumbnailDebug] Article Storage - thumbnailURL: \(metadata.thumbnailURL?.absoluteString ?? "nil")")
-        #endif
+        Logger.article.debug("[ThumbnailDebug] Article Storage - URL: \(validatedURL.absoluteString)")
+        Logger.article.debug("[ThumbnailDebug] Article Storage - thumbnailURL: \(metadata.thumbnailURL?.absoluteString ?? "nil")")
 
         modelContext.insert(article)
         try modelContext.save()

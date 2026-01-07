@@ -27,9 +27,7 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
         do {
             try fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
         } catch {
-            #if DEBUG
-            print("[ParsedContentCache] Failed to create directory: \(error)")
-            #endif
+            Logger.cache.error("Failed to create directory: \(error)")
         }
     }
 
@@ -45,9 +43,7 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
             return nil
         }
 
-        #if DEBUG
-        print("[ParsedContentCache] Cache hit for: \(url.absoluteString)")
-        #endif
+        Logger.cache.debug("Cache hit for: \(url.absoluteString)")
 
         return cached.content
     }
@@ -60,13 +56,9 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
             let data = try JSONEncoder().encode(cached)
             try data.write(to: fileURL)
 
-            #if DEBUG
-            print("[ParsedContentCache] Saved content for: \(url.absoluteString)")
-            #endif
+            Logger.cache.debug("Saved content for: \(url.absoluteString)")
         } catch {
-            #if DEBUG
-            print("[ParsedContentCache] Failed to save: \(error)")
-            #endif
+            Logger.cache.error("Failed to save: \(error)")
         }
     }
 
@@ -74,9 +66,7 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
         try? fileManager.removeItem(at: cacheDirectory)
         ensureDirectoryExists()
 
-        #if DEBUG
-        print("[ParsedContentCache] Cleared all cached content")
-        #endif
+        Logger.cache.info("Cleared all cached content")
     }
 
     func remove(for url: URL) {

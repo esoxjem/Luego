@@ -5,7 +5,6 @@ protocol UserDefaultsDataSourceProtocol: Sendable {
     func clearSharedURLs()
 }
 
-@MainActor
 final class UserDefaultsDataSource: UserDefaultsDataSourceProtocol {
     private let sharedStorage: SharedStorageDataSourceProtocol
 

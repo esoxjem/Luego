@@ -42,9 +42,7 @@ final class LuegoSDKDataSource: LuegoSDKDataSourceProtocol {
         do {
             return try JSONDecoder().decode(SDKVersionsResponse.self, from: data)
         } catch {
-            #if DEBUG
-            print("[SDK] ⚠ Failed to decode versions: \(error)")
-            #endif
+            Logger.sdk.error("⚠ Failed to decode versions: \(error)")
             throw LuegoSDKError.parsingFailed("Failed to decode SDK versions")
         }
     }
@@ -91,9 +89,7 @@ final class LuegoSDKDataSource: LuegoSDKDataSourceProtocol {
         do {
             return try await URLSession.shared.data(for: request)
         } catch {
-            #if DEBUG
-            print("[SDK] ⚠ Network error: \(error.localizedDescription)")
-            #endif
+            Logger.sdk.error("⚠ Network error: \(error.localizedDescription)")
             throw LuegoSDKError.networkUnavailable
         }
     }

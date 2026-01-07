@@ -37,9 +37,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         }
 
         guard let context = jsContext else {
-            #if DEBUG
-            print("[LuegoParser] JSContext not initialized")
-            #endif
+            Logger.parser.debug("JSContext not initialized")
             return nil
         }
 
@@ -48,24 +46,18 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
 
     private func initializeContext() {
         guard let bundles = sdkManager.loadBundles() else {
-            #if DEBUG
-            print("[LuegoParser] Failed to load bundles")
-            #endif
+            Logger.parser.debug("Failed to load bundles")
             return
         }
 
         guard let context = JSContext() else {
-            #if DEBUG
-            print("[LuegoParser] Failed to create JSContext")
-            #endif
+            Logger.parser.error("Failed to create JSContext")
             return
         }
 
         context.exceptionHandler = { _, exception in
-            #if DEBUG
             let errorMessage = exception?.toString() ?? "Unknown JS error"
-            print("[LuegoParser] JS Exception: \(errorMessage)")
-            #endif
+            Logger.parser.error("JS Exception: \(errorMessage)")
         }
 
         context.evaluateScript(polyfills)
@@ -73,9 +65,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         let bundleOrder = ["linkedom", "readability", "turndown", "parser"]
         for name in bundleOrder {
             guard let script = bundles[name] else {
-                #if DEBUG
-                print("[LuegoParser] Missing bundle: \(name)")
-                #endif
+                Logger.parser.error("Missing bundle: \(name)")
                 return
             }
             context.evaluateScript(script)
@@ -83,25 +73,19 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
 
         let check = context.evaluateScript("typeof LuegoParser")
         guard check?.toString() == "object" else {
-            #if DEBUG
-            print("[LuegoParser] LuegoParser object not found")
-            #endif
+            Logger.parser.error("LuegoParser object not found")
             return
         }
 
         self.jsContext = context
 
-        #if DEBUG
-        print("[LuegoParser] Initialized successfully")
-        #endif
+        Logger.parser.info("Initialized successfully")
     }
 
     private func executeParser(context: JSContext, html: String, url: URL) -> ParserResult? {
         guard let htmlJSON = encodeAsJSONString(html),
               let urlString = encodeAsJSONString(url.absoluteString) else {
-            #if DEBUG
-            print("[LuegoParser] Failed to encode parameters")
-            #endif
+            Logger.parser.debug("Failed to encode parameters")
             return nil
         }
 
@@ -111,9 +95,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         guard let result = context.evaluateScript(script),
               !result.isUndefined,
               !result.isNull else {
-            #if DEBUG
-            print("[LuegoParser] Parser returned undefined/null")
-            #endif
+            Logger.parser.debug("Parser returned undefined/null")
             return nil
         }
 
@@ -145,9 +127,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
             return ParserResult(success: true, content: content, metadata: metadata, error: nil)
         } else {
             let error = result.objectForKeyedSubscript("error")?.toString()
-            #if DEBUG
-            print("[LuegoParser] Parsing failed: \(error ?? "unknown error")")
-            #endif
+            Logger.parser.debug("Parsing failed: \(error ?? "unknown error")")
             return ParserResult(success: false, content: nil, metadata: nil, error: error)
         }
     }
@@ -166,10 +146,8 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         let siteName = metadataValue.objectForKeyedSubscript("siteName")?.toString()
         let thumbnail = metadataValue.objectForKeyedSubscript("thumbnail")?.toString()
 
-        #if DEBUG
-        print("[ThumbnailDebug] SDK Parser - Raw JS value: '\(thumbnail ?? "nil")'")
-        print("[ThumbnailDebug] SDK Parser - After normalize: '\(normalizeJSString(thumbnail) ?? "nil")'")
-        #endif
+        Logger.parser.debug("[ThumbnailDebug] SDK Parser - Raw JS value: '\(thumbnail ?? "nil")'")
+        Logger.parser.debug("[ThumbnailDebug] SDK Parser - After normalize: '\(normalizeJSString(thumbnail) ?? "nil")'")
 
         return ParserMetadata(
             title: normalizeJSString(title),

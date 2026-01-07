@@ -1,5 +1,4 @@
 import Foundation
-import os
 
 struct SharedURL: Codable, Sendable {
     let url: URL
@@ -12,19 +11,16 @@ protocol SharedStorageDataSourceProtocol: Sendable {
     func clearSharedURLs()
 }
 
-@MainActor
 final class SharedStorage: SharedStorageDataSourceProtocol {
     static let shared = SharedStorage()
 
     private let appGroupIdentifier = "group.com.esoxjem.Luego"
     private let sharedURLsKey = "sharedURLs"
-    private let logger = Logger(subsystem: "com.esoxjem.Luego", category: "SharedStorage")
 
     private init() {}
 
     func saveSharedURL(_ url: URL) {
         guard let userDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
-            logger.error("Failed to access shared UserDefaults with app group: \(self.appGroupIdentifier)")
             return
         }
 

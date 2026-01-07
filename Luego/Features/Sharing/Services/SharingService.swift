@@ -1,6 +1,5 @@
 import Foundation
 import SwiftData
-import os
 
 protocol SharingServiceProtocol: Sendable {
     func syncSharedArticles() async throws -> [Article]
@@ -11,7 +10,6 @@ final class SharingService: SharingServiceProtocol {
     private let modelContext: ModelContext
     private let metadataDataSource: MetadataDataSourceProtocol
     private let userDefaultsDataSource: UserDefaultsDataSourceProtocol
-    private let logger = Logger(subsystem: "com.esoxjem.Luego", category: "SharingService")
 
     init(
         modelContext: ModelContext,
@@ -51,7 +49,7 @@ final class SharingService: SharingServiceProtocol {
                 try modelContext.save()
                 newArticles.append(article)
             } catch {
-                logger.error("Failed to sync shared article from \(url.absoluteString): \(error.localizedDescription)")
+                Logger.sharing.error("Failed to sync shared article from \(url.absoluteString): \(error.localizedDescription)")
                 continue
             }
         }

@@ -31,9 +31,7 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
         let body = ["url": url.absoluteString]
         request.httpBody = try JSONEncoder().encode(body)
 
-        #if DEBUG
-        print("[LuegoAPI] Fetching: \(url.absoluteString)")
-        #endif
+        Logger.api.debug("Fetching: \(url.absoluteString)")
 
         let data: Data
         let response: URLResponse
@@ -41,9 +39,7 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            #if DEBUG
-            print("[LuegoAPI] Network error: \(error.localizedDescription)")
-            #endif
+            Logger.api.error("Network error: \(error.localizedDescription)")
             throw LuegoAPIError.networkError(error)
         }
 
@@ -51,9 +47,7 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
             throw LuegoAPIError.networkError(URLError(.badServerResponse))
         }
 
-        #if DEBUG
-        print("[LuegoAPI] Status: \(httpResponse.statusCode)")
-        #endif
+        Logger.api.debug("Status: \(httpResponse.statusCode)")
 
         switch httpResponse.statusCode {
         case 200:
@@ -78,14 +72,10 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
         do {
             let decoder = JSONDecoder()
             let response = try decoder.decode(LuegoAPIResponse.self, from: data)
-            #if DEBUG
-            print("[ThumbnailDebug] API Response - thumbnail: '\(response.metadata.thumbnail ?? "nil")'")
-            #endif
+            Logger.api.debug("[ThumbnailDebug] API Response - thumbnail: '\(response.metadata.thumbnail ?? "nil")'")
             return response
         } catch {
-            #if DEBUG
-            print("[LuegoAPI] Decoding error: \(error)")
-            #endif
+            Logger.api.error("Decoding error: \(error)")
             throw LuegoAPIError.decodingError(error)
         }
     }
