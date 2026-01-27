@@ -2,6 +2,7 @@ import Foundation
 
 protocol LuegoSDKManagerProtocol: Sendable {
     func ensureSDKReady() async
+    func checkForUpdates() async -> SDKUpdateResult
     func isSDKAvailable() -> Bool
     func loadBundles() -> [String: String]?
     func loadRules() -> Data?
@@ -11,6 +12,12 @@ protocol LuegoSDKManagerProtocol: Sendable {
 struct SDKVersionInfo: Sendable {
     let parserVersion: String
     let rulesVersion: String
+}
+
+enum SDKUpdateResult: Sendable {
+    case updated(parserVersion: String, rulesVersion: String, bundlesUpdated: Int, rulesUpdated: Bool)
+    case alreadyUpToDate(parserVersion: String, rulesVersion: String)
+    case failed(Error)
 }
 
 @MainActor
@@ -27,6 +34,10 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
     }
 
     func ensureSDKReady() async {
+        _ = await checkForUpdates()
+    }
+
+    func checkForUpdates() async -> SDKUpdateResult {
         do {
             Logger.sdk.debug("─────────────────────────────────────────────")
             Logger.sdk.debug("Checking for updates...")
@@ -71,9 +82,24 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
                 skippedBundles: skippedBundles,
                 rulesRefreshed: rulesRefreshed
             )
+
+            let parserVersion = remoteVersions.bundles["parser"]?.version ?? "?"
+            let rulesVersion = remoteVersions.rules.version
+
+            if downloadedBundles.isEmpty && !rulesRefreshed {
+                return .alreadyUpToDate(parserVersion: parserVersion, rulesVersion: rulesVersion)
+            } else {
+                return .updated(
+                    parserVersion: parserVersion,
+                    rulesVersion: rulesVersion,
+                    bundlesUpdated: downloadedBundles.count,
+                    rulesUpdated: rulesRefreshed
+                )
+            }
         } catch {
             Logger.sdk.error("✗ Update failed: \(error.localizedDescription)")
             Logger.sdk.debug("─────────────────────────────────────────────")
+            return .failed(error)
         }
     }
 

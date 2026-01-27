@@ -16,6 +16,11 @@ struct SettingsView: View {
                 onRefresh: viewModel.refreshArticlePool
             )
 
+            SDKUpdateSection(
+                isChecking: viewModel.isCheckingForUpdates,
+                onCheck: { Task { await viewModel.checkForSDKUpdates() } }
+            )
+
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
         }
         .navigationTitle("Settings")
@@ -23,6 +28,14 @@ struct SettingsView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
             }
+        }
+        .alert(
+            viewModel.updateAlertTitle,
+            isPresented: $viewModel.showUpdateAlert
+        ) {
+            Button("OK") { }
+        } message: {
+            Text(viewModel.updateAlertMessage)
         }
     }
 }
@@ -126,6 +139,31 @@ struct RefreshArticlePoolSection: View {
             .disabled(didRefresh)
         } footer: {
             Text("Clears the cached article pool and fetches fresh articles on next discovery.")
+        }
+    }
+}
+
+struct SDKUpdateSection: View {
+    let isChecking: Bool
+    let onCheck: () -> Void
+
+    var body: some View {
+        Section {
+            Button(action: onCheck) {
+                HStack {
+                    Label("Check for SDK Updates", systemImage: "arrow.triangle.2.circlepath")
+
+                    Spacer()
+
+                    if isChecking {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+            }
+            .disabled(isChecking)
+        } footer: {
+            Text("Downloads the latest parsing rules and parser if available.")
         }
     }
 }
