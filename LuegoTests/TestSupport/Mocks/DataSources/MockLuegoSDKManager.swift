@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class MockLuegoSDKManager: LuegoSDKManagerProtocol {
     var ensureSDKReadyCallCount = 0
+    var checkForUpdatesCallCount = 0
     var isSDKAvailableCallCount = 0
     var loadBundlesCallCount = 0
     var loadRulesCallCount = 0
@@ -13,9 +14,15 @@ final class MockLuegoSDKManager: LuegoSDKManagerProtocol {
     var bundlesToReturn: [String: String]?
     var rulesToReturn: Data?
     var versionInfoToReturn: SDKVersionInfo?
+    var updateResultToReturn: SDKUpdateResult = .alreadyUpToDate(parserVersion: "1.0.0", rulesVersion: "1.0.0")
 
     func ensureSDKReady() async {
         ensureSDKReadyCallCount += 1
+    }
+
+    func checkForUpdates() async -> SDKUpdateResult {
+        checkForUpdatesCallCount += 1
+        return updateResultToReturn
     }
 
     func isSDKAvailable() -> Bool {
@@ -40,6 +47,7 @@ final class MockLuegoSDKManager: LuegoSDKManagerProtocol {
 
     func reset() {
         ensureSDKReadyCallCount = 0
+        checkForUpdatesCallCount = 0
         isSDKAvailableCallCount = 0
         loadBundlesCallCount = 0
         loadRulesCallCount = 0
@@ -48,5 +56,6 @@ final class MockLuegoSDKManager: LuegoSDKManagerProtocol {
         bundlesToReturn = nil
         rulesToReturn = nil
         versionInfoToReturn = nil
+        updateResultToReturn = .alreadyUpToDate(parserVersion: "1.0.0", rulesVersion: "1.0.0")
     }
 }
