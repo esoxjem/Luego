@@ -142,7 +142,8 @@ final class DIContainer {
     func makeSettingsViewModel() -> SettingsViewModel {
         SettingsViewModel(
             preferencesDataSource: discoveryPreferencesDataSource,
-            discoveryService: discoveryService
+            discoveryService: discoveryService,
+            sdkManager: luegoSDKManager
         )
     }
 }

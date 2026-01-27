@@ -16,7 +16,7 @@ struct SettingsView: View {
                 onRefresh: viewModel.refreshArticlePool
             )
 
-            AppVersionSection()
+            AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
         }
         .navigationTitle("Settings")
         .toolbar {
@@ -131,7 +131,9 @@ struct RefreshArticlePoolSection: View {
 }
 
 struct AppVersionSection: View {
-    private var versionString: String {
+    let sdkVersionString: String?
+
+    private var appVersionString: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "Version \(version) (\(build))"
@@ -139,13 +141,18 @@ struct AppVersionSection: View {
 
     var body: some View {
         Section {
-            HStack {
-                Spacer()
-                Text(versionString)
+            VStack(spacing: 4) {
+                Text(appVersionString)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                Spacer()
+
+                if let sdkVersion = sdkVersionString {
+                    Text(sdkVersion)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
+            .frame(maxWidth: .infinity)
             .listRowBackground(Color.clear)
         }
     }

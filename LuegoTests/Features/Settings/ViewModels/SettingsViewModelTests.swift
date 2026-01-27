@@ -7,15 +7,18 @@ import Foundation
 struct SettingsViewModelTests {
     var mockPreferencesDataSource: MockDiscoveryPreferencesDataSource
     var mockDiscoveryService: MockDiscoveryService
+    var mockSDKManager: MockLuegoSDKManager
     var viewModel: SettingsViewModel
 
     init() {
         mockPreferencesDataSource = MockDiscoveryPreferencesDataSource()
         mockPreferencesDataSource.selectedSource = .kagiSmallWeb
         mockDiscoveryService = MockDiscoveryService()
+        mockSDKManager = MockLuegoSDKManager()
         viewModel = SettingsViewModel(
             preferencesDataSource: mockPreferencesDataSource,
-            discoveryService: mockDiscoveryService
+            discoveryService: mockDiscoveryService,
+            sdkManager: mockSDKManager
         )
     }
 
@@ -24,10 +27,25 @@ struct SettingsViewModelTests {
         mockPreferencesDataSource.selectedSource = .blogroll
         let vm = SettingsViewModel(
             preferencesDataSource: mockPreferencesDataSource,
-            discoveryService: mockDiscoveryService
+            discoveryService: mockDiscoveryService,
+            sdkManager: mockSDKManager
         )
 
         #expect(vm.selectedDiscoverySource == .blogroll)
+    }
+
+    @Test("sdkVersionString returns formatted version when available")
+    func sdkVersionStringReturnsVersion() {
+        mockSDKManager.versionInfoToReturn = SDKVersionInfo(parserVersion: "1.2.3", rulesVersion: "4.5.6")
+
+        #expect(viewModel.sdkVersionString == "Parser 1.2.3 · Rules 4.5.6")
+    }
+
+    @Test("sdkVersionString returns nil when version info unavailable")
+    func sdkVersionStringReturnsNil() {
+        mockSDKManager.versionInfoToReturn = nil
+
+        #expect(viewModel.sdkVersionString == nil)
     }
 
     @Test("updateDiscoverySource updates preferences")
