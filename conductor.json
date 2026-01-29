@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "setup": "ln -sf \"$CONDUCTOR_ROOT_PATH/Luego/Core/Configuration/Secrets.swift\" ./Luego/Core/Configuration/Secrets.swift"
+  }
+}

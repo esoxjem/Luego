@@ -73,6 +73,9 @@ Luego/Core/Configuration/Secrets.swift
 .claude/settings.local.json
 .claude/*.local.*
 
+# Conductor local hooks (personal configuration)
+conductor.local/
+
 # Xcode user state (explicit)
 *.xcuserstate
 
