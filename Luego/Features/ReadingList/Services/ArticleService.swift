@@ -89,6 +89,10 @@ final class ArticleService: ArticleServiceProtocol {
     }
 
     func saveEphemeralArticle(_ ephemeralArticle: EphemeralArticle) async throws -> Article {
+        if let existingArticle = findExistingArticle(for: ephemeralArticle.url) {
+            return existingArticle
+        }
+
         let article = Article(
             url: ephemeralArticle.url,
             title: ephemeralArticle.title,
@@ -100,5 +104,11 @@ final class ArticleService: ArticleServiceProtocol {
         modelContext.insert(article)
         try modelContext.save()
         return article
+    }
+
+    private func findExistingArticle(for url: URL) -> Article? {
+        let predicate = #Predicate<Article> { $0.url == url }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+        return try? modelContext.fetch(descriptor).first
     }
 }

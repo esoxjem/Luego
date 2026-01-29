@@ -85,7 +85,5 @@ conductor.local/
 # Project documentation (local tracking only)
 FEATURES.md
 
-# Local todo tracking
-todos/
 *.log
 Makefile

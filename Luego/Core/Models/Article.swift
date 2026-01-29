@@ -10,11 +10,11 @@ import SwiftData
 
 @Model
 final class Article {
-    @Attribute(.unique) var id: UUID
-    @Attribute(.unique) var url: URL
-    var title: String
+    var id: UUID = UUID()
+    var url: URL = URL(string: "luego://placeholder")!
+    var title: String = ""
     var content: String?
-    var savedDate: Date
+    var savedDate: Date = Date()
     var thumbnailURL: URL?
     var publishedDate: Date?
     var readPosition: Double = 0.0

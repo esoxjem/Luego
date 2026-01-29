@@ -32,6 +32,12 @@ final class SharingService: SharingServiceProtocol {
         for url in sharedURLs {
             do {
                 let validatedURL = try await metadataDataSource.validateURL(url)
+
+                if articleExists(for: validatedURL) {
+                    Logger.sharing.debug("Skipping duplicate URL: \(validatedURL.absoluteString)")
+                    continue
+                }
+
                 let metadata = try await metadataDataSource.fetchMetadata(for: validatedURL)
 
                 let article = Article(
@@ -64,5 +70,11 @@ final class SharingService: SharingServiceProtocol {
 
     private func clearSharedURLs() {
         userDefaultsDataSource.clearSharedURLs()
+    }
+
+    private func articleExists(for url: URL) -> Bool {
+        let predicate = #Predicate<Article> { $0.url == url }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+        return (try? modelContext.fetch(descriptor).first) != nil
     }
 }
