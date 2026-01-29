@@ -9,6 +9,7 @@ struct ReaderView: View {
     @State private var viewHeight: CGFloat = 0
     @State private var saveTask: Task<Void, Never>?
     @State private var hasRestoredPosition = false
+    @State private var lastSavedPosition: Double = 0
 
     var body: some View {
         Group {
@@ -225,14 +226,18 @@ extension ReaderView {
     }
 
     private func updateReadPosition() {
+        let newPosition = calculateReadPosition()
+
+        guard abs(newPosition - lastSavedPosition) > 0.01 else { return }
+
         saveTask?.cancel()
 
         saveTask = Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
             guard !Task.isCancelled else { return }
 
-            let position = calculateReadPosition()
-            await viewModel.updateReadPosition(position)
+            await viewModel.updateReadPosition(newPosition)
+            lastSavedPosition = newPosition
         }
     }
 
@@ -242,6 +247,7 @@ extension ReaderView {
         guard contentHeight > 0 && viewHeight > 0 else { return }
 
         let savedPosition = viewModel.article.readPosition
+        lastSavedPosition = savedPosition
 
         Task {
             try? await Task.sleep(nanoseconds: 100_000_000)
