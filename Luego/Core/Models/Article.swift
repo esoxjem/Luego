@@ -11,7 +11,7 @@ import SwiftData
 @Model
 final class Article {
     var id: UUID = UUID()
-    var url: URL = URL(string: "about:blank")!
+    var url: URL = URL(string: "luego://placeholder")!
     var title: String = ""
     var content: String?
     var savedDate: Date = Date()
