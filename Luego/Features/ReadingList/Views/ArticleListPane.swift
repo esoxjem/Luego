@@ -126,6 +126,9 @@ struct SelectableArticleList: View {
     private func deleteButton(for article: Article) -> some View {
         Button(role: .destructive) {
             Task {
+                if selection?.id == article.id {
+                    selection = nil
+                }
                 await viewModel.deleteArticle(article)
             }
         } label: {

@@ -41,7 +41,7 @@ struct ContentView: View {
                     selectedArticle: $selectedArticle
                 )
             } detail: {
-                DetailPaneView(article: selectedArticle)
+                DetailPane(article: selectedArticle)
             }
         }
     }

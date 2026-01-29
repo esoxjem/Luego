@@ -25,10 +25,6 @@ enum ArticleFilter: CaseIterable, Hashable {
         }
     }
 
-    var isArticleList: Bool {
-        self != .discovery
-    }
-
     var emptyStateIcon: String {
         switch self {
         case .readingList: "doc.text.fill"

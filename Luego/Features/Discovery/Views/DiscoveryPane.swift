@@ -85,6 +85,12 @@ struct DiscoveryInlineView: View {
             applicationActivities: nil
         )
 
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = window.rootViewController?.view
+            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
         rootViewController.present(activityVC, animated: true)
     }
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct DetailPaneView: View {
+struct DetailPane: View {
     let article: Article?
     @Environment(\.diContainer) private var diContainer
     @State private var readerViewModel: ReaderViewModel?
