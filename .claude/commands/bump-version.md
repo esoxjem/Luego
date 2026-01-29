@@ -2,25 +2,29 @@
 
 Bump the app version and/or build number in the Xcode project for both the main app and share extension.
 
+## Versioning Strategy
+
+This project uses **CalVer** (Calendar Versioning) with the format `YYYY.MM.DD`:
+- **MARKETING_VERSION**: Date-based version (e.g., 2025.01.29)
+- **CURRENT_PROJECT_VERSION**: Build number, incremented for same-day releases
+
 ## Instructions
 
 1. Check the current version numbers in the project:
-   - MARKETING_VERSION (e.g., 1.1) - the user-facing version
-   - CURRENT_PROJECT_VERSION (e.g., 9) - the build number
+   - MARKETING_VERSION (e.g., 2025.01.29) - the user-facing version
+   - CURRENT_PROJECT_VERSION (e.g., 1) - the build number
 
 2. Ask the user what they want to bump:
-   - **Build only**: Increment CURRENT_PROJECT_VERSION by 1
-   - **Patch version**: Increment patch (1.1 -> 1.2), reset build to 1
-   - **Minor version**: Increment minor (1.1 -> 2.0), reset build to 1
-   - **Major version**: Increment major (1.1 -> 2.0), reset build to 1
+   - **Build only**: Increment CURRENT_PROJECT_VERSION by 1 (for same-day releases)
+   - **New version**: Set MARKETING_VERSION to today's date (YYYY.MM.DD), reset build to 1
 
 3. Update the version in `Luego.xcodeproj/project.pbxproj`:
    - Find all occurrences of MARKETING_VERSION and CURRENT_PROJECT_VERSION
-   - Update them consistently across all build configurations for BOTH targets
+   - Update them consistently across all build configurations for ALL targets
 
 4. Verify the changes look correct
 
-5. Commit with message: `bump version` or `bump version to X.Y`
+5. Commit with message: `bump version` or `bump version to YYYY.MM.DD`
 
 ## Project File Location
 
@@ -28,13 +32,13 @@ The version numbers are in: `Luego.xcodeproj/project.pbxproj`
 
 Look for lines like:
 ```
-CURRENT_PROJECT_VERSION = 9;
-MARKETING_VERSION = 1.1;
+CURRENT_PROJECT_VERSION = 1;
+MARKETING_VERSION = 2025.01.29;
 ```
 
 ## Targets to Update
 
-There are **two targets** that need version updates:
+There are **three targets** that need version updates:
 
 1. **Luego (main app)**
    - Bundle ID: `com.esoxjem.Luego`
@@ -44,9 +48,13 @@ There are **two targets** that need version updates:
    - Bundle ID: `com.esoxjem.Luego.LuegoShareExtension`
    - Has Debug and Release configurations
 
+3. **LuegoTests (test target)**
+   - Bundle ID: `com.esoxjem.Luego.LuegoTests`
+   - Has Debug and Release configurations
+
 ## Important
 
-- Always update ALL occurrences in the project file (4 total: 2 for main app + 2 for extension)
-- Keep the main app and extension versions in sync
-- The build number should always be incremented, even for version bumps
+- Always update ALL occurrences in the project file (6 total: 2 for main app + 2 for extension + 2 for tests)
+- Keep all targets' versions in sync
+- For same-day releases, only increment the build number
 - After bumping, the Settings screen will automatically show the new version when the app is rebuilt
