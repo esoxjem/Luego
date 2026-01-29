@@ -24,25 +24,25 @@ struct ContentView: View {
         }
     }
 
-    private var iPadLayout: some View {
-        NavigationSplitView {
-            SidebarView(selection: $selectedFilter)
-        } content: {
-            contentPane
-        } detail: {
-            DetailPaneView(article: selectedArticle)
-        }
-    }
-
     @ViewBuilder
-    private var contentPane: some View {
-        if selectedFilter.isArticleList {
-            ArticleListPane(
-                filter: selectedFilter,
-                selectedArticle: $selectedArticle
-            )
+    private var iPadLayout: some View {
+        if selectedFilter == .discovery {
+            NavigationSplitView {
+                SidebarView(selection: $selectedFilter)
+            } detail: {
+                DiscoveryPane()
+            }
         } else {
-            DiscoveryPane()
+            NavigationSplitView {
+                SidebarView(selection: $selectedFilter)
+            } content: {
+                ArticleListPane(
+                    filter: selectedFilter,
+                    selectedArticle: $selectedArticle
+                )
+            } detail: {
+                DetailPaneView(article: selectedArticle)
+            }
         }
     }
 
