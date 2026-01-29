@@ -4,6 +4,7 @@ import SwiftData
 struct ArticleListPane: View {
     let filter: ArticleFilter
     @Binding var selectedArticle: Article?
+    let onDiscover: () -> Void
     @Environment(\.diContainer) private var diContainer
     @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
     @State private var viewModel: ArticleListViewModel?
@@ -18,7 +19,7 @@ struct ArticleListPane: View {
         Group {
             if let viewModel {
                 if filteredArticles.isEmpty {
-                    ArticleListEmptyState(onDiscover: {}, filter: filter)
+                    ArticleListEmptyState(onDiscover: onDiscover, filter: filter)
                 } else {
                     SelectableArticleList(
                         articles: filteredArticles,
@@ -34,6 +35,12 @@ struct ArticleListPane: View {
         .navigationTitle(filter.title)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                if filter == .readingList {
+                    Button(action: onDiscover) {
+                        Image(systemName: "die.face.5")
+                    }
+                    .accessibilityLabel("Inspire Me")
+                }
                 Button {
                     showingAddArticle = true
                 } label: {
