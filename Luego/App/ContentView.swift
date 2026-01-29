@@ -38,7 +38,8 @@ struct ContentView: View {
             } content: {
                 ArticleListPane(
                     filter: selectedFilter,
-                    selectedArticle: $selectedArticle
+                    selectedArticle: $selectedArticle,
+                    onDiscover: { selectedFilter = .discovery }
                 )
             } detail: {
                 DetailPane(article: selectedArticle)

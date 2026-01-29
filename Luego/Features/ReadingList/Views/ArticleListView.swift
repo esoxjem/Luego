@@ -41,6 +41,7 @@ struct ArticleListView: View {
                     } label: {
                         Image(systemName: "die.face.5")
                     }
+                    .accessibilityLabel("Inspire Me")
                 }
                 Button {
                     showingAddArticle = true
