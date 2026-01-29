@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Luego** is a minimal read-it-later iOS application that allows users to save articles from URLs, fetch metadata automatically, and manage a reading list. Built with SwiftUI and Swift 5.0, targeting iOS 26.0+.
 
-- **Supported Devices**: iPhone
+- **Supported Devices**: iPhone, iPad
 
 ## Getting Started
 
@@ -22,15 +22,15 @@ open Luego.xcodeproj
 
 ## Development Commands
 
-### Building with Claude Code
+### Building and Testing with Claude Code
 
-**IMPORTANT: Use the ios-build-fixer agent for automated building and error fixing**
+**IMPORTANT: Always use the `/xcode-test` skill for building and testing**
 
-Claude Code includes an `ios-build-fixer` agent that:
-- Automatically checks for available iOS simulators
-- Builds the project with proper error handling
-- Identifies and fixes common build errors automatically
-- Retries the build after applying fixes
+Run `/xcode-test` to:
+- Automatically check for available iOS simulators
+- Build the project with proper error handling
+- Run tests on the iOS simulator
+- Identify and fix common build errors automatically
 
 ## Project Structure
 
@@ -311,7 +311,7 @@ struct ReaderView: View {
 The project has comprehensive unit tests using Swift Testing framework (`@Suite`, `@Test`, `#expect`).
 
 ### Running Tests
-- **With Claude Code**: Ask "Run the tests" - the ios-build-fixer agent handles simulator selection
+- **With Claude Code**: Run `/xcode-test` to build and test on the simulator
 - **In Xcode**: Press ⌘U
 - **Command line**: `xcodebuild test -project Luego.xcodeproj -scheme Luego -destination 'platform=iOS Simulator,name=iPhone 17'`
 
