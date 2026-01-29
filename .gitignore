@@ -87,3 +87,5 @@ FEATURES.md
 
 # Local todo tracking
 todos/
+*.log
+Makefile
