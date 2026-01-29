@@ -76,6 +76,9 @@ Luego/Core/Configuration/Secrets.swift
 # Conductor local hooks (personal configuration)
 conductor.local/
 
+# Conductor agent collaboration directory
+.context/
+
 # Xcode user state (explicit)
 *.xcuserstate
 
