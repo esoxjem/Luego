@@ -1,3 +1,4 @@
+import NetworkImage
 import SwiftUI
 
 struct ArticleRowView: View {
@@ -162,38 +163,10 @@ struct ArticleMetadataRow: View {
 struct ArticleThumbnailView: View {
     let url: URL?
 
-    @State private var loadedImage: PlatformImage?
-    @State private var loadFailed = false
-
-    private static let imageCache = NSCache<NSURL, PlatformImage>()
-
     private let thumbnailSize: CGFloat = 72
 
     var body: some View {
-        Group {
-            if let url, isWebURL(url) {
-                thumbnailContainer {
-                    if let loadedImage {
-                        loadedImageView(loadedImage)
-                    } else if loadFailed {
-                        placeholderView
-                    } else {
-                        loadingView
-                    }
-                }
-                .task {
-                    await loadImage(from: url)
-                }
-            } else {
-                thumbnailContainer {
-                    placeholderView
-                }
-            }
-        }
-    }
-
-    private func thumbnailContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
+        thumbnailContent
             .frame(width: thumbnailSize, height: thumbnailSize)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay {
@@ -203,15 +176,24 @@ struct ArticleThumbnailView: View {
             .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
     }
 
-    private func loadedImageView(_ image: PlatformImage) -> some View {
-        Image(platformImage: image)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-    }
-
-    private var loadingView: some View {
-        Rectangle()
-            .fill(Color.secondary.opacity(0.1))
+    @ViewBuilder
+    private var thumbnailContent: some View {
+        if let url {
+            NetworkImage(url: url) { state in
+                switch state {
+                case .empty:
+                    placeholderView
+                case .success(let image, _):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure:
+                    placeholderView
+                }
+            }
+        } else {
+            placeholderView
+        }
     }
 
     private var placeholderView: some View {
@@ -222,28 +204,5 @@ struct ArticleThumbnailView: View {
                     .font(.system(size: 20, weight: .light))
                     .foregroundStyle(.quaternary)
             }
-    }
-
-    private func isWebURL(_ url: URL) -> Bool {
-        url.scheme == "http" || url.scheme == "https"
-    }
-
-    private func loadImage(from url: URL) async {
-        if let cached = Self.imageCache.object(forKey: url as NSURL) {
-            loadedImage = cached
-            return
-        }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let image = PlatformImage(data: data) {
-                Self.imageCache.setObject(image, forKey: url as NSURL)
-                loadedImage = image
-            } else {
-                loadFailed = true
-            }
-        } catch {
-            loadFailed = true
-        }
     }
 }
