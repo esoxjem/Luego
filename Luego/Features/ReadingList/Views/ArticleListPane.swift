@@ -46,11 +46,13 @@ struct ArticleListPane: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+#if !os(macOS)
                 Button {
                     showingSettings = true
                 } label: {
                     Image(systemName: "gearshape")
                 }
+                #endif
             }
         }
         .sheet(isPresented: $showingAddArticle) {
@@ -79,6 +81,18 @@ struct SelectableArticleList: View {
     @Binding var selection: Article?
     let filter: ArticleFilter
 
+    private var swipeActions: ArticleSwipeActions {
+        ArticleSwipeActions(
+            filter: filter,
+            viewModel: viewModel,
+            onDelete: { article in
+                if selection?.id == article.id {
+                    selection = nil
+                }
+            }
+        )
+    }
+
     var body: some View {
         List {
             ForEach(articles) { article in
@@ -87,50 +101,55 @@ struct SelectableArticleList: View {
                 } label: {
                     ArticleRowView(article: article)
                 }
+                .buttonStyle(.plain)
                 .listRowBackground(selection?.id == article.id ? Color.accentColor.opacity(0.2) : Color.clear)
+                #if os(macOS)
+                .contextMenu {
+                    contextMenuItems(for: article)
+                }
+                #else
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    favoriteButton(for: article)
+                    swipeActions.favoriteButton(for: article)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    archiveButton(for: article)
-                    deleteButton(for: article)
+                    swipeActions.archiveButton(for: article)
+                    swipeActions.deleteButton(for: article)
                 }
+                #endif
             }
         }
+        #if os(macOS)
+        .listStyle(.inset)
+        #endif
         .scrollContentBackground(.hidden)
     }
 
-    private func favoriteButton(for article: Article) -> some View {
-        let isFavorited = filter == .favorites
-        return Button {
-            Task {
-                await viewModel.toggleFavorite(article)
-            }
+    #if os(macOS)
+    @ViewBuilder
+    private func contextMenuItems(for article: Article) -> some View {
+        let isFavorited = article.isFavorite
+        let isArchived = filter == .archived
+
+        Button {
+            Task { await viewModel.toggleFavorite(article) }
         } label: {
             Label(
-                isFavorited ? "Unfavorite" : "Favorite",
-                systemImage: isFavorited ? "heart.slash.fill" : "heart.fill"
+                isFavorited ? "Remove from Favorites" : "Add to Favorites",
+                systemImage: isFavorited ? "star.slash" : "star"
             )
         }
-        .tint(isFavorited ? .gray : .red)
-    }
 
-    private func archiveButton(for article: Article) -> some View {
-        let isArchived = filter == .archived
-        return Button {
-            Task {
-                await viewModel.toggleArchive(article)
-            }
+        Button {
+            Task { await viewModel.toggleArchive(article) }
         } label: {
             Label(
                 isArchived ? "Unarchive" : "Archive",
-                systemImage: isArchived ? "tray.and.arrow.up.fill" : "archivebox.fill"
+                systemImage: isArchived ? "tray.and.arrow.up" : "archivebox"
             )
         }
-        .tint(.blue)
-    }
 
-    private func deleteButton(for article: Article) -> some View {
+        Divider()
+
         Button(role: .destructive) {
             Task {
                 if selection?.id == article.id {
@@ -139,7 +158,8 @@ struct SelectableArticleList: View {
                 await viewModel.deleteArticle(article)
             }
         } label: {
-            Label("Delete", systemImage: "trash.fill")
+            Label("Delete", systemImage: "trash")
         }
     }
+    #endif
 }

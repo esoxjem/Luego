@@ -32,4 +32,5 @@ extension Logger {
     static let cache = Logger(category: "Cache")
     static let article = Logger(category: "Article")
     static let sharing = Logger(category: "Sharing")
+    static let cloudKit = Logger(category: "CloudKit")
 }

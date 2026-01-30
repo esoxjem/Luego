@@ -12,9 +12,11 @@ struct AddArticleView: View {
                 Section {
                     TextField("Enter URL", text: $urlText)
                         .textContentType(.URL)
+                        #if os(iOS)
                         .keyboardType(.URL)
-                        .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        #endif
+                        .autocorrectionDisabled()
                 } header: {
                     Text("Article URL")
                 } footer: {
@@ -33,7 +35,9 @@ struct AddArticleView: View {
                 }
             }
             .navigationTitle("Add Article")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

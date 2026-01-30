@@ -36,11 +36,24 @@ struct LuegoApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.diContainer, diContainer)
+                .environment(diContainer.syncObserver)
                 .task(id: "sdkInit") {
                     await diContainer.sdkManager.ensureSDKReady()
                 }
         }
         .modelContainer(sharedModelContainer)
+        #if os(macOS)
+        .defaultSize(width: 1000, height: 700)
+        #endif
+
+        #if os(macOS)
+        Settings {
+            SettingsView(
+                viewModel: diContainer.makeSettingsViewModel(),
+                syncStatusObserver: diContainer.syncObserver
+            )
+        }
+        #endif
     }
 }
 

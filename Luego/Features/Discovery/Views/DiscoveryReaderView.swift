@@ -36,16 +36,19 @@ struct DiscoveryReaderView: View {
                 }
             }
             .navigationTitle("Discover")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
 
-                if viewModel.ephemeralArticle != nil {
+                if let article = viewModel.ephemeralArticle {
                     ToolbarItem(placement: .primaryAction) {
                         DiscoveryToolbarMenu(
-                            onShare: shareArticle,
+                            articleURL: article.url,
+                            articleTitle: article.title,
                             onOpenInBrowser: openInBrowser
                         )
                     }
@@ -57,29 +60,6 @@ struct DiscoveryReaderView: View {
                 }
             }
         }
-    }
-
-    private func shareArticle() {
-        guard let article = viewModel.ephemeralArticle else { return }
-
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController else {
-            return
-        }
-
-        let activityVC = UIActivityViewController(
-            activityItems: [article.url],
-            applicationActivities: nil
-        )
-
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = window.rootViewController?.view
-            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
-
-        rootViewController.present(activityVC, animated: true)
     }
 
     private func openInBrowser() {
@@ -201,7 +181,11 @@ struct DiscoveryBottomBar: View {
             )
             .disabled(isSaved)
         }
+        #if os(iOS)
         .glassEffect(.regular.interactive().tint(.purple.opacity(0.8)))
+        #else
+        .background(.ultraThinMaterial, in: Capsule())
+        #endif
     }
 }
 
@@ -222,12 +206,13 @@ struct DiscoveryBottomBarButton: View {
 }
 
 struct DiscoveryToolbarMenu: View {
-    let onShare: () -> Void
+    let articleURL: URL
+    let articleTitle: String
     let onOpenInBrowser: () -> Void
 
     var body: some View {
         Menu {
-            Button(action: onShare) {
+            ShareLink(item: articleURL, subject: Text(articleTitle)) {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
 

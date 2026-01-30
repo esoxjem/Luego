@@ -2,10 +2,21 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
+    var syncStatusObserver: SyncStatusObserver?
+    @Environment(SyncStatusObserver.self) private var envSyncStatusObserver: SyncStatusObserver?
     @Environment(\.dismiss) private var dismiss
+
+    private var resolvedObserver: SyncStatusObserver? {
+        syncStatusObserver ?? envSyncStatusObserver
+    }
 
     var body: some View {
         Form {
+            SyncStatusSection(
+                state: resolvedObserver?.state ?? .idle,
+                lastSyncTime: resolvedObserver?.lastSyncTime
+            )
+
             DiscoverySettingsSection(
                 selectedSource: $viewModel.selectedDiscoverySource,
                 onSourceChanged: viewModel.updateDiscoverySource
@@ -24,11 +35,13 @@ struct SettingsView: View {
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
         }
         .navigationTitle("Settings")
+        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
             }
         }
+        #endif
         .alert(
             viewModel.updateAlertTitle,
             isPresented: $viewModel.showUpdateAlert
@@ -164,6 +177,57 @@ struct SDKUpdateSection: View {
             .disabled(isChecking)
         } footer: {
             Text("Downloads the latest parsing rules and parser if available.")
+        }
+    }
+}
+
+struct SyncStatusSection: View {
+    let state: SyncState
+    let lastSyncTime: Date?
+
+    private var statusText: String {
+        switch state {
+        case .idle: "Up to date"
+        case .syncing: "Syncing..."
+        case .success: "Just synced"
+        case .error(let message, _): message
+        }
+    }
+
+    private var statusColor: Color {
+        switch state {
+        case .idle, .success: .secondary
+        case .syncing: .blue
+        case .error: .red
+        }
+    }
+
+    private var formattedTime: String? {
+        guard let time = lastSyncTime else { return nil }
+        return DateFormatters.time.string(from: time)
+    }
+
+    var body: some View {
+        Section {
+            HStack {
+                Label("iCloud Sync", systemImage: "icloud")
+
+                Spacer()
+
+                Text(statusText)
+                    .foregroundStyle(statusColor)
+            }
+
+            if let timeText = formattedTime {
+                HStack {
+                    Text("Last synced")
+                    Spacer()
+                    Text(timeText)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } footer: {
+            Text("Articles sync automatically across your devices via iCloud.")
         }
     }
 }

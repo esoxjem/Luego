@@ -46,9 +46,18 @@ final class ArticleService: ArticleServiceProtocol {
         Logger.article.debug("[ThumbnailDebug] Article Storage - URL: \(validatedURL.absoluteString)")
         Logger.article.debug("[ThumbnailDebug] Article Storage - thumbnailURL: \(metadata.thumbnailURL?.absoluteString ?? "nil")")
 
-        modelContext.insert(article)
-        try modelContext.save()
-        return article
+        do {
+            modelContext.insert(article)
+            try modelContext.save()
+            return article
+        } catch {
+            modelContext.rollback()
+            if let existingArticle = findExistingArticle(for: validatedURL) {
+                Logger.article.debug("Duplicate detected via constraint: \(validatedURL.absoluteString)")
+                return existingArticle
+            }
+            throw error
+        }
     }
 
     func deleteArticle(id: UUID) async throws {
@@ -101,9 +110,18 @@ final class ArticleService: ArticleServiceProtocol {
             publishedDate: ephemeralArticle.publishedDate
         )
 
-        modelContext.insert(article)
-        try modelContext.save()
-        return article
+        do {
+            modelContext.insert(article)
+            try modelContext.save()
+            return article
+        } catch {
+            modelContext.rollback()
+            if let existingArticle = findExistingArticle(for: ephemeralArticle.url) {
+                Logger.article.debug("Duplicate detected via constraint: \(ephemeralArticle.url.absoluteString)")
+                return existingArticle
+            }
+            throw error
+        }
     }
 
     private func findExistingArticle(for url: URL) -> Article? {

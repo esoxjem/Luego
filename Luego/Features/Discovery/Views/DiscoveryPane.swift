@@ -55,10 +55,11 @@ struct DiscoveryInlineView: View {
             }
         }
         .toolbar {
-            if viewModel.ephemeralArticle != nil {
+            if let article = viewModel.ephemeralArticle {
                 ToolbarItem(placement: .primaryAction) {
                     DiscoveryToolbarMenu(
-                        onShare: shareArticle,
+                        articleURL: article.url,
+                        articleTitle: article.title,
                         onOpenInBrowser: openInBrowser
                     )
                 }
@@ -69,29 +70,6 @@ struct DiscoveryInlineView: View {
                 await viewModel.fetchRandomArticle()
             }
         }
-    }
-
-    private func shareArticle() {
-        guard let article = viewModel.ephemeralArticle else { return }
-
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController else {
-            return
-        }
-
-        let activityVC = UIActivityViewController(
-            activityItems: [article.url],
-            applicationActivities: nil
-        )
-
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = window.rootViewController?.view
-            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
-
-        rootViewController.present(activityVC, animated: true)
     }
 
     private func openInBrowser() {

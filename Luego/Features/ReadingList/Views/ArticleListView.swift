@@ -8,6 +8,10 @@
 import SwiftUI
 import SwiftData
 
+#if os(iOS)
+import UIKit
+#endif
+
 struct ArticleListView: View {
     @Environment(\.diContainer) private var diContainer
     @Environment(\.scenePhase) private var scenePhase
@@ -32,7 +36,9 @@ struct ArticleListView: View {
             onDiscover: { showingDiscovery = true }
         )
         .navigationTitle(filter.title)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if filter == .readingList {
@@ -55,9 +61,11 @@ struct ArticleListView: View {
                 }
             }
         }
+        #if os(iOS)
         .onAppear {
             configureNavigationBarAppearance()
         }
+        #endif
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
                 AddArticleView(viewModel: viewModel, existingArticles: allArticles)
@@ -70,11 +78,20 @@ struct ArticleListView: View {
                 }
             }
         }
+        #if os(iOS)
         .fullScreenCover(isPresented: $showingDiscovery) {
             if let vm = discoveryViewModel {
                 DiscoveryReaderView(viewModel: vm)
             }
         }
+        #else
+        .sheet(isPresented: $showingDiscovery) {
+            if let vm = discoveryViewModel {
+                DiscoveryReaderView(viewModel: vm)
+                    .frame(minWidth: 600, minHeight: 500)
+            }
+        }
+        #endif
         .onChange(of: showingDiscovery) { _, isShowing in
             if isShowing, discoveryViewModel == nil, let container = diContainer {
                 discoveryViewModel = container.makeDiscoveryViewModel()
@@ -102,6 +119,7 @@ struct ArticleListView: View {
         await viewModel.syncSharedArticles()
     }
 
+    #if os(iOS)
     private func configureNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithDefaultBackground()
@@ -119,7 +137,7 @@ struct ArticleListView: View {
             size: 0
         )
     }
-
+    #endif
 }
 
 struct ArticleListContent: View {
@@ -150,6 +168,10 @@ struct ArticleList: View {
     let diContainer: DIContainer?
     let filter: ArticleFilter
 
+    private var swipeActions: ArticleSwipeActions {
+        ArticleSwipeActions(filter: filter, viewModel: viewModel)
+    }
+
     var body: some View {
         List {
             ForEach(articles) { article in
@@ -159,55 +181,15 @@ struct ArticleList: View {
                     ArticleRowView(article: article)
                 }
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    favoriteButton(for: article)
+                    swipeActions.favoriteButton(for: article)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    archiveButton(for: article)
-                    deleteButton(for: article)
+                    swipeActions.archiveButton(for: article)
+                    swipeActions.deleteButton(for: article)
                 }
             }
         }
         .scrollContentBackground(.hidden)
-    }
-
-    private func favoriteButton(for article: Article) -> some View {
-        let isFavorited = filter == .favorites
-        return Button {
-            Task {
-                await viewModel.toggleFavorite(article)
-            }
-        } label: {
-            Label(
-                isFavorited ? "Unfavorite" : "Favorite",
-                systemImage: isFavorited ? "heart.slash.fill" : "heart.fill"
-            )
-        }
-        .tint(isFavorited ? .gray : .red)
-    }
-
-    private func archiveButton(for article: Article) -> some View {
-        let isArchived = filter == .archived
-        return Button {
-            Task {
-                await viewModel.toggleArchive(article)
-            }
-        } label: {
-            Label(
-                isArchived ? "Unarchive" : "Archive",
-                systemImage: isArchived ? "tray.and.arrow.up.fill" : "archivebox.fill"
-            )
-        }
-        .tint(.blue)
-    }
-
-    private func deleteButton(for article: Article) -> some View {
-        Button(role: .destructive) {
-            Task {
-                await viewModel.deleteArticle(article)
-            }
-        } label: {
-            Label("Delete", systemImage: "trash.fill")
-        }
     }
 }
 
@@ -244,7 +226,11 @@ struct ArticleListEmptyState: View {
                 Button("Inspire Me") {
                     onDiscover()
                 }
+                #if os(iOS)
                 .buttonStyle(.glassProminent)
+                #else
+                .buttonStyle(.borderedProminent)
+                #endif
                 .tint(.purple)
             }
         }
