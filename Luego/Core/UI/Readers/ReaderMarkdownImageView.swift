@@ -1,9 +1,17 @@
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+typealias PlatformImage = UIImage
+#elseif os(macOS)
+import AppKit
+typealias PlatformImage = NSImage
+#endif
+
 struct ReaderMarkdownImageView: View {
     let imageURL: URL?
 
-    @State private var loadedImage: UIImage?
+    @State private var loadedImage: PlatformImage?
     @State private var loadFailed = false
 
     var body: some View {
@@ -32,8 +40,8 @@ struct ReaderMarkdownImageView: View {
     private func loadImage(from url: URL) async {
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            if let uiImage = UIImage(data: data) {
-                loadedImage = uiImage
+            if let image = PlatformImage(data: data) {
+                loadedImage = image
             } else {
                 loadFailed = true
             }
@@ -44,15 +52,24 @@ struct ReaderMarkdownImageView: View {
 }
 
 struct TrueSizeImage: View {
-    let image: UIImage
+    let image: PlatformImage
 
     var body: some View {
+        #if os(iOS)
         Image(uiImage: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(maxWidth: image.size.width)
             .frame(maxWidth: .infinity, alignment: .leading)
             .allowsHitTesting(false)
+        #elseif os(macOS)
+        Image(nsImage: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: image.size.width)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .allowsHitTesting(false)
+        #endif
     }
 }
 

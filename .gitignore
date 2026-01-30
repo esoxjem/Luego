@@ -66,6 +66,9 @@ fastlane/test_output
 # Build directory
 build/
 
+# Xcode derived data
+DerivedData/
+
 # Secrets (API keys - use Secrets.swift.template as reference)
 Luego/Core/Configuration/Secrets.swift
 

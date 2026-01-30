@@ -40,9 +40,10 @@ struct ReaderView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 ReaderViewToolbar(
+                    articleURL: viewModel.article.url,
+                    articleTitle: viewModel.article.title,
                     onOpenInBrowser: openInBrowser,
-                    onRefresh: refreshContent,
-                    onShare: shareArticle
+                    onRefresh: refreshContent
                 )
             }
         }
@@ -139,9 +140,10 @@ struct ArticleErrorView: View {
 }
 
 struct ReaderViewToolbar: View {
+    let articleURL: URL
+    let articleTitle: String
     let onOpenInBrowser: () -> Void
     let onRefresh: () -> Void
-    let onShare: () -> Void
 
     var body: some View {
         Menu {
@@ -153,7 +155,7 @@ struct ReaderViewToolbar: View {
                 Label("Open in Browser", systemImage: "safari")
             }
 
-            Button(action: onShare) {
+            ShareLink(item: articleURL, subject: Text(articleTitle)) {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
         } label: {
@@ -292,27 +294,6 @@ extension ReaderView {
         Task {
             await viewModel.refreshContent()
         }
-    }
-
-    private func shareArticle() {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController else {
-            return
-        }
-
-        let activityVC = UIActivityViewController(
-            activityItems: [viewModel.article.url],
-            applicationActivities: nil
-        )
-
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = window.rootViewController?.view
-            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
-
-        rootViewController.present(activityVC, animated: true)
     }
 }
 

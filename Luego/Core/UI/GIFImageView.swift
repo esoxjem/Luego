@@ -1,4 +1,7 @@
 import SwiftUI
+import ImageIO
+
+#if os(iOS)
 import UIKit
 
 struct GIFImageView: UIViewRepresentable {
@@ -49,3 +52,27 @@ struct GIFImageView: UIViewRepresentable {
         return duration > 0 ? duration : 1.0
     }
 }
+
+#elseif os(macOS)
+import AppKit
+
+struct GIFImageView: NSViewRepresentable {
+    let gifName: String
+
+    func makeNSView(context: Context) -> NSImageView {
+        let imageView = NSImageView()
+        imageView.animates = true
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        imageView.canDrawSubviewsIntoLayer = true
+
+        if let url = Bundle.main.url(forResource: gifName, withExtension: "gif"),
+           let image = NSImage(contentsOf: url) {
+            imageView.image = image
+        }
+
+        return imageView
+    }
+
+    func updateNSView(_ nsView: NSImageView, context: Context) {}
+}
+#endif

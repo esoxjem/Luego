@@ -8,6 +8,10 @@
 import SwiftUI
 import SwiftData
 
+#if os(iOS)
+import UIKit
+#endif
+
 struct ArticleListView: View {
     @Environment(\.diContainer) private var diContainer
     @Environment(\.scenePhase) private var scenePhase
@@ -32,7 +36,9 @@ struct ArticleListView: View {
             onDiscover: { showingDiscovery = true }
         )
         .navigationTitle(filter.title)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if filter == .readingList {
@@ -55,9 +61,11 @@ struct ArticleListView: View {
                 }
             }
         }
+        #if os(iOS)
         .onAppear {
             configureNavigationBarAppearance()
         }
+        #endif
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
                 AddArticleView(viewModel: viewModel, existingArticles: allArticles)
@@ -70,11 +78,20 @@ struct ArticleListView: View {
                 }
             }
         }
+        #if os(iOS)
         .fullScreenCover(isPresented: $showingDiscovery) {
             if let vm = discoveryViewModel {
                 DiscoveryReaderView(viewModel: vm)
             }
         }
+        #else
+        .sheet(isPresented: $showingDiscovery) {
+            if let vm = discoveryViewModel {
+                DiscoveryReaderView(viewModel: vm)
+                    .frame(minWidth: 600, minHeight: 500)
+            }
+        }
+        #endif
         .onChange(of: showingDiscovery) { _, isShowing in
             if isShowing, discoveryViewModel == nil, let container = diContainer {
                 discoveryViewModel = container.makeDiscoveryViewModel()
@@ -102,6 +119,7 @@ struct ArticleListView: View {
         await viewModel.syncSharedArticles()
     }
 
+    #if os(iOS)
     private func configureNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithDefaultBackground()
@@ -119,7 +137,7 @@ struct ArticleListView: View {
             size: 0
         )
     }
-
+    #endif
 }
 
 struct ArticleListContent: View {
@@ -244,7 +262,11 @@ struct ArticleListEmptyState: View {
                 Button("Inspire Me") {
                     onDiscover()
                 }
+                #if os(iOS)
                 .buttonStyle(.glassProminent)
+                #else
+                .buttonStyle(.borderedProminent)
+                #endif
                 .tint(.purple)
             }
         }

@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		607598D12EC2300000BEE86E /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 607598D02EC2300000BEE86E /* MarkdownUI */; };
-		608D75732EC33EA6002DD532 /* LuegoShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		608D75732EC33EA6002DD532 /* LuegoShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */; platformFilters = (ios, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -336,6 +336,9 @@
 /* Begin PBXTargetDependency section */
 		608D75722EC33EA6002DD532 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+			);
 			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;
 			targetProxy = 608D75712EC33EA6002DD532 /* PBXContainerItemProxy */;
 		};
@@ -495,7 +498,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -503,6 +507,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Luego/Luego-macOS.entitlements;
 			};
 			name = Debug;
 		};
@@ -531,7 +536,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -539,6 +545,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Luego/Luego-macOS.entitlements;
 			};
 			name = Release;
 		};
@@ -614,9 +621,11 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 2026.01.29;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -641,9 +650,11 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 2026.01.29;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = NO;
