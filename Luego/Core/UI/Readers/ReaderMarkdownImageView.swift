@@ -8,11 +8,23 @@ import AppKit
 typealias PlatformImage = NSImage
 #endif
 
+extension Image {
+    init(platformImage: PlatformImage) {
+        #if os(iOS)
+        self.init(uiImage: platformImage)
+        #elseif os(macOS)
+        self.init(nsImage: platformImage)
+        #endif
+    }
+}
+
 struct ReaderMarkdownImageView: View {
     let imageURL: URL?
 
     @State private var loadedImage: PlatformImage?
     @State private var loadFailed = false
+
+    private static let imageCache = NSCache<NSURL, PlatformImage>()
 
     var body: some View {
         if let imageURL, isWebURL(imageURL) {
@@ -38,9 +50,15 @@ struct ReaderMarkdownImageView: View {
     }
 
     private func loadImage(from url: URL) async {
+        if let cached = Self.imageCache.object(forKey: url as NSURL) {
+            loadedImage = cached
+            return
+        }
+
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             if let image = PlatformImage(data: data) {
+                Self.imageCache.setObject(image, forKey: url as NSURL)
                 loadedImage = image
             } else {
                 loadFailed = true
@@ -55,21 +73,12 @@ struct TrueSizeImage: View {
     let image: PlatformImage
 
     var body: some View {
-        #if os(iOS)
-        Image(uiImage: image)
+        Image(platformImage: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(maxWidth: image.size.width)
             .frame(maxWidth: .infinity, alignment: .leading)
             .allowsHitTesting(false)
-        #elseif os(macOS)
-        Image(nsImage: image)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(maxWidth: image.size.width)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .allowsHitTesting(false)
-        #endif
     }
 }
 

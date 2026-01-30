@@ -24,11 +24,13 @@ struct SettingsView: View {
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
         }
         .navigationTitle("Settings")
+        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
             }
         }
+        #endif
         .alert(
             viewModel.updateAlertTitle,
             isPresented: $viewModel.showUpdateAlert

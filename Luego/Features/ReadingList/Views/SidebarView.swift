@@ -3,6 +3,10 @@ import SwiftUI
 struct SidebarView: View {
     @Binding var selection: ArticleFilter
 
+    // macOS and iPad sidebars use different implementations:
+    // - macOS: List(selection:) for native keyboard navigation, sections for HIG compliance
+    // - iPad: Button-based for consistent tap behavior across iOS navigation patterns
+
     var body: some View {
         #if os(macOS)
         macOSSidebar
