@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct LuegoApp: App {
+    private let cloudKitSyncObserver = CloudKitSyncObserver()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Article.self,
