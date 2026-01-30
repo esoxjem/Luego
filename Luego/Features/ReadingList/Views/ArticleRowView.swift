@@ -17,24 +17,31 @@ struct ArticleRowView: View {
 
     #if os(macOS)
     private var macOSRowLayout: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            ArticleTitleRow(
-                title: article.title,
-                isFavorite: article.isFavorite,
-                isUnread: isUnread
-            )
+        HStack(alignment: .top, spacing: 8) {
+            UnreadIndicator(isUnread: isUnread)
+                .padding(.top, 6)
 
-            ArticleMetadataRowCompact(
-                domain: article.domain,
-                formattedDate: formatDisplayDate(article)
-            )
+            VStack(alignment: .leading, spacing: 2) {
+                ArticleTitleRow(
+                    title: article.title,
+                    isFavorite: article.isFavorite,
+                    isUnread: isUnread
+                )
 
-            if !article.excerpt.isEmpty {
-                Text(article.excerpt)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(3)
-                    .padding(.top, 2)
+                ArticleMetadataRowCompact(
+                    domain: article.domain,
+                    author: article.author,
+                    readPercentage: Int(article.readPosition * 100),
+                    formattedDate: formatDisplayDate(article)
+                )
+
+                if !article.excerpt.isEmpty {
+                    Text(article.excerpt)
+                        .font(.system(.subheadline, design: .serif))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .padding(.top, 2)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -57,7 +64,7 @@ struct ArticleRowView: View {
 
                 if !article.excerpt.isEmpty {
                     Text(article.excerpt)
-                        .font(.subheadline)
+                        .font(.system(.subheadline, design: .serif))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -65,6 +72,7 @@ struct ArticleRowView: View {
                 ArticleMetadataRow(
                     domain: article.domain,
                     author: article.author,
+                    readPercentage: Int(article.readPosition * 100),
                     formattedDate: formatDisplayDate(article),
                     estimatedReadingTime: article.estimatedReadingTime,
                     hasContent: article.content != nil
@@ -115,7 +123,7 @@ struct ArticleTitleRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
-                .font(.headline)
+                .font(.system(.headline, design: .serif))
                 .fontWeight(isUnread ? .semibold : .medium)
                 .foregroundStyle(isUnread ? Color.primary : Color.primary.opacity(0.85))
                 .lineLimit(2)
@@ -123,9 +131,9 @@ struct ArticleTitleRow: View {
             Spacer(minLength: 4)
 
             if isFavorite {
-                Image(systemName: "star.fill")
+                Image(systemName: "heart.fill")
                     .font(.caption2)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.pink)
             }
         }
     }
@@ -134,33 +142,43 @@ struct ArticleTitleRow: View {
 struct ArticleMetadataRow: View {
     let domain: String
     let author: String?
+    let readPercentage: Int
     let formattedDate: String
     let estimatedReadingTime: String
     let hasContent: Bool
 
     var body: some View {
-        HStack(spacing: 0) {
-            Text(domain)
-                .lineLimit(1)
-
-            if let author, !author.isEmpty {
-                Text(" · ")
-                    .foregroundStyle(.quaternary)
-                Text(author)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 0) {
+                Text(domain)
                     .lineLimit(1)
+
+                if let author, !author.isEmpty {
+                    Text(" · ")
+                        .foregroundStyle(.quaternary)
+                    Text(author)
+                        .lineLimit(1)
+                }
+
+                Spacer()
             }
 
-            if hasContent {
+            HStack(spacing: 0) {
+                Text("Read \(readPercentage)%")
+                    .foregroundStyle(.blue)
+
+                if hasContent {
+                    Text(" · ")
+                        .foregroundStyle(.quaternary)
+                    Text(estimatedReadingTime)
+                }
+
                 Text(" · ")
                     .foregroundStyle(.quaternary)
-                Text(estimatedReadingTime)
+                Text(formattedDate)
+
+                Spacer()
             }
-
-            Text(" · ")
-                .foregroundStyle(.quaternary)
-            Text(formattedDate)
-
-            Spacer()
         }
         .font(.caption)
         .foregroundStyle(.tertiary)
@@ -170,19 +188,36 @@ struct ArticleMetadataRow: View {
 #if os(macOS)
 struct ArticleMetadataRowCompact: View {
     let domain: String
+    let author: String?
+    let readPercentage: Int
     let formattedDate: String
 
     var body: some View {
-        HStack(spacing: 0) {
-            Text(domain)
-                .lineLimit(1)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 0) {
+                Text(domain)
+                    .lineLimit(1)
 
-            Text(" · ")
-                .foregroundStyle(.quaternary)
+                if let author, !author.isEmpty {
+                    Text(" · ")
+                        .foregroundStyle(.quaternary)
+                    Text(author)
+                        .lineLimit(1)
+                }
 
-            Text(formattedDate)
+                Spacer()
+            }
 
-            Spacer()
+            HStack(spacing: 0) {
+                Text("Read \(readPercentage)%")
+                    .foregroundStyle(.blue)
+
+                Text(" · ")
+                    .foregroundStyle(.quaternary)
+                Text(formattedDate)
+
+                Spacer()
+            }
         }
         .font(.caption)
         .foregroundStyle(.tertiary)
