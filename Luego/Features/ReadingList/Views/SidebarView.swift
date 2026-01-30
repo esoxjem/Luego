@@ -66,36 +66,44 @@ struct SidebarView: View {
     }
 }
 
-struct SidebarSyncFooter: View {
+struct SyncStatusRow: View {
     let state: SyncState
     let lastSyncTime: Date?
+    var verticalPadding: Edge.Set = .vertical
 
     private var formattedTime: String? {
         guard let time = lastSyncTime else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: time)
+        return DateFormatters.time.string(from: time)
     }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            SyncStatusIndicator(state: state, onErrorTap: nil)
+                .font(.caption)
+
+            if let timeText = formattedTime {
+                Text("Synced at \(timeText)")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(verticalPadding, 8)
+    }
+}
+
+struct SidebarSyncFooter: View {
+    let state: SyncState
+    let lastSyncTime: Date?
 
     var body: some View {
         VStack(spacing: 0) {
             Divider()
                 .opacity(0.5)
 
-            HStack(spacing: 6) {
-                SyncStatusIndicator(state: state, onErrorTap: nil)
-                    .font(.caption)
-
-                if let timeText = formattedTime {
-                    Text("Synced at \(timeText)")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            SyncStatusRow(state: state, lastSyncTime: lastSyncTime)
         }
         .background(.bar)
     }
@@ -125,7 +133,7 @@ struct SidebarSettingsButton: View {
                 .opacity(0.5)
 
             VStack(spacing: 8) {
-                SidebarSyncStatus(state: state, lastSyncTime: lastSyncTime)
+                SyncStatusRow(state: state, lastSyncTime: lastSyncTime, verticalPadding: .top)
 
                 SettingsLink {
                     HStack {
@@ -155,32 +163,4 @@ struct SidebarSettingsButton: View {
     }
 }
 
-struct SidebarSyncStatus: View {
-    let state: SyncState
-    let lastSyncTime: Date?
-
-    private var formattedTime: String? {
-        guard let time = lastSyncTime else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: time)
-    }
-
-    var body: some View {
-        HStack(spacing: 6) {
-            SyncStatusIndicator(state: state, onErrorTap: nil)
-                .font(.caption)
-
-            if let timeText = formattedTime {
-                Text("Synced at \(timeText)")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-    }
-}
 #endif

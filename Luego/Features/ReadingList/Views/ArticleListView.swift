@@ -168,6 +168,10 @@ struct ArticleList: View {
     let diContainer: DIContainer?
     let filter: ArticleFilter
 
+    private var swipeActions: ArticleSwipeActions {
+        ArticleSwipeActions(filter: filter, viewModel: viewModel)
+    }
+
     var body: some View {
         List {
             ForEach(articles) { article in
@@ -177,55 +181,15 @@ struct ArticleList: View {
                     ArticleRowView(article: article)
                 }
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    favoriteButton(for: article)
+                    swipeActions.favoriteButton(for: article)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    archiveButton(for: article)
-                    deleteButton(for: article)
+                    swipeActions.archiveButton(for: article)
+                    swipeActions.deleteButton(for: article)
                 }
             }
         }
         .scrollContentBackground(.hidden)
-    }
-
-    private func favoriteButton(for article: Article) -> some View {
-        let isFavorited = filter == .favorites
-        return Button {
-            Task {
-                await viewModel.toggleFavorite(article)
-            }
-        } label: {
-            Label(
-                isFavorited ? "Unfavorite" : "Favorite",
-                systemImage: isFavorited ? "heart.slash.fill" : "heart.fill"
-            )
-        }
-        .tint(isFavorited ? .gray : .red)
-    }
-
-    private func archiveButton(for article: Article) -> some View {
-        let isArchived = filter == .archived
-        return Button {
-            Task {
-                await viewModel.toggleArchive(article)
-            }
-        } label: {
-            Label(
-                isArchived ? "Unarchive" : "Archive",
-                systemImage: isArchived ? "tray.and.arrow.up.fill" : "archivebox.fill"
-            )
-        }
-        .tint(.blue)
-    }
-
-    private func deleteButton(for article: Article) -> some View {
-        Button(role: .destructive) {
-            Task {
-                await viewModel.deleteArticle(article)
-            }
-        } label: {
-            Label("Delete", systemImage: "trash.fill")
-        }
     }
 }
 

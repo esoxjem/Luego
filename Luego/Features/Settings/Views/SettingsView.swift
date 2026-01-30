@@ -204,9 +204,7 @@ struct SyncStatusSection: View {
 
     private var formattedTime: String? {
         guard let time = lastSyncTime else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: time)
+        return DateFormatters.time.string(from: time)
     }
 
     var body: some View {

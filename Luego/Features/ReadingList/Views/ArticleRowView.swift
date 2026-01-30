@@ -88,19 +88,13 @@ struct ArticleRowView: View {
         let now = Date()
 
         if calendar.isDateInToday(displayDate) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "h:mm a"
-            return formatter.string(from: displayDate)
+            return DateFormatters.time.string(from: displayDate)
         } else if calendar.isDateInYesterday(displayDate) {
             return "Yesterday"
         } else if let daysAgo = calendar.dateComponents([.day], from: displayDate, to: now).day, daysAgo < 7 {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "EEEE"
-            return formatter.string(from: displayDate)
+            return DateFormatters.weekday.string(from: displayDate)
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d"
-            return formatter.string(from: displayDate)
+            return DateFormatters.shortDate.string(from: displayDate)
         }
     }
 }
