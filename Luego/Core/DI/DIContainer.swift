@@ -60,6 +60,12 @@ final class DIContainer {
 
     var sdkManager: LuegoSDKManagerProtocol { luegoSDKManager }
 
+    private lazy var _syncStatusObserver: SyncStatusObserver = {
+        SyncStatusObserver()
+    }()
+
+    var syncObserver: SyncStatusObserver { _syncStatusObserver }
+
     private lazy var opmlDataSource: OPMLDataSource = {
         OPMLDataSource()
     }()

@@ -28,7 +28,7 @@ struct ArticleRowView: View {
                     isUnread: isUnread
                 )
 
-                ArticleMetadataRowCompact(
+                ArticleMetadataRow(
                     domain: article.domain,
                     author: article.author,
                     readPercentage: Int(article.readPosition * 100),
@@ -75,7 +75,7 @@ struct ArticleRowView: View {
                     readPercentage: Int(article.readPosition * 100),
                     formattedDate: formatDisplayDate(article),
                     estimatedReadingTime: article.estimatedReadingTime,
-                    hasContent: article.content != nil
+                    showReadingTime: article.content != nil
                 )
             }
         }
@@ -144,8 +144,8 @@ struct ArticleMetadataRow: View {
     let author: String?
     let readPercentage: Int
     let formattedDate: String
-    let estimatedReadingTime: String
-    let hasContent: Bool
+    var estimatedReadingTime: String? = nil
+    var showReadingTime: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -167,10 +167,10 @@ struct ArticleMetadataRow: View {
                 Text("Read \(readPercentage)%")
                     .foregroundStyle(.blue)
 
-                if hasContent {
+                if showReadingTime, let time = estimatedReadingTime {
                     Text(" · ")
                         .foregroundStyle(.quaternary)
-                    Text(estimatedReadingTime)
+                    Text(time)
                 }
 
                 Text(" · ")
@@ -184,43 +184,3 @@ struct ArticleMetadataRow: View {
         .foregroundStyle(.tertiary)
     }
 }
-
-#if os(macOS)
-struct ArticleMetadataRowCompact: View {
-    let domain: String
-    let author: String?
-    let readPercentage: Int
-    let formattedDate: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 0) {
-                Text(domain)
-                    .lineLimit(1)
-
-                if let author, !author.isEmpty {
-                    Text(" · ")
-                        .foregroundStyle(.quaternary)
-                    Text(author)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-            }
-
-            HStack(spacing: 0) {
-                Text("Read \(readPercentage)%")
-                    .foregroundStyle(.blue)
-
-                Text(" · ")
-                    .foregroundStyle(.quaternary)
-                Text(formattedDate)
-
-                Spacer()
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(.tertiary)
-    }
-}
-#endif

@@ -64,18 +64,20 @@ final class SyncStatusObserver: SyncStatusObservable {
         }
 
         if event.endDate == nil {
+            debounceTask?.cancel()
             updateState(.syncing)
             Logger.cloudKit.debug("\(eventType) started")
         } else if let error = event.error {
+            debounceTask?.cancel()
             let (message, needsSignIn) = classifyError(error)
             updateState(.error(message: message, needsSignIn: needsSignIn))
             Logger.cloudKit.error("\(eventType) failed: \(error.localizedDescription)")
         } else {
+            debounceTask?.cancel()
             lastSyncTime = Date()
             updateState(.success)
             Logger.cloudKit.info("\(eventType) completed")
 
-            debounceTask?.cancel()
             debounceTask = Task {
                 try? await Task.sleep(for: .seconds(3))
                 guard !Task.isCancelled else { return }
@@ -115,10 +117,21 @@ final class SyncStatusObserver: SyncStatusObservable {
     }
 
     private func classifyError(_ error: Error) -> (message: String, needsSignIn: Bool) {
-        if let ckError = error as? CKError, ckError.code == .notAuthenticated {
-            return ("Sign in to iCloud to sync", true)
+        if let ckError = error as? CKError {
+            switch ckError.code {
+            case .notAuthenticated:
+                return ("Sign in to iCloud to sync", true)
+            case .networkUnavailable, .networkFailure:
+                return ("Network unavailable. Please check your connection.", false)
+            case .quotaExceeded:
+                return ("iCloud storage is full", false)
+            case .serverResponseLost:
+                return ("Sync interrupted. Will retry automatically.", false)
+            default:
+                return ("Unable to sync. Please try again later.", false)
+            }
         }
-        return (error.localizedDescription, false)
+        return ("Unable to sync. Please try again later.", false)
     }
 
     func dismissError() {
