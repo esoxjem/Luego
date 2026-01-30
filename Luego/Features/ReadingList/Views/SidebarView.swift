@@ -4,6 +4,47 @@ struct SidebarView: View {
     @Binding var selection: ArticleFilter
 
     var body: some View {
+        #if os(macOS)
+        macOSSidebar
+        #else
+        iPadSidebar
+        #endif
+    }
+
+    #if os(macOS)
+    private var macOSSidebar: some View {
+        List(selection: $selection) {
+            Section("Library") {
+                filterRow(.readingList)
+                filterRow(.favorites)
+                filterRow(.archived)
+            }
+            Section("Discover") {
+                filterRow(.discovery)
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("Luego")
+        .safeAreaInset(edge: .bottom) {
+            SettingsLink {
+                Image(systemName: "gear")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(.bar)
+            .accessibilityLabel("Settings")
+        }
+    }
+
+    private func filterRow(_ filter: ArticleFilter) -> some View {
+        Label(filter.title, systemImage: filter.icon).tag(filter)
+    }
+    #endif
+
+    private var iPadSidebar: some View {
         List {
             ForEach(ArticleFilter.allCases, id: \.self) { filter in
                 Button {
