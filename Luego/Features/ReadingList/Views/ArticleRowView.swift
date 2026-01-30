@@ -1,11 +1,8 @@
+import NetworkImage
 import SwiftUI
 
 struct ArticleRowView: View {
     let article: Article
-
-    private var isUnread: Bool {
-        article.readPosition == 0 && article.content != nil
-    }
 
     var body: some View {
         #if os(macOS)
@@ -17,15 +14,13 @@ struct ArticleRowView: View {
 
     #if os(macOS)
     private var macOSRowLayout: some View {
-        HStack(alignment: .top, spacing: 8) {
-            UnreadIndicator(isUnread: isUnread)
-                .padding(.top, 6)
+        HStack(alignment: .top, spacing: 12) {
+            ArticleThumbnailView(url: article.thumbnailURL)
 
             VStack(alignment: .leading, spacing: 2) {
                 ArticleTitleRow(
                     title: article.title,
-                    isFavorite: article.isFavorite,
-                    isUnread: isUnread
+                    isFavorite: article.isFavorite
                 )
 
                 ArticleMetadataRow(
@@ -51,15 +46,13 @@ struct ArticleRowView: View {
     #endif
 
     private var iOSRowLayout: some View {
-        HStack(alignment: .top, spacing: 10) {
-            UnreadIndicator(isUnread: isUnread)
-                .padding(.top, 6)
+        HStack(alignment: .top, spacing: 12) {
+            ArticleThumbnailView(url: article.thumbnailURL)
 
             VStack(alignment: .leading, spacing: 4) {
                 ArticleTitleRow(
                     title: article.title,
-                    isFavorite: article.isFavorite,
-                    isUnread: isUnread
+                    isFavorite: article.isFavorite
                 )
 
                 if !article.excerpt.isEmpty {
@@ -99,27 +92,15 @@ struct ArticleRowView: View {
     }
 }
 
-struct UnreadIndicator: View {
-    let isUnread: Bool
-
-    var body: some View {
-        Circle()
-            .fill(isUnread ? Color.accentColor : Color.clear)
-            .frame(width: 8, height: 8)
-    }
-}
-
 struct ArticleTitleRow: View {
     let title: String
     let isFavorite: Bool
-    let isUnread: Bool
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
                 .font(.system(.headline, design: .serif))
-                .fontWeight(isUnread ? .semibold : .medium)
-                .foregroundStyle(isUnread ? Color.primary : Color.primary.opacity(0.85))
+                .fontWeight(.medium)
                 .lineLimit(2)
 
             Spacer(minLength: 4)
@@ -176,5 +157,52 @@ struct ArticleMetadataRow: View {
         }
         .font(.caption)
         .foregroundStyle(.tertiary)
+    }
+}
+
+struct ArticleThumbnailView: View {
+    let url: URL?
+
+    private let thumbnailSize: CGFloat = 72
+
+    var body: some View {
+        thumbnailContent
+            .frame(width: thumbnailSize, height: thumbnailSize)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+            }
+            .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+    }
+
+    @ViewBuilder
+    private var thumbnailContent: some View {
+        if let url {
+            NetworkImage(url: url) { state in
+                switch state {
+                case .empty:
+                    placeholderView
+                case .success(let image, _):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure:
+                    placeholderView
+                }
+            }
+        } else {
+            placeholderView
+        }
+    }
+
+    private var placeholderView: some View {
+        Rectangle()
+            .fill(Color.secondary.opacity(0.1))
+            .overlay {
+                Image(systemName: "doc.richtext")
+                    .font(.system(size: 20, weight: .light))
+                    .foregroundStyle(.quaternary)
+            }
     }
 }
