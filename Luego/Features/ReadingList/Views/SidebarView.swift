@@ -3,10 +3,6 @@ import SwiftUI
 struct SidebarView: View {
     @Binding var selection: ArticleFilter
 
-    // macOS and iPad sidebars use different implementations:
-    // - macOS: List(selection:) for native keyboard navigation, sections for HIG compliance
-    // - iPad: Button-based for consistent tap behavior across iOS navigation patterns
-
     var body: some View {
         #if os(macOS)
         macOSSidebar
@@ -18,33 +14,30 @@ struct SidebarView: View {
     #if os(macOS)
     private var macOSSidebar: some View {
         List(selection: $selection) {
-            Section("Library") {
+            Section {
                 filterRow(.readingList)
                 filterRow(.favorites)
                 filterRow(.archived)
+            } header: {
+                SidebarSectionHeader(title: "Library")
             }
-            Section("Discover") {
+
+            Section {
                 filterRow(.discovery)
+            } header: {
+                SidebarSectionHeader(title: "Discover")
             }
         }
         .listStyle(.sidebar)
         .navigationTitle("Luego")
         .safeAreaInset(edge: .bottom) {
-            SettingsLink {
-                Image(systemName: "gear")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(.bar)
-            .accessibilityLabel("Settings")
+            SidebarSettingsButton()
         }
     }
 
     private func filterRow(_ filter: ArticleFilter) -> some View {
-        Label(filter.title, systemImage: filter.icon).tag(filter)
+        Label(filter.title, systemImage: filter.icon)
+            .tag(filter)
     }
     #endif
 
@@ -62,3 +55,51 @@ struct SidebarView: View {
         .navigationTitle("Luego")
     }
 }
+
+#if os(macOS)
+struct SidebarSectionHeader: View {
+    let title: String
+
+    var body: some View {
+        Text(title.uppercased())
+            .font(.caption)
+            .fontWeight(.medium)
+            .foregroundStyle(.tertiary)
+            .kerning(0.8)
+            .padding(.top, 4)
+    }
+}
+
+struct SidebarSettingsButton: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .opacity(0.5)
+
+            SettingsLink {
+                HStack {
+                    Image(systemName: "gear")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+
+                    Text("Settings")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Text("⌘,")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Settings")
+        }
+        .background(.bar)
+    }
+}
+#endif

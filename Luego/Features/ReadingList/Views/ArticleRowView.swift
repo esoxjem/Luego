@@ -1,142 +1,191 @@
 import SwiftUI
-import NetworkImage
 
 struct ArticleRowView: View {
     let article: Article
-    #if os(macOS)
-    @State private var isHovered = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    #endif
+
+    private var isUnread: Bool {
+        article.readPosition == 0 && article.content != nil
+    }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            ArticleThumbnailView(thumbnailURL: article.thumbnailURL)
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            ArticleContentView(
-                title: article.title,
-                domain: article.domain,
-                readPercentage: Int(article.readPosition * 100),
-                formattedDate: formatDisplayDate(article),
-                estimatedReadingTime: article.estimatedReadingTime,
-                hasContent: article.content != nil,
-                isFavorite: article.isFavorite
-            )
-        }
-        .padding(.vertical, 4)
         #if os(macOS)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isHovered ? Color.secondary.opacity(0.08) : Color.clear)
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: isHovered)
-        )
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        macOSRowLayout
+        #else
+        iOSRowLayout
         #endif
+    }
+
+    #if os(macOS)
+    private var macOSRowLayout: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ArticleTitleRow(
+                title: article.title,
+                isFavorite: article.isFavorite,
+                isUnread: isUnread
+            )
+
+            ArticleMetadataRowCompact(
+                domain: article.domain,
+                formattedDate: formatDisplayDate(article)
+            )
+
+            if !article.excerpt.isEmpty {
+                Text(article.excerpt)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .padding(.top, 2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .padding(.vertical, 4)
+    }
+    #endif
+
+    private var iOSRowLayout: some View {
+        HStack(alignment: .top, spacing: 10) {
+            UnreadIndicator(isUnread: isUnread)
+                .padding(.top, 6)
+
+            VStack(alignment: .leading, spacing: 4) {
+                ArticleTitleRow(
+                    title: article.title,
+                    isFavorite: article.isFavorite,
+                    isUnread: isUnread
+                )
+
+                if !article.excerpt.isEmpty {
+                    Text(article.excerpt)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                ArticleMetadataRow(
+                    domain: article.domain,
+                    author: article.author,
+                    formattedDate: formatDisplayDate(article),
+                    estimatedReadingTime: article.estimatedReadingTime,
+                    hasContent: article.content != nil
+                )
+            }
+        }
+        .padding(.vertical, 6)
     }
 
     private func formatDisplayDate(_ article: Article) -> String {
         let displayDate = article.publishedDate ?? article.savedDate
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd-MMM-yy"
-        return formatter.string(from: displayDate)
+        let calendar = Calendar.current
+        let now = Date()
+
+        if calendar.isDateInToday(displayDate) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            return formatter.string(from: displayDate)
+        } else if calendar.isDateInYesterday(displayDate) {
+            return "Yesterday"
+        } else if let daysAgo = calendar.dateComponents([.day], from: displayDate, to: now).day, daysAgo < 7 {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: displayDate)
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: displayDate)
+        }
     }
 }
 
-struct ArticleContentView: View {
+struct UnreadIndicator: View {
+    let isUnread: Bool
+
+    var body: some View {
+        Circle()
+            .fill(isUnread ? Color.accentColor : Color.clear)
+            .frame(width: 8, height: 8)
+    }
+}
+
+struct ArticleTitleRow: View {
     let title: String
+    let isFavorite: Bool
+    let isUnread: Bool
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(title)
+                .font(.headline)
+                .fontWeight(isUnread ? .semibold : .medium)
+                .foregroundStyle(isUnread ? Color.primary : Color.primary.opacity(0.85))
+                .lineLimit(2)
+
+            Spacer(minLength: 4)
+
+            if isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+}
+
+struct ArticleMetadataRow: View {
     let domain: String
-    let readPercentage: Int
+    let author: String?
     let formattedDate: String
     let estimatedReadingTime: String
     let hasContent: Bool
-    let isFavorite: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .center) {
-                Text(title)
-                    .font(.system(.headline, design: .serif))
-                    .lineLimit(2)
-
-                Spacer()
-
-                if isFavorite {
-                    Image(systemName: "heart.fill")
-                        .font(.caption)
-                        .foregroundStyle(.pink)
-                }
-            }
-
+        HStack(spacing: 0) {
             Text(domain)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
                 .lineLimit(1)
 
-            Text("Read \(readPercentage)%")
-                .font(.caption)
-                .foregroundStyle(.blue)
-
-            ArticleMetadataFooter(
-                formattedDate: formattedDate,
-                estimatedReadingTime: estimatedReadingTime,
-                hasContent: hasContent
-            )
-        }
-    }
-}
-
-struct ArticleMetadataFooter: View {
-    let formattedDate: String
-    let estimatedReadingTime: String
-    let hasContent: Bool
-
-    var body: some View {
-        HStack {
-            Text(formattedDate)
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-
-            Spacer()
+            if let author, !author.isEmpty {
+                Text(" · ")
+                    .foregroundStyle(.quaternary)
+                Text(author)
+                    .lineLimit(1)
+            }
 
             if hasContent {
+                Text(" · ")
+                    .foregroundStyle(.quaternary)
                 Text(estimatedReadingTime)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
             }
+
+            Text(" · ")
+                .foregroundStyle(.quaternary)
+            Text(formattedDate)
+
+            Spacer()
         }
+        .font(.caption)
+        .foregroundStyle(.tertiary)
     }
 }
 
-struct ArticleThumbnailView: View {
-    let thumbnailURL: URL?
+#if os(macOS)
+struct ArticleMetadataRowCompact: View {
+    let domain: String
+    let formattedDate: String
 
     var body: some View {
-        if let thumbnailURL {
-            NetworkImage(url: thumbnailURL) { state in
-                if let image = state.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else {
-                    ThumbnailPlaceholder()
-                }
-            }
-        } else {
-            ThumbnailPlaceholder()
-        }
-    }
-}
+        HStack(spacing: 0) {
+            Text(domain)
+                .lineLimit(1)
 
-struct ThumbnailPlaceholder: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(Color.gray.opacity(0.2))
-            .overlay {
-                Image(systemName: "doc.text")
-                    .foregroundStyle(.secondary)
-            }
+            Text(" · ")
+                .foregroundStyle(.quaternary)
+
+            Text(formattedDate)
+
+            Spacer()
+        }
+        .font(.caption)
+        .foregroundStyle(.tertiary)
     }
 }
+#endif

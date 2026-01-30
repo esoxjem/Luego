@@ -70,6 +70,68 @@ extension Article: Equatable {
 }
 
 extension Article {
+    var excerpt: String {
+        guard let content = content, !content.isEmpty else { return "" }
+
+        let textToProcess = String(content.prefix(500))
+        let stripped = textToProcess.strippingMarkdown()
+        let cleaned = stripped
+            .components(separatedBy: .newlines)
+            .joined(separator: " ")
+            .components(separatedBy: .whitespaces)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
+        if cleaned.count <= 120 {
+            return cleaned
+        }
+
+        let truncated = String(cleaned.prefix(120))
+        if let lastSpace = truncated.lastIndex(of: " ") {
+            return String(truncated[..<lastSpace]) + "…"
+        }
+        return truncated + "…"
+    }
+}
+
+extension String {
+    func strippingMarkdown() -> String {
+        var result = self
+
+        let patterns: [(pattern: String, replacement: String)] = [
+            (#"!\[([^\]]*)\]\([^)]+\)"#, ""),           // Images
+            (#"\[([^\]]+)\]\([^)]+\)"#, "$1"),          // Links → keep text
+            (#"^#{1,6}\s+"#, ""),                        // Headers
+            (#"\*\*([^*]+)\*\*"#, "$1"),                // Bold
+            (#"__([^_]+)__"#, "$1"),                    // Bold alt
+            (#"\*([^*]+)\*"#, "$1"),                    // Italic
+            (#"_([^_]+)_"#, "$1"),                      // Italic alt
+            (#"~~([^~]+)~~"#, "$1"),                    // Strikethrough
+            (#"`([^`]+)`"#, "$1"),                      // Inline code
+            (#"^>\s+"#, ""),                            // Blockquotes
+            (#"^[-*+]\s+"#, ""),                        // List items
+            (#"^\d+\.\s+"#, ""),                        // Numbered lists
+            (#"^---+$"#, ""),                           // Horizontal rules
+            (#"^___+$"#, ""),                           // Horizontal rules alt
+            (#"```[\s\S]*?```"#, ""),                   // Code blocks
+        ]
+
+        for (pattern, replacement) in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) {
+                result = regex.stringByReplacingMatches(
+                    in: result,
+                    options: [],
+                    range: NSRange(result.startIndex..., in: result),
+                    withTemplate: replacement
+                )
+            }
+        }
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+extension Article {
     static let sampleArticles: [Article] = [
         Article(
             url: URL(string: "https://www.example.com/article1")!,

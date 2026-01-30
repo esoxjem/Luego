@@ -89,7 +89,13 @@ struct SelectableArticleList: View {
                 } label: {
                     ArticleRowView(article: article)
                 }
+                .buttonStyle(.plain)
                 .listRowBackground(selection?.id == article.id ? Color.accentColor.opacity(0.2) : Color.clear)
+                #if os(macOS)
+                .contextMenu {
+                    contextMenuItems(for: article)
+                }
+                #else
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     favoriteButton(for: article)
                 }
@@ -97,8 +103,12 @@ struct SelectableArticleList: View {
                     archiveButton(for: article)
                     deleteButton(for: article)
                 }
+                #endif
             }
         }
+        #if os(macOS)
+        .listStyle(.inset)
+        #endif
         .scrollContentBackground(.hidden)
     }
 
@@ -144,4 +154,43 @@ struct SelectableArticleList: View {
             Label("Delete", systemImage: "trash.fill")
         }
     }
+
+    #if os(macOS)
+    @ViewBuilder
+    private func contextMenuItems(for article: Article) -> some View {
+        let isFavorited = article.isFavorite
+        let isArchived = filter == .archived
+
+        Button {
+            Task { await viewModel.toggleFavorite(article) }
+        } label: {
+            Label(
+                isFavorited ? "Remove from Favorites" : "Add to Favorites",
+                systemImage: isFavorited ? "star.slash" : "star"
+            )
+        }
+
+        Button {
+            Task { await viewModel.toggleArchive(article) }
+        } label: {
+            Label(
+                isArchived ? "Unarchive" : "Archive",
+                systemImage: isArchived ? "tray.and.arrow.up" : "archivebox"
+            )
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            Task {
+                if selection?.id == article.id {
+                    selection = nil
+                }
+                await viewModel.deleteArticle(article)
+            }
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+    #endif
 }
