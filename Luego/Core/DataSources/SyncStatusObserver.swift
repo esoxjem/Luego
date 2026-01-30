@@ -15,6 +15,7 @@ enum SyncState: Equatable {
     case error(message: String, needsSignIn: Bool)
 }
 
+@MainActor
 protocol SyncStatusObservable: AnyObject {
     var state: SyncState { get }
     var lastSyncTime: Date? { get }
@@ -27,27 +28,25 @@ final class SyncStatusObserver: SyncStatusObservable {
     private(set) var state: SyncState = .idle
     private(set) var lastSyncTime: Date?
 
-    nonisolated(unsafe) private var notificationObserver: Any?
-    private var debounceTask: Task<Void, Never>?
+    nonisolated(unsafe) private var observerTask: Task<Void, Never>?
+    nonisolated(unsafe) private var debounceTask: Task<Void, Never>?
 
     init() {
         observeCloudKitEvents()
     }
 
     deinit {
-        if let observer = notificationObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
+        observerTask?.cancel()
+        debounceTask?.cancel()
     }
 
     private func observeCloudKitEvents() {
-        notificationObserver = NotificationCenter.default.addObserver(
-            forName: NSPersistentCloudKitContainer.eventChangedNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                self?.handleSyncEvent(notification)
+        observerTask = Task {
+            let notifications = NotificationCenter.default.notifications(
+                named: NSPersistentCloudKitContainer.eventChangedNotification
+            )
+            for await notification in notifications {
+                handleSyncEvent(notification)
             }
         }
         Logger.cloudKit.info("SyncStatusObserver initialized")
