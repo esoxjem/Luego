@@ -3,6 +3,10 @@ import NetworkImage
 
 struct ArticleRowView: View {
     let article: Article
+    #if os(macOS)
+    @State private var isHovered = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    #endif
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -21,6 +25,16 @@ struct ArticleRowView: View {
             )
         }
         .padding(.vertical, 4)
+        #if os(macOS)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isHovered ? Color.secondary.opacity(0.08) : Color.clear)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: isHovered)
+        )
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        #endif
     }
 
     private func formatDisplayDate(_ article: Article) -> String {

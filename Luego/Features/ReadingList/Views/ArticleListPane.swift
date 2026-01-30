@@ -46,11 +46,13 @@ struct ArticleListPane: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+#if !os(macOS)
                 Button {
                     showingSettings = true
                 } label: {
                     Image(systemName: "gearshape")
                 }
+                #endif
             }
         }
         .sheet(isPresented: $showingAddArticle) {
