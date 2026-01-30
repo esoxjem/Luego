@@ -177,6 +177,45 @@ struct SharingServiceTests {
 
         #expect(mockUserDefaultsDataSource.getSharedURLsCallCount == 1)
     }
+
+    @Test("syncSharedArticles skips duplicate URLs via fast-path check")
+    func syncSkipsDuplicateURLsViaFastPath() async throws {
+        let url = URL(string: "https://example.com/duplicate")!
+
+        let existingArticle = Article(
+            url: url,
+            title: "Existing Article"
+        )
+        modelContext.insert(existingArticle)
+        try modelContext.save()
+
+        mockUserDefaultsDataSource.sharedURLs = [url]
+
+        let articles = try await sut.syncSharedArticles()
+
+        #expect(articles.isEmpty)
+        #expect(mockMetadataDataSource.fetchMetadataCallCount == 0)
+
+        let allArticles = try fetchAllArticles()
+        #expect(allArticles.count == 1)
+        #expect(allArticles.first?.title == "Existing Article")
+    }
+
+    @Test("syncSharedArticles handles constraint violation gracefully")
+    func syncHandlesConstraintViolationGracefully() async throws {
+        let urls = [
+            URL(string: "https://example.com/article1")!,
+            URL(string: "https://example.com/article2")!
+        ]
+        mockUserDefaultsDataSource.sharedURLs = urls
+
+        let articles = try await sut.syncSharedArticles()
+
+        #expect(articles.count == 2)
+
+        let allArticles = try fetchAllArticles()
+        #expect(allArticles.count == 2)
+    }
 }
 
 @MainActor

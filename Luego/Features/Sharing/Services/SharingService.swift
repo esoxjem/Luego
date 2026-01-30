@@ -51,9 +51,18 @@ final class SharingService: SharingServiceProtocol {
                     readPosition: 0
                 )
 
-                modelContext.insert(article)
-                try modelContext.save()
-                newArticles.append(article)
+                do {
+                    modelContext.insert(article)
+                    try modelContext.save()
+                    newArticles.append(article)
+                } catch {
+                    modelContext.rollback()
+                    if let existingArticle = fetchExistingArticle(for: validatedURL) {
+                        Logger.sharing.debug("Duplicate detected via constraint: \(validatedURL.absoluteString)")
+                    } else {
+                        Logger.sharing.error("Failed to save article and no existing article found: \(error.localizedDescription)")
+                    }
+                }
             } catch {
                 Logger.sharing.error("Failed to sync shared article from \(url.absoluteString): \(error.localizedDescription)")
                 continue
@@ -76,5 +85,11 @@ final class SharingService: SharingServiceProtocol {
         let predicate = #Predicate<Article> { $0.url == url }
         let descriptor = FetchDescriptor<Article>(predicate: predicate)
         return (try? modelContext.fetch(descriptor).first) != nil
+    }
+
+    private func fetchExistingArticle(for url: URL) -> Article? {
+        let predicate = #Predicate<Article> { $0.url == url }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+        return try? modelContext.fetch(descriptor).first
     }
 }

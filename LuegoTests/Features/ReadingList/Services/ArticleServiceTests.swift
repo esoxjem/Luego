@@ -346,4 +346,57 @@ struct ArticleServiceTests {
         let articles = try await sut.getAllArticles()
         #expect(articles.count == 3)
     }
+
+    @Test("addArticle returns existing article when duplicate URL is added")
+    func addArticleReturnsDuplicateWhenURLExists() async throws {
+        let url = URL(string: "https://example.com/duplicate-test")!
+        mockMetadataDataSource.metadataToReturn = ArticleMetadata(
+            title: "Original Title",
+            thumbnailURL: nil,
+            description: nil,
+            publishedDate: nil
+        )
+
+        let originalArticle = try await sut.addArticle(url: url)
+
+        mockMetadataDataSource.metadataToReturn = ArticleMetadata(
+            title: "Duplicate Title",
+            thumbnailURL: nil,
+            description: nil,
+            publishedDate: nil
+        )
+
+        let duplicateArticle = try await sut.addArticle(url: url)
+
+        #expect(duplicateArticle.id == originalArticle.id)
+        #expect(duplicateArticle.title == "Original Title")
+
+        let articles = try await sut.getAllArticles()
+        #expect(articles.count == 1)
+    }
+
+    @Test("saveEphemeralArticle returns existing article when duplicate URL is saved")
+    func saveEphemeralArticleReturnsDuplicateWhenURLExists() async throws {
+        let url = URL(string: "https://example.com/ephemeral-duplicate")!
+
+        let originalEphemeral = EphemeralArticleFixtures.createEphemeralArticle(
+            url: url,
+            title: "Original Ephemeral",
+            content: "Original content"
+        )
+        let originalArticle = try await sut.saveEphemeralArticle(originalEphemeral)
+
+        let duplicateEphemeral = EphemeralArticleFixtures.createEphemeralArticle(
+            url: url,
+            title: "Duplicate Ephemeral",
+            content: "Duplicate content"
+        )
+        let duplicateArticle = try await sut.saveEphemeralArticle(duplicateEphemeral)
+
+        #expect(duplicateArticle.id == originalArticle.id)
+        #expect(duplicateArticle.title == "Original Ephemeral")
+
+        let articles = try await sut.getAllArticles()
+        #expect(articles.count == 1)
+    }
 }
