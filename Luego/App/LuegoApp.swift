@@ -10,7 +10,7 @@ import SwiftData
 
 @main
 struct LuegoApp: App {
-    private let cloudKitSyncObserver = CloudKitSyncObserver()
+    @State private var syncStatusObserver = SyncStatusObserver()
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -38,6 +38,7 @@ struct LuegoApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.diContainer, diContainer)
+                .environment(syncStatusObserver)
                 .task(id: "sdkInit") {
                     await diContainer.sdkManager.ensureSDKReady()
                 }
@@ -49,7 +50,10 @@ struct LuegoApp: App {
 
         #if os(macOS)
         Settings {
-            SettingsView(viewModel: diContainer.makeSettingsViewModel())
+            SettingsView(
+                viewModel: diContainer.makeSettingsViewModel(),
+                syncStatusObserver: syncStatusObserver
+            )
         }
         #endif
     }
