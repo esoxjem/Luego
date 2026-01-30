@@ -45,9 +45,14 @@ if let existingArticle = findExistingArticle(for: ephemeralArticle.url) {
 
 ## Proposed Solutions
 
-### Option A: Add Unique Constraint (Recommended)
+### Option A: Add Unique Constraint ~~(Recommended)~~ ❌ NOT COMPATIBLE WITH CLOUDKIT
 
 Add `@Attribute(.unique)` to the URL field in the Article model.
+
+**⚠️ INCOMPATIBLE WITH CLOUDKIT SYNC**: SwiftData's `@Attribute(.unique)` constraint cannot be used with CloudKit because:
+1. CloudKit doesn't support database-level unique constraints
+2. Schema migrations fail when adding uniqueness to CloudKit-synced data
+3. `ModelContainer` creation throws `fatalError` on app launch
 
 **Pros:**
 - Database-level enforcement prevents duplicates
@@ -55,11 +60,12 @@ Add `@Attribute(.unique)` to the URL field in the Article model.
 - Works across all code paths
 
 **Cons:**
+- ❌ **Does not work with CloudKit sync**
 - Requires handling constraint violation errors
 - May need migration for existing data
 
 **Effort:** Small
-**Risk:** Low
+**Risk:** ~~Low~~ **HIGH - causes app crash with CloudKit**
 
 ### Option B: Transaction-Based Check-and-Insert
 
@@ -78,7 +84,12 @@ Wrap the existence check and insert in a database transaction.
 
 ## Recommended Action
 
-Implement Option A - add `@Attribute(.unique)` to `Article.url` and handle `NSConstraintConflictException` gracefully.
+Use **application-level duplicate checks** with **graceful error handling** as defense-in-depth:
+1. Check for existing article before inserting (`findExistingArticle()` / `articleExists()`)
+2. Wrap insert/save in try-catch with rollback
+3. On any error, attempt to return existing article if found
+
+**Note:** Option A (`@Attribute(.unique)`) is NOT compatible with CloudKit sync.
 
 ## Technical Details
 
@@ -91,17 +102,19 @@ Implement Option A - add `@Attribute(.unique)` to `Article.url` and handle `NSCo
 
 ## Acceptance Criteria
 
-- [x] `Article.url` has `@Attribute(.unique)` constraint
-- [x] Constraint violation errors are caught and handled gracefully
-- [x] No duplicate articles can be created via any code path
-- [x] Tests verify duplicate prevention
+- [x] ~~`Article.url` has `@Attribute(.unique)` constraint~~ (NOT compatible with CloudKit)
+- [x] Application-level duplicate checks before insert
+- [x] Error handling with rollback and existing article lookup as fallback
+- [x] Tests verify duplicate prevention via fast-path check
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-30 | Created during PR #38 review | Found by data-integrity-guardian agent |
-| 2026-01-30 | Implemented Option A | Added `@Attribute(.unique)` to Article.url, updated ArticleService and SharingService to handle constraint violations gracefully with rollback and existing article lookup, added tests for duplicate prevention |
+| 2026-01-30 | Attempted Option A | Added `@Attribute(.unique)` to Article.url - **CAUSED APP CRASH** |
+| 2026-01-30 | Reverted unique constraint | **CRITICAL LEARNING:** `@Attribute(.unique)` is incompatible with CloudKit sync. CloudKit doesn't support database-level unique constraints, and schema migration fails with `fatalError` on `ModelContainer` creation |
+| 2026-01-30 | Final implementation | Kept application-level duplicate checks (`findExistingArticle()`) with graceful error handling (try-catch with rollback) as defense-in-depth. Added tests for duplicate prevention via fast-path. |
 
 ## Resources
 
