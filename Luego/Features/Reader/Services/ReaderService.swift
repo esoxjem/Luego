@@ -49,17 +49,17 @@ final class ReaderService: ReaderServiceProtocol {
             throw ReaderServiceError.articleNotFound
         }
 
-        if freshArticle.content == nil {
+        if forceRefresh || freshArticle.content == nil {
             freshArticle.content = content.content
         }
 
-        if freshArticle.author == nil, let author = content.author {
+        if forceRefresh || freshArticle.author == nil, let author = content.author {
             freshArticle.author = author
         }
-        if freshArticle.wordCount == nil, let wordCount = content.wordCount {
+        if forceRefresh || freshArticle.wordCount == nil, let wordCount = content.wordCount {
             freshArticle.wordCount = wordCount
         }
-        if freshArticle.thumbnailURL == nil, let thumbnailURL = content.thumbnailURL {
+        if forceRefresh || freshArticle.thumbnailURL == nil, let thumbnailURL = content.thumbnailURL {
             freshArticle.thumbnailURL = thumbnailURL
         }
 
