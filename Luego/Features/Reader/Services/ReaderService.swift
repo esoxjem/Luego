@@ -48,7 +48,9 @@ final class ReaderService: ReaderServiceProtocol {
             throw ReaderServiceError.articleNotFound
         }
 
-        freshArticle.content = content.content
+        if freshArticle.content == nil {
+            freshArticle.content = content.content
+        }
 
         if freshArticle.author == nil, let author = content.author {
             freshArticle.author = author

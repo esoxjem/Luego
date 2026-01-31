@@ -9,6 +9,7 @@ final class ReaderViewModel {
     var isLoading: Bool
     var errorMessage: String?
 
+    @ObservationIgnored
     private var loadingTask: Task<Void, Never>?
     private let readerService: ReaderServiceProtocol
 
