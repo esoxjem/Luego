@@ -1,6 +1,17 @@
 import Foundation
 import SwiftData
 
+enum ReaderServiceError: Error, LocalizedError {
+    case articleNotFound
+
+    var errorDescription: String? {
+        switch self {
+        case .articleNotFound:
+            return "Article not found in database"
+        }
+    }
+}
+
 protocol ReaderServiceProtocol: Sendable {
     func fetchContent(for article: Article, forceRefresh: Bool) async throws -> Article
     func updateReadPosition(articleId: UUID, position: Double) async throws
@@ -17,25 +28,43 @@ final class ReaderService: ReaderServiceProtocol {
     }
 
     func fetchContent(for article: Article, forceRefresh: Bool = false) async throws -> Article {
+        let articleId = article.id
+
+        Logger.reader.debug("fetchContent() called for article \(articleId)")
+
         guard forceRefresh || article.content == nil else {
+            Logger.reader.debug("Content already exists, returning cached")
             return article
         }
 
+        Logger.reader.debug("Fetching content from metadata source")
         let content = try await metadataDataSource.fetchContent(for: article.url, timeout: nil, forceRefresh: forceRefresh)
-        article.content = content.content
 
-        if article.author == nil, let author = content.author {
-            article.author = author
+        let predicate = #Predicate<Article> { $0.id == articleId }
+        let descriptor = FetchDescriptor<Article>(predicate: predicate)
+
+        guard let freshArticle = try modelContext.fetch(descriptor).first else {
+            Logger.reader.error("Article \(articleId) not found after fetch")
+            throw ReaderServiceError.articleNotFound
         }
-        if article.wordCount == nil, let wordCount = content.wordCount {
-            article.wordCount = wordCount
+
+        if freshArticle.content == nil {
+            freshArticle.content = content.content
         }
-        if article.thumbnailURL == nil, let thumbnailURL = content.thumbnailURL {
-            article.thumbnailURL = thumbnailURL
+
+        if freshArticle.author == nil, let author = content.author {
+            freshArticle.author = author
+        }
+        if freshArticle.wordCount == nil, let wordCount = content.wordCount {
+            freshArticle.wordCount = wordCount
+        }
+        if freshArticle.thumbnailURL == nil, let thumbnailURL = content.thumbnailURL {
+            freshArticle.thumbnailURL = thumbnailURL
         }
 
         try modelContext.save()
-        return article
+        Logger.reader.debug("Content saved for article \(articleId)")
+        return freshArticle
     }
 
     func updateReadPosition(articleId: UUID, position: Double) async throws {

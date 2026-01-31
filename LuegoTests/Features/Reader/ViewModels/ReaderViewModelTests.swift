@@ -177,4 +177,16 @@ struct ReaderViewModelTests {
 
         #expect(viewModel.article.readPosition == 0.8)
     }
+
+    @Test("loadContent handles CancellationError gracefully without setting errorMessage")
+    func loadContentHandlesCancellationGracefully() async {
+        let article = ArticleFixtures.createArticle(content: nil)
+        let viewModel = createViewModel(article: article)
+        mockReaderService.shouldThrowCancellationError = true
+
+        await viewModel.loadContent()
+
+        #expect(viewModel.errorMessage == nil)
+        #expect(viewModel.isLoading == false)
+    }
 }

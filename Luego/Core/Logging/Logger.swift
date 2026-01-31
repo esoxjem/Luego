@@ -33,4 +33,5 @@ extension Logger {
     static let article = Logger(category: "Article")
     static let sharing = Logger(category: "Sharing")
     static let cloudKit = Logger(category: "CloudKit")
+    static let reader = Logger(category: "Reader")
 }
