@@ -151,8 +151,8 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
 
     private func completeWithError(message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-            self.extensionContext?.cancelRequest(withError: NSError(domain: "LuegoShareExtension", code: -1, userInfo: [NSLocalizedDescriptionKey: message]))
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+            self?.extensionContext?.cancelRequest(withError: NSError(domain: "LuegoShareExtension", code: -1, userInfo: [NSLocalizedDescriptionKey: message]))
         })
         self.present(alert, animated: true)
     }
