@@ -6,9 +6,11 @@
 //
 
 import UIKit
+import os.log
 
 class ShareViewController: UIViewController, UIAdaptivePresentationControllerDelegate {
 
+    private let logger = Logger(subsystem: "com.esoxjem.Luego.ShareExtension", category: "ShareViewController")
     private let successView = SuccessView()
 
     override func viewDidLoad() {
@@ -95,14 +97,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
                 errorMessage = "Invalid URL format"
             }
 
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                if let url = extractedURL {
-                    self.saveURL(url)
-                } else {
-                    self.completeWithError(message: errorMessage ?? "Unknown error")
-                }
-            }
+            self?.processExtractionResult(url: extractedURL, errorMessage: errorMessage)
         }
     }
 
@@ -122,13 +117,17 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
                 errorMessage = "No valid URL found in text"
             }
 
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                if let url = extractedURL {
-                    self.saveURL(url)
-                } else {
-                    self.completeWithError(message: errorMessage ?? "Unknown error")
-                }
+            self?.processExtractionResult(url: extractedURL, errorMessage: errorMessage)
+        }
+    }
+
+    private func processExtractionResult(url: URL?, errorMessage: String?) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if let url = url {
+                self.saveURL(url)
+            } else {
+                self.completeWithError(message: errorMessage ?? "Unknown error")
             }
         }
     }
