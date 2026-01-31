@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+@MainActor
 protocol SharingServiceProtocol: Sendable {
     func syncSharedArticles() async throws -> [Article]
 }
@@ -22,19 +23,23 @@ final class SharingService: SharingServiceProtocol {
     }
 
     func syncSharedArticles() async throws -> [Article] {
-        let sharedURLs = getSharedURLs()
+        let lastSyncTimestamp = userDefaultsDataSource.getLastSyncTimestamp() ?? Date.distantPast
+        let sharedURLs = userDefaultsDataSource.getSharedURLs(after: lastSyncTimestamp)
+
         guard !sharedURLs.isEmpty else {
             return []
         }
 
         var newArticles: [Article] = []
+        var latestProcessedTimestamp: Date = lastSyncTimestamp
 
-        for url in sharedURLs {
+        for sharedURL in sharedURLs {
             do {
-                let validatedURL = try await metadataDataSource.validateURL(url)
+                let validatedURL = try await metadataDataSource.validateURL(sharedURL.url)
 
                 if articleExists(for: validatedURL) {
                     Logger.sharing.debug("Skipping duplicate URL: \(validatedURL.absoluteString)")
+                    latestProcessedTimestamp = max(latestProcessedTimestamp, sharedURL.timestamp)
                     continue
                 }
 
@@ -55,30 +60,27 @@ final class SharingService: SharingServiceProtocol {
                     modelContext.insert(article)
                     try modelContext.save()
                     newArticles.append(article)
+                    latestProcessedTimestamp = max(latestProcessedTimestamp, sharedURL.timestamp)
                 } catch {
                     modelContext.rollback()
-                    if let existingArticle = fetchExistingArticle(for: validatedURL) {
+                    if fetchExistingArticle(for: validatedURL) != nil {
                         Logger.sharing.debug("Duplicate detected via constraint: \(validatedURL.absoluteString)")
+                        latestProcessedTimestamp = max(latestProcessedTimestamp, sharedURL.timestamp)
                     } else {
                         Logger.sharing.error("Failed to save article and no existing article found: \(error.localizedDescription)")
                     }
                 }
             } catch {
-                Logger.sharing.error("Failed to sync shared article from \(url.absoluteString): \(error.localizedDescription)")
+                Logger.sharing.error("Failed to sync shared article from \(sharedURL.url.absoluteString): \(error.localizedDescription)")
                 continue
             }
         }
 
-        clearSharedURLs()
+        if latestProcessedTimestamp > lastSyncTimestamp {
+            userDefaultsDataSource.setLastSyncTimestamp(latestProcessedTimestamp)
+        }
+
         return newArticles
-    }
-
-    private func getSharedURLs() -> [URL] {
-        userDefaultsDataSource.getSharedURLs()
-    }
-
-    private func clearSharedURLs() {
-        userDefaultsDataSource.clearSharedURLs()
     }
 
     private func articleExists(for url: URL) -> Bool {

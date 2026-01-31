@@ -75,11 +75,21 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
                 extractedURL = nil
                 errorMessage = "Failed to load URL: \(error.localizedDescription)"
             } else if let url = item as? URL {
-                extractedURL = url
-                errorMessage = nil
+                if url.scheme == "http" || url.scheme == "https" {
+                    extractedURL = url
+                    errorMessage = nil
+                } else {
+                    extractedURL = nil
+                    errorMessage = "Only web URLs are supported"
+                }
             } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
-                extractedURL = url
-                errorMessage = nil
+                if url.scheme == "http" || url.scheme == "https" {
+                    extractedURL = url
+                    errorMessage = nil
+                } else {
+                    extractedURL = nil
+                    errorMessage = "Only web URLs are supported"
+                }
             } else {
                 extractedURL = nil
                 errorMessage = "Invalid URL format"
@@ -104,7 +114,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
             if let error {
                 extractedURL = nil
                 errorMessage = "Failed to load text: \(error.localizedDescription)"
-            } else if let text = item as? String, let url = URL(string: text), url.scheme != nil {
+            } else if let text = item as? String, let url = URL(string: text), url.scheme == "http" || url.scheme == "https" {
                 extractedURL = url
                 errorMessage = nil
             } else {

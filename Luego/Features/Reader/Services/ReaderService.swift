@@ -49,7 +49,7 @@ final class ReaderService: ReaderServiceProtocol {
             throw ReaderServiceError.articleNotFound
         }
 
-        if forceRefresh || freshArticle.content == nil {
+        if forceRefresh || freshArticle.content == nil, !content.content.isEmpty {
             freshArticle.content = content.content
         }
 

@@ -244,7 +244,7 @@ struct ShareExtensionToReadingListIntegrationTests {
     @Test("shared URLs sync to reading list")
     func sharedURLsSyncToReadingList() async throws {
         let sharedURL = URL(string: "https://shared.example.com/article")!
-        mockUserDefaultsDataSource.sharedURLs = [sharedURL]
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [SharedURL(url: sharedURL, timestamp: Date())]
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Shared Article",
             thumbnailURL: nil,
@@ -265,7 +265,7 @@ struct ShareExtensionToReadingListIntegrationTests {
     @Test("synced articles can be favorited after save")
     func syncedArticlesCanBeFavorited() async throws {
         let sharedURL = URL(string: "https://shared.example.com/article")!
-        mockUserDefaultsDataSource.sharedURLs = [sharedURL]
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [SharedURL(url: sharedURL, timestamp: Date())]
 
         let syncedArticles = try await sharingService.syncSharedArticles()
         let articleId = syncedArticles.first!.id
@@ -279,7 +279,7 @@ struct ShareExtensionToReadingListIntegrationTests {
     @Test("synced articles can be archived after save")
     func syncedArticlesCanBeArchived() async throws {
         let sharedURL = URL(string: "https://shared.example.com/article")!
-        mockUserDefaultsDataSource.sharedURLs = [sharedURL]
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [SharedURL(url: sharedURL, timestamp: Date())]
 
         let syncedArticles = try await sharingService.syncSharedArticles()
         let articleId = syncedArticles.first!.id
@@ -293,7 +293,7 @@ struct ShareExtensionToReadingListIntegrationTests {
     @Test("synced articles can be deleted")
     func syncedArticlesCanBeDeleted() async throws {
         let sharedURL = URL(string: "https://shared.example.com/article")!
-        mockUserDefaultsDataSource.sharedURLs = [sharedURL]
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [SharedURL(url: sharedURL, timestamp: Date())]
 
         let syncedArticles = try await sharingService.syncSharedArticles()
         let articleId = syncedArticles.first!.id
@@ -306,10 +306,10 @@ struct ShareExtensionToReadingListIntegrationTests {
 
     @Test("multiple shared URLs create separate articles")
     func multipleSharedURLsCreateSeparateArticles() async throws {
-        mockUserDefaultsDataSource.sharedURLs = [
-            URL(string: "https://example.com/article1")!,
-            URL(string: "https://example.com/article2")!,
-            URL(string: "https://example.com/article3")!
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [
+            SharedURL(url: URL(string: "https://example.com/article1")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article2")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article3")!, timestamp: Date())
         ]
 
         let syncedArticles = try await sharingService.syncSharedArticles()
