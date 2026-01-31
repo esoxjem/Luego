@@ -179,33 +179,9 @@ final class ContentDataSource: MetadataDataSourceProtocol {
 
     private func logFetchStart(url: URL, forceRefresh: Bool, skipCache: Bool) {
         let host = url.host() ?? url.absoluteString
-        let sdkReady = parserDataSource.isReady
-        let versionString = formatVersionString()
-        let cacheMode = formatCacheMode(forceRefresh: forceRefresh, skipCache: skipCache)
+        let sdkStatus = parserDataSource.isReady ? "ready" : "unavailable"
+        let cacheMode = skipCache ? "skip" : (forceRefresh ? "refresh" : "normal")
 
-        Logger.content.debug("""
-        ─────────────────────────────────
-        URL: \(host)
-        SDK: \(sdkReady ? "Ready" : "Not available") \(versionString)
-        Cache: \(cacheMode)
-        ────────────────────────────────────────────────────
-        """)
-    }
-
-    private func formatVersionString() -> String {
-        guard let info = sdkManager.getVersionInfo() else {
-            return ""
-        }
-        return "(v\(info.parserVersion), rules: \(info.rulesVersion))"
-    }
-
-    private func formatCacheMode(forceRefresh: Bool, skipCache: Bool) -> String {
-        if skipCache {
-            return "SKIP (no read/write)"
-        } else if forceRefresh {
-            return "FORCE REFRESH (clear → fetch → save)"
-        } else {
-            return "NORMAL (read → fetch if miss → save)"
-        }
+        Logger.content.debug("Fetch: \(host) | SDK: \(sdkStatus) | Cache: \(cacheMode)")
     }
 }
