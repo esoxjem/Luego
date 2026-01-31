@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+@MainActor
 protocol ArticleServiceProtocol: Sendable {
     func getAllArticles() async throws -> [Article]
     func addArticle(url: URL) async throws -> Article

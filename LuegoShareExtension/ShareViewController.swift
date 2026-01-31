@@ -129,13 +129,9 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
     }
 
     private func completeWithSuccess() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
-                self.successView.alpha = 1
-                self.successView.transform = .identity
-            }
+        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
+            self.successView.alpha = 1
+            self.successView.transform = .identity
         }
     }
 
@@ -144,15 +140,11 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
     }
 
     private func completeWithError(message: String) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-                self.extensionContext?.cancelRequest(withError: NSError(domain: "LuegoShareExtension", code: -1, userInfo: [NSLocalizedDescriptionKey: message]))
-            })
-            self.present(alert, animated: true)
-        }
+        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+            self.extensionContext?.cancelRequest(withError: NSError(domain: "LuegoShareExtension", code: -1, userInfo: [NSLocalizedDescriptionKey: message]))
+        })
+        self.present(alert, animated: true)
     }
 
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {

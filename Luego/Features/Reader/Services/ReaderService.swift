@@ -12,6 +12,7 @@ enum ReaderServiceError: Error, LocalizedError {
     }
 }
 
+@MainActor
 protocol ReaderServiceProtocol: Sendable {
     func fetchContent(for article: Article, forceRefresh: Bool) async throws -> Article
     func updateReadPosition(articleId: UUID, position: Double) async throws
