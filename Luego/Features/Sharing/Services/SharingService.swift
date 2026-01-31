@@ -86,7 +86,7 @@ final class SharingService: SharingServiceProtocol {
     private func articleExists(for url: URL) -> Bool {
         let predicate = #Predicate<Article> { $0.url == url }
         let descriptor = FetchDescriptor<Article>(predicate: predicate)
-        return (try? modelContext.fetch(descriptor).first) != nil
+        return (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
     }
 
     private func fetchExistingArticle(for url: URL) -> Article? {
