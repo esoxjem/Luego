@@ -47,7 +47,7 @@ struct ReaderView: View {
                 )
             }
         }
-        .task {
+        .task(id: viewModel.article.id) {
             await viewModel.loadContent()
         }
     }
