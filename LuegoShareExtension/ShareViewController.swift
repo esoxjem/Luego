@@ -67,37 +67,58 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
     }
 
     private func handleURLProvider(_ provider: NSItemProvider) {
-        provider.loadItem(forTypeIdentifier: "public.url", options: nil) { [weak self] (item, error) in
-            guard let self = self else { return }
+        provider.loadItem(forTypeIdentifier: "public.url", options: nil) { @Sendable [weak self] (item, error) in
+            let extractedURL: URL?
+            let errorMessage: String?
 
-            if let error = error {
-                self.completeWithError(message: "Failed to load URL: \(error.localizedDescription)")
-                return
+            if let error {
+                extractedURL = nil
+                errorMessage = "Failed to load URL: \(error.localizedDescription)"
+            } else if let url = item as? URL {
+                extractedURL = url
+                errorMessage = nil
+            } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                extractedURL = url
+                errorMessage = nil
+            } else {
+                extractedURL = nil
+                errorMessage = "Invalid URL format"
             }
 
-            if let url = item as? URL {
-                self.saveURL(url)
-            } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
-                self.saveURL(url)
-            } else {
-                self.completeWithError(message: "Invalid URL format")
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let url = extractedURL {
+                    self.saveURL(url)
+                } else {
+                    self.completeWithError(message: errorMessage ?? "Unknown error")
+                }
             }
         }
     }
 
     private func handleTextProvider(_ provider: NSItemProvider) {
-        provider.loadItem(forTypeIdentifier: "public.plain-text", options: nil) { [weak self] (item, error) in
-            guard let self = self else { return }
+        provider.loadItem(forTypeIdentifier: "public.plain-text", options: nil) { @Sendable [weak self] (item, error) in
+            let extractedURL: URL?
+            let errorMessage: String?
 
-            if let error = error {
-                self.completeWithError(message: "Failed to load text: \(error.localizedDescription)")
-                return
+            if let error {
+                extractedURL = nil
+                errorMessage = "Failed to load text: \(error.localizedDescription)"
+            } else if let text = item as? String, let url = URL(string: text), url.scheme != nil {
+                extractedURL = url
+                errorMessage = nil
+            } else {
+                extractedURL = nil
+                errorMessage = "No valid URL found in text"
             }
 
-            if let text = item as? String, let url = URL(string: text), url.scheme != nil {
-                self.saveURL(url)
-            } else {
-                self.completeWithError(message: "No valid URL found in text")
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let url = extractedURL {
+                    self.saveURL(url)
+                } else {
+                    self.completeWithError(message: errorMessage ?? "Unknown error")
+                }
             }
         }
     }

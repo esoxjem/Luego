@@ -1,6 +1,7 @@
 import Foundation
 
-final class ContentDataSource: MetadataDataSourceProtocol, Sendable {
+@MainActor
+final class ContentDataSource: MetadataDataSourceProtocol {
     private let parserDataSource: LuegoParserDataSourceProtocol
     private let parsedContentCache: ParsedContentCacheDataSourceProtocol
     private let luegoAPIDataSource: LuegoAPIDataSourceProtocol

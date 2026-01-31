@@ -5,12 +5,14 @@ struct SharedURL: Codable, Sendable {
     let timestamp: Date
 }
 
+@MainActor
 protocol SharedStorageDataSourceProtocol: Sendable {
     func saveSharedURL(_ url: URL)
     func getSharedURLs() -> [SharedURL]
     func clearSharedURLs()
 }
 
+@MainActor
 final class SharedStorage: SharedStorageDataSourceProtocol {
     static let shared = SharedStorage()
 
