@@ -98,6 +98,15 @@ extension String {
     func strippingMarkdown() -> String {
         var result = self
 
+        if let codeBlockRegex = try? NSRegularExpression(pattern: #"```.*?```"#, options: [.dotMatchesLineSeparators]) {
+            result = codeBlockRegex.stringByReplacingMatches(
+                in: result,
+                options: [],
+                range: NSRange(result.startIndex..., in: result),
+                withTemplate: ""
+            )
+        }
+
         let patterns: [(pattern: String, replacement: String)] = [
             (#"!\[([^\]]*)\]\([^)]+\)"#, ""),           // Images
             (#"\[([^\]]+)\]\([^)]+\)"#, "$1"),          // Links → keep text
@@ -113,7 +122,6 @@ extension String {
             (#"^\d+\.\s+"#, ""),                        // Numbered lists
             (#"^---+$"#, ""),                           // Horizontal rules
             (#"^___+$"#, ""),                           // Horizontal rules alt
-            (#"```[\s\S]*?```"#, ""),                   // Code blocks
         ]
 
         for (pattern, replacement) in patterns {
