@@ -95,36 +95,45 @@ extension Article {
 }
 
 extension String {
+    private static let codeBlockRegex = try! NSRegularExpression(
+        pattern: #"```.*?```"#,
+        options: [.dotMatchesLineSeparators]
+    )
+
+    private static let markdownPatterns: [(regex: NSRegularExpression, replacement: String)] = [
+        (try! NSRegularExpression(pattern: #"!\[([^\]]*)\]\([^)]+\)"#, options: [.anchorsMatchLines]), ""),
+        (try! NSRegularExpression(pattern: #"\[([^\]]+)\]\([^)]+\)"#, options: [.anchorsMatchLines]), "$1"),
+        (try! NSRegularExpression(pattern: #"^#{1,6}\s+"#, options: [.anchorsMatchLines]), ""),
+        (try! NSRegularExpression(pattern: #"\*\*([^*]+)\*\*"#, options: [.anchorsMatchLines]), "$1"),
+        (try! NSRegularExpression(pattern: #"__([^_]+)__"#, options: [.anchorsMatchLines]), "$1"),
+        (try! NSRegularExpression(pattern: #"\*([^*]+)\*"#, options: [.anchorsMatchLines]), "$1"),
+        (try! NSRegularExpression(pattern: #"_([^_]+)_"#, options: [.anchorsMatchLines]), "$1"),
+        (try! NSRegularExpression(pattern: #"~~([^~]+)~~"#, options: [.anchorsMatchLines]), "$1"),
+        (try! NSRegularExpression(pattern: #"`([^`]+)`"#, options: [.anchorsMatchLines]), "$1"),
+        (try! NSRegularExpression(pattern: #"^>\s+"#, options: [.anchorsMatchLines]), ""),
+        (try! NSRegularExpression(pattern: #"^[-*+]\s+"#, options: [.anchorsMatchLines]), ""),
+        (try! NSRegularExpression(pattern: #"^\d+\.\s+"#, options: [.anchorsMatchLines]), ""),
+        (try! NSRegularExpression(pattern: #"^---+$"#, options: [.anchorsMatchLines]), ""),
+        (try! NSRegularExpression(pattern: #"^___+$"#, options: [.anchorsMatchLines]), ""),
+    ]
+
     func strippingMarkdown() -> String {
         var result = self
 
-        let patterns: [(pattern: String, replacement: String)] = [
-            (#"!\[([^\]]*)\]\([^)]+\)"#, ""),           // Images
-            (#"\[([^\]]+)\]\([^)]+\)"#, "$1"),          // Links → keep text
-            (#"^#{1,6}\s+"#, ""),                        // Headers
-            (#"\*\*([^*]+)\*\*"#, "$1"),                // Bold
-            (#"__([^_]+)__"#, "$1"),                    // Bold alt
-            (#"\*([^*]+)\*"#, "$1"),                    // Italic
-            (#"_([^_]+)_"#, "$1"),                      // Italic alt
-            (#"~~([^~]+)~~"#, "$1"),                    // Strikethrough
-            (#"`([^`]+)`"#, "$1"),                      // Inline code
-            (#"^>\s+"#, ""),                            // Blockquotes
-            (#"^[-*+]\s+"#, ""),                        // List items
-            (#"^\d+\.\s+"#, ""),                        // Numbered lists
-            (#"^---+$"#, ""),                           // Horizontal rules
-            (#"^___+$"#, ""),                           // Horizontal rules alt
-            (#"```[\s\S]*?```"#, ""),                   // Code blocks
-        ]
+        result = Self.codeBlockRegex.stringByReplacingMatches(
+            in: result,
+            options: [],
+            range: NSRange(result.startIndex..., in: result),
+            withTemplate: ""
+        )
 
-        for (pattern, replacement) in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) {
-                result = regex.stringByReplacingMatches(
-                    in: result,
-                    options: [],
-                    range: NSRange(result.startIndex..., in: result),
-                    withTemplate: replacement
-                )
-            }
+        for (regex, replacement) in Self.markdownPatterns {
+            result = regex.stringByReplacingMatches(
+                in: result,
+                options: [],
+                range: NSRange(result.startIndex..., in: result),
+                withTemplate: replacement
+            )
         }
 
         return result.trimmingCharacters(in: .whitespacesAndNewlines)

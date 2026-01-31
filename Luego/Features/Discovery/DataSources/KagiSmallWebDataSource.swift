@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol DiscoverySourceProtocol: Sendable {
     var sourceIdentifier: DiscoverySource { get }
     func fetchArticles(forceRefresh: Bool) async throws -> [SmallWebArticleEntry]

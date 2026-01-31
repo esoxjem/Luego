@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol MetadataDataSourceProtocol: Sendable {
     func validateURL(_ url: URL) async throws -> URL
     func fetchMetadata(for url: URL, timeout: TimeInterval?) async throws -> ArticleMetadata

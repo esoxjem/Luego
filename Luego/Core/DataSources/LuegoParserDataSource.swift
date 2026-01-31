@@ -1,6 +1,7 @@
 import Foundation
 import JavaScriptCore
 
+@MainActor
 protocol LuegoParserDataSourceProtocol: Sendable {
     func parse(html: String, url: URL) async -> ParserResult?
     var isReady: Bool { get }

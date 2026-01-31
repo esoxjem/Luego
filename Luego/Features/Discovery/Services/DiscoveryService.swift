@@ -11,6 +11,7 @@ enum DiscoveryError: LocalizedError {
     }
 }
 
+@MainActor
 protocol DiscoveryServiceProtocol: Sendable {
     func fetchRandomArticle(
         from source: DiscoverySource,

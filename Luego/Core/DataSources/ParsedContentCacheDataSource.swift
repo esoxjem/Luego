@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 
+@MainActor
 protocol ParsedContentCacheDataSourceProtocol: Sendable {
     func get(for url: URL) -> ArticleContent?
     func save(_ content: ArticleContent, for url: URL)

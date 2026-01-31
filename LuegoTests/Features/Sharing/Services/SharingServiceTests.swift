@@ -33,7 +33,7 @@ struct SharingServiceTests {
 
     @Test("syncSharedArticles returns empty array when no shared URLs")
     func syncReturnsEmptyWhenNoSharedURLs() async throws {
-        mockUserDefaultsDataSource.sharedURLs = []
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = []
 
         let articles = try await sut.syncSharedArticles()
 
@@ -44,10 +44,10 @@ struct SharingServiceTests {
     @Test("syncSharedArticles validates each shared URL")
     func syncValidatesEachURL() async throws {
         let urls = [
-            URL(string: "https://example.com/article1")!,
-            URL(string: "https://example.com/article2")!
+            SharedURL(url: URL(string: "https://example.com/article1")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article2")!, timestamp: Date())
         ]
-        mockUserDefaultsDataSource.sharedURLs = urls
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = urls
 
         _ = try await sut.syncSharedArticles()
 
@@ -57,11 +57,11 @@ struct SharingServiceTests {
     @Test("syncSharedArticles fetches metadata for each valid URL")
     func syncFetchesMetadataForEachURL() async throws {
         let urls = [
-            URL(string: "https://example.com/article1")!,
-            URL(string: "https://example.com/article2")!,
-            URL(string: "https://example.com/article3")!
+            SharedURL(url: URL(string: "https://example.com/article1")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article2")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article3")!, timestamp: Date())
         ]
-        mockUserDefaultsDataSource.sharedURLs = urls
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = urls
 
         _ = try await sut.syncSharedArticles()
 
@@ -71,7 +71,7 @@ struct SharingServiceTests {
     @Test("syncSharedArticles creates and persists articles to SwiftData")
     func syncCreatesAndPersistsArticles() async throws {
         let url = URL(string: "https://example.com/shared")!
-        mockUserDefaultsDataSource.sharedURLs = [url]
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [SharedURL(url: url, timestamp: Date())]
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Shared Article",
             thumbnailURL: URL(string: "https://example.com/thumb.jpg"),
@@ -92,10 +92,10 @@ struct SharingServiceTests {
     @Test("syncSharedArticles returns all successfully synced articles")
     func syncReturnsAllSuccessfulArticles() async throws {
         let urls = [
-            URL(string: "https://example.com/article1")!,
-            URL(string: "https://example.com/article2")!
+            SharedURL(url: URL(string: "https://example.com/article1")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article2")!, timestamp: Date())
         ]
-        mockUserDefaultsDataSource.sharedURLs = urls
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = urls
 
         let articles = try await sut.syncSharedArticles()
 
@@ -105,11 +105,12 @@ struct SharingServiceTests {
     @Test("syncSharedArticles continues processing on individual URL failure")
     func syncContinuesOnIndividualFailure() async throws {
         let urls = [
-            URL(string: "https://example.com/article1")!,
-            URL(string: "https://example.com/article2")!,
-            URL(string: "https://example.com/article3")!
+            SharedURL(url: URL(string: "https://example.com/article1")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article2")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article3")!, timestamp: Date())
         ]
-        mockUserDefaultsDataSource.sharedURLs = urls
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = urls
+        mockUserDefaultsDataSource.sharedURLs = urls.map { $0.url }
 
         let testSut = SharingServiceWithFailureSimulation(
             modelContext: modelContext,
@@ -123,28 +124,30 @@ struct SharingServiceTests {
         #expect(articles.count == 2)
     }
 
-    @Test("syncSharedArticles clears shared URLs after sync")
-    func syncClearsSharedURLsAfterSync() async throws {
-        mockUserDefaultsDataSource.sharedURLs = [
-            URL(string: "https://example.com/article")!
+    @Test("syncSharedArticles updates last sync timestamp after sync")
+    func syncUpdatesLastSyncTimestampAfterSync() async throws {
+        let timestamp = Date()
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [
+            SharedURL(url: URL(string: "https://example.com/article")!, timestamp: timestamp)
         ]
 
         _ = try await sut.syncSharedArticles()
 
-        #expect(mockUserDefaultsDataSource.clearSharedURLsCallCount == 1)
+        #expect(mockUserDefaultsDataSource.setLastSyncTimestampCallCount == 1)
+        #expect(mockUserDefaultsDataSource.lastSyncTimestamp == timestamp)
     }
 
-    @Test("syncSharedArticles clears shared URLs even when all fail")
-    func syncClearsURLsEvenOnAllFailures() async throws {
-        mockUserDefaultsDataSource.sharedURLs = [
-            URL(string: "https://example.com/article")!
+    @Test("syncSharedArticles does not update timestamp when all URLs fail")
+    func syncDoesNotUpdateTimestampOnAllFailures() async throws {
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [
+            SharedURL(url: URL(string: "https://example.com/article")!, timestamp: Date())
         ]
         mockMetadataDataSource.shouldThrowOnValidateURL = true
 
         let articles = try await sut.syncSharedArticles()
 
         #expect(articles.isEmpty)
-        #expect(mockUserDefaultsDataSource.clearSharedURLsCallCount == 1)
+        #expect(mockUserDefaultsDataSource.setLastSyncTimestampCallCount == 0)
     }
 
     @Test("syncSharedArticles persists articles with correct metadata")
@@ -152,7 +155,7 @@ struct SharingServiceTests {
         let url = URL(string: "https://example.com/shared")!
         let publishedDate = Date()
         let thumbnailURL = URL(string: "https://example.com/image.jpg")!
-        mockUserDefaultsDataSource.sharedURLs = [url]
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [SharedURL(url: url, timestamp: Date())]
         mockMetadataDataSource.metadataToReturn = ArticleMetadata(
             title: "Full Metadata Article",
             thumbnailURL: thumbnailURL,
@@ -169,13 +172,14 @@ struct SharingServiceTests {
         #expect(articles.first?.readPosition == 0)
     }
 
-    @Test("syncSharedArticles reads from user defaults data source")
-    func syncReadsFromUserDefaultsDataSource() async throws {
-        mockUserDefaultsDataSource.sharedURLs = []
+    @Test("syncSharedArticles reads from user defaults data source with timestamp filter")
+    func syncReadsFromUserDefaultsDataSourceWithTimestampFilter() async throws {
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = []
 
         _ = try await sut.syncSharedArticles()
 
-        #expect(mockUserDefaultsDataSource.getSharedURLsCallCount == 1)
+        #expect(mockUserDefaultsDataSource.getSharedURLsAfterCallCount == 1)
+        #expect(mockUserDefaultsDataSource.getLastSyncTimestampCallCount == 1)
     }
 
     @Test("syncSharedArticles skips duplicate URLs via fast-path check")
@@ -189,7 +193,7 @@ struct SharingServiceTests {
         modelContext.insert(existingArticle)
         try modelContext.save()
 
-        mockUserDefaultsDataSource.sharedURLs = [url]
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [SharedURL(url: url, timestamp: Date())]
 
         let articles = try await sut.syncSharedArticles()
 
@@ -204,10 +208,10 @@ struct SharingServiceTests {
     @Test("syncSharedArticles handles constraint violation gracefully")
     func syncHandlesConstraintViolationGracefully() async throws {
         let urls = [
-            URL(string: "https://example.com/article1")!,
-            URL(string: "https://example.com/article2")!
+            SharedURL(url: URL(string: "https://example.com/article1")!, timestamp: Date()),
+            SharedURL(url: URL(string: "https://example.com/article2")!, timestamp: Date())
         ]
-        mockUserDefaultsDataSource.sharedURLs = urls
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = urls
 
         let articles = try await sut.syncSharedArticles()
 
@@ -215,6 +219,22 @@ struct SharingServiceTests {
 
         let allArticles = try fetchAllArticles()
         #expect(allArticles.count == 2)
+    }
+
+    @Test("syncSharedArticles only processes URLs newer than last sync timestamp")
+    func syncOnlyProcessesNewerURLs() async throws {
+        let oldTimestamp = Date().addingTimeInterval(-3600)
+        let newTimestamp = Date()
+        mockUserDefaultsDataSource.lastSyncTimestamp = oldTimestamp
+        mockUserDefaultsDataSource.sharedURLsWithTimestamps = [
+            SharedURL(url: URL(string: "https://example.com/old")!, timestamp: oldTimestamp.addingTimeInterval(-60)),
+            SharedURL(url: URL(string: "https://example.com/new")!, timestamp: newTimestamp)
+        ]
+
+        let articles = try await sut.syncSharedArticles()
+
+        #expect(articles.count == 1)
+        #expect(articles.first?.url.absoluteString == "https://example.com/new")
     }
 }
 

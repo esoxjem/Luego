@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+@MainActor
 protocol ArticleServiceProtocol: Sendable {
     func getAllArticles() async throws -> [Article]
     func addArticle(url: URL) async throws -> Article
@@ -30,6 +31,12 @@ final class ArticleService: ArticleServiceProtocol {
 
     func addArticle(url: URL) async throws -> Article {
         let validatedURL = try await metadataDataSource.validateURL(url)
+
+        if let existingArticle = findExistingArticle(for: validatedURL) {
+            Logger.article.debug("Duplicate detected: \(validatedURL.absoluteString)")
+            return existingArticle
+        }
+
         let metadata = try await metadataDataSource.fetchMetadata(for: validatedURL)
 
         let article = Article(
@@ -53,7 +60,7 @@ final class ArticleService: ArticleServiceProtocol {
         } catch {
             modelContext.rollback()
             if let existingArticle = findExistingArticle(for: validatedURL) {
-                Logger.article.debug("Duplicate detected via constraint: \(validatedURL.absoluteString)")
+                Logger.article.debug("Duplicate detected after error: \(validatedURL.absoluteString)")
                 return existingArticle
             }
             throw error
