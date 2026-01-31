@@ -2,7 +2,6 @@ import Foundation
 
 @MainActor
 protocol DiscoverySourceProtocol: Sendable {
-    var sourceIdentifier: DiscoverySource { get }
     func fetchArticles(forceRefresh: Bool) async throws -> [SmallWebArticleEntry]
     func randomArticleEntry() async throws -> SmallWebArticleEntry
     func clearCache()
@@ -29,8 +28,6 @@ enum SmallWebError: LocalizedError {
 
 @MainActor
 final class KagiSmallWebDataSource: DiscoverySourceProtocol {
-    let sourceIdentifier: DiscoverySource = .kagiSmallWeb
-
     private let opmlDataSource: OPMLDataSource
     private let seenTracker: SeenItemTracker
     private let opmlURL = URL(string: "https://kagi.com/smallweb/opml")!

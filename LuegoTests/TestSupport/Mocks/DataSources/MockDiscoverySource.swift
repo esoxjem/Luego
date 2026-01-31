@@ -3,8 +3,6 @@ import Foundation
 
 @MainActor
 final class MockDiscoverySource: DiscoverySourceProtocol {
-    var sourceIdentifier: DiscoverySource
-
     var fetchArticlesCallCount = 0
     var randomArticleEntryCallCount = 0
     var clearCacheCallCount = 0
@@ -22,9 +20,7 @@ final class MockDiscoverySource: DiscoverySourceProtocol {
     var fetchArticlesError: Error = SmallWebError.noArticlesAvailable
     var randomArticleEntryError: Error = SmallWebError.noArticlesAvailable
 
-    init(sourceIdentifier: DiscoverySource = .kagiSmallWeb) {
-        self.sourceIdentifier = sourceIdentifier
-    }
+    init() {}
 
     func fetchArticles(forceRefresh: Bool) async throws -> [SmallWebArticleEntry] {
         fetchArticlesCallCount += 1
