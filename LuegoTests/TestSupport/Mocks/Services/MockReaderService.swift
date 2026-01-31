@@ -14,6 +14,7 @@ final class MockReaderService: ReaderServiceProtocol {
     var articleToReturn: Article?
     var shouldThrowOnFetchContent = false
     var shouldThrowOnUpdateReadPosition = false
+    var shouldThrowCancellationError = false
 
     enum MockError: Error {
         case mockError
@@ -23,6 +24,9 @@ final class MockReaderService: ReaderServiceProtocol {
         fetchContentCallCount += 1
         lastFetchedArticle = article
         lastForceRefresh = forceRefresh
+        if shouldThrowCancellationError {
+            throw CancellationError()
+        }
         if shouldThrowOnFetchContent {
             throw MockError.mockError
         }
