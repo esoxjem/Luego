@@ -165,6 +165,14 @@ struct ArticleThumbnailView: View {
 
     private let thumbnailSize: CGFloat = 72
 
+    private var secureURL: URL? {
+        guard let url else { return nil }
+        guard url.scheme == "http" else { return url }
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        components?.scheme = "https"
+        return components?.url ?? url
+    }
+
     var body: some View {
         thumbnailContent
             .frame(width: thumbnailSize, height: thumbnailSize)
@@ -178,7 +186,7 @@ struct ArticleThumbnailView: View {
 
     @ViewBuilder
     private var thumbnailContent: some View {
-        if let url {
+        if let url = secureURL {
             NetworkImage(url: url) { state in
                 switch state {
                 case .empty:
