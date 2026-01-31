@@ -25,8 +25,6 @@ enum BlogrollError: LocalizedError {
 
 @MainActor
 final class BlogrollDataSource: DiscoverySourceProtocol {
-    let sourceIdentifier: DiscoverySource = .blogroll
-
     private let blogrollRSSDataSource: BlogrollRSSDataSource
     private let genericRSSDataSource: GenericRSSDataSource
     private let seenTracker: SeenItemTracker

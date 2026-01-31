@@ -62,12 +62,6 @@ struct KagiSmallWebDataSourceTests {
         #expect(seenItems == nil || (seenItems as? [String])?.isEmpty == true)
     }
 
-    @Test("sourceIdentifier returns kagiSmallWeb")
-    func sourceIdentifierIsKagiSmallWeb() {
-        clearTestData()
-        #expect(sut.sourceIdentifier == .kagiSmallWeb)
-    }
-
     @Test("fetchArticles returns articles or throws on network failure")
     func fetchArticlesReturnsArticlesOrThrows() async {
         clearTestData()

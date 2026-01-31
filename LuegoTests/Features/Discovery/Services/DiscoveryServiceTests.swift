@@ -11,8 +11,8 @@ struct DiscoveryServiceTests {
     var sut: DiscoveryService
 
     init() {
-        mockKagiDataSource = MockDiscoverySource(sourceIdentifier: .kagiSmallWeb)
-        mockBlogrollDataSource = MockDiscoverySource(sourceIdentifier: .blogroll)
+        mockKagiDataSource = MockDiscoverySource()
+        mockBlogrollDataSource = MockDiscoverySource()
         mockMetadataDataSource = MockMetadataDataSource()
         sut = DiscoveryService(
             kagiSmallWebDataSource: mockKagiDataSource,

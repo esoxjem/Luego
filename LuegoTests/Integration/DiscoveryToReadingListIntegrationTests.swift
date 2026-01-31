@@ -17,8 +17,8 @@ struct DiscoveryToReadingListIntegrationTests {
     init() throws {
         modelContainer = try createTestModelContainer()
         modelContext = modelContainer.mainContext
-        mockKagiDataSource = MockDiscoverySource(sourceIdentifier: .kagiSmallWeb)
-        mockBlogrollDataSource = MockDiscoverySource(sourceIdentifier: .blogroll)
+        mockKagiDataSource = MockDiscoverySource()
+        mockBlogrollDataSource = MockDiscoverySource()
         mockMetadataDataSource = MockMetadataDataSource()
 
         discoveryService = DiscoveryService(
