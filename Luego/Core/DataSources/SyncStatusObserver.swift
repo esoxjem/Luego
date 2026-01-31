@@ -28,8 +28,10 @@ final class SyncStatusObserver: SyncStatusObservable {
     private(set) var state: SyncState = .idle
     private(set) var lastSyncTime: Date?
 
-    nonisolated(unsafe) private var observerTask: Task<Void, Never>?
-    nonisolated(unsafe) private var debounceTask: Task<Void, Never>?
+    @ObservationIgnored
+    private var observerTask: Task<Void, Never>?
+    @ObservationIgnored
+    private var debounceTask: Task<Void, Never>?
 
     init() {
         observeCloudKitEvents()
