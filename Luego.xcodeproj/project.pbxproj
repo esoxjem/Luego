@@ -510,7 +510,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 2026.01.31;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -559,7 +559,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 2026.01.31;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -664,7 +664,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 2026.01.31;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -695,7 +695,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 2026.01.31;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
