@@ -74,8 +74,9 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
             let errorMessage: String?
 
             if let error {
+                self?.logger.error("Failed to load URL from provider: \(error.localizedDescription, privacy: .private)")
                 extractedURL = nil
-                errorMessage = "Failed to load URL: \(error.localizedDescription)"
+                errorMessage = "Unable to load URL"
             } else if let url = item as? URL {
                 if url.scheme == "http" || url.scheme == "https" {
                     extractedURL = url
@@ -107,8 +108,9 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
             let errorMessage: String?
 
             if let error {
+                self?.logger.error("Failed to load text from provider: \(error.localizedDescription, privacy: .private)")
                 extractedURL = nil
-                errorMessage = "Failed to load text: \(error.localizedDescription)"
+                errorMessage = "Unable to load content"
             } else if let text = item as? String, let url = URL(string: text), url.scheme == "http" || url.scheme == "https" {
                 extractedURL = url
                 errorMessage = nil
