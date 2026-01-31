@@ -48,9 +48,9 @@ final class ContentDataSource: MetadataDataSourceProtocol {
 
         if forceRefresh {
             parsedContentCache.remove(for: url)
-            Logger.content.debug("Cache cleared (forceRefresh)")
+            Logger.content.debugPublic("Cache cleared (forceRefresh)")
         } else if let cached = parsedContentCache.get(for: url) {
-            Logger.content.debug("✓ Cache HIT")
+            Logger.content.debugPublic("✓ Cache HIT")
             return cached
         }
 
@@ -83,15 +83,15 @@ final class ContentDataSource: MetadataDataSourceProtocol {
                   result.success,
                   let content = result.content,
                   !content.isEmpty else {
-                Logger.content.debug("✗ Local SDK parsing failed → falling back to API")
+                Logger.content.debugPublic("✗ Local SDK parsing failed → falling back to API")
                 return nil
             }
 
-            Logger.content.debug("✓ Local SDK parsing SUCCESS")
+            Logger.content.debugPublic("✓ Local SDK parsing SUCCESS")
 
             return ArticleContent(from: result, url: url)
         } catch {
-            Logger.content.debug("✗ HTML fetch failed: \(error.localizedDescription) → falling back to API")
+            Logger.content.debugPublic("✗ HTML fetch failed: \(error.localizedDescription) → falling back to API")
             return nil
         }
     }
@@ -99,7 +99,7 @@ final class ContentDataSource: MetadataDataSourceProtocol {
     private func fetchFromAPI(url: URL) async throws -> ArticleContent {
         let response = try await luegoAPIDataSource.fetchArticle(for: url)
 
-        Logger.content.debug("✓ API fetch SUCCESS")
+        Logger.content.debugPublic("✓ API fetch SUCCESS")
 
         let publishedDate = parsePublishedDate(from: response.metadata.publishedDate)
         let thumbnailURL = response.metadata.thumbnail.flatMap { URL(string: $0) }

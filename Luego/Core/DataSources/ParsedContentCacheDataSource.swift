@@ -28,7 +28,7 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
         do {
             try fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
         } catch {
-            Logger.cache.error("Failed to create directory: \(error)")
+            Logger.cache.errorPublic("Failed to create directory: \(error)")
         }
     }
 
@@ -59,7 +59,7 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
 
             Logger.cache.debug("Saved content for: \(url.absoluteString)")
         } catch {
-            Logger.cache.error("Failed to save: \(error)")
+            Logger.cache.errorPublic("Failed to save: \(error)")
         }
     }
 
@@ -67,7 +67,7 @@ final class ParsedContentCacheDataSource: ParsedContentCacheDataSourceProtocol {
         try? fileManager.removeItem(at: cacheDirectory)
         ensureDirectoryExists()
 
-        Logger.cache.info("Cleared all cached content")
+        Logger.cache.infoPublic("Cleared all cached content")
     }
 
     func remove(for url: URL) {

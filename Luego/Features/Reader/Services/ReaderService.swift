@@ -34,11 +34,11 @@ final class ReaderService: ReaderServiceProtocol {
         Logger.reader.debug("fetchContent() called for article \(articleId)")
 
         guard forceRefresh || article.content == nil else {
-            Logger.reader.debug("Content already exists, returning cached")
+            Logger.reader.debugPublic("Content already exists, returning cached")
             return article
         }
 
-        Logger.reader.debug("Fetching content from metadata source")
+        Logger.reader.debugPublic("Fetching content from metadata source")
         let content = try await metadataDataSource.fetchContent(for: article.url, timeout: nil, forceRefresh: forceRefresh)
 
         let predicate = #Predicate<Article> { $0.id == articleId }

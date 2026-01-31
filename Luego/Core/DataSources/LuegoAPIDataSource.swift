@@ -39,7 +39,7 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            Logger.api.error("Network error: \(error.localizedDescription)")
+            Logger.api.errorPublic("Network error: \(error.localizedDescription)")
             throw LuegoAPIError.networkError(error)
         }
 
@@ -47,7 +47,7 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
             throw LuegoAPIError.networkError(URLError(.badServerResponse))
         }
 
-        Logger.api.debug("Status: \(httpResponse.statusCode)")
+        Logger.api.debugPublic("Status: \(httpResponse.statusCode)")
 
         switch httpResponse.statusCode {
         case 200:
@@ -75,7 +75,7 @@ final class LuegoAPIDataSource: LuegoAPIDataSourceProtocol, Sendable {
             Logger.api.debug("[ThumbnailDebug] API Response - thumbnail: '\(response.metadata.thumbnail ?? "nil")'")
             return response
         } catch {
-            Logger.api.error("Decoding error: \(error)")
+            Logger.api.errorPublic("Decoding error: \(error)")
             throw LuegoAPIError.decodingError(error)
         }
     }

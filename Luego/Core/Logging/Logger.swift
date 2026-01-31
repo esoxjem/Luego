@@ -8,18 +8,34 @@ final class Logger: Sendable {
     }
 
     func debug(_ message: String) {
-        osLogger.debug("\(message, privacy: .public)")
+        osLogger.debug("\(message, privacy: .private)")
     }
 
     func info(_ message: String) {
-        osLogger.info("\(message, privacy: .public)")
+        osLogger.info("\(message, privacy: .private)")
     }
 
     func warning(_ message: String) {
-        osLogger.warning("\(message, privacy: .public)")
+        osLogger.warning("\(message, privacy: .private)")
     }
 
     func error(_ message: String) {
+        osLogger.error("\(message, privacy: .private)")
+    }
+
+    func debugPublic(_ message: String) {
+        osLogger.debug("\(message, privacy: .public)")
+    }
+
+    func infoPublic(_ message: String) {
+        osLogger.info("\(message, privacy: .public)")
+    }
+
+    func warningPublic(_ message: String) {
+        osLogger.warning("\(message, privacy: .public)")
+    }
+
+    func errorPublic(_ message: String) {
         osLogger.error("\(message, privacy: .public)")
     }
 }

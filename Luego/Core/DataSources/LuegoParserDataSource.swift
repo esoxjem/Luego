@@ -38,7 +38,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         }
 
         guard let context = jsContext else {
-            Logger.parser.debug("JSContext not initialized")
+            Logger.parser.debugPublic("JSContext not initialized")
             return nil
         }
 
@@ -47,12 +47,12 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
 
     private func initializeContext() {
         guard let bundles = sdkManager.loadBundles() else {
-            Logger.parser.debug("Failed to load bundles")
+            Logger.parser.debugPublic("Failed to load bundles")
             return
         }
 
         guard let context = JSContext() else {
-            Logger.parser.error("Failed to create JSContext")
+            Logger.parser.errorPublic("Failed to create JSContext")
             return
         }
 
@@ -66,7 +66,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         let bundleOrder = ["linkedom", "readability", "turndown", "parser"]
         for name in bundleOrder {
             guard let script = bundles[name] else {
-                Logger.parser.error("Missing bundle: \(name)")
+                Logger.parser.errorPublic("Missing bundle: \(name)")
                 return
             }
             context.evaluateScript(script)
@@ -74,19 +74,19 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
 
         let check = context.evaluateScript("typeof LuegoParser")
         guard check?.toString() == "object" else {
-            Logger.parser.error("LuegoParser object not found")
+            Logger.parser.errorPublic("LuegoParser object not found")
             return
         }
 
         self.jsContext = context
 
-        Logger.parser.info("Initialized successfully")
+        Logger.parser.infoPublic("Initialized successfully")
     }
 
     private func executeParser(context: JSContext, html: String, url: URL) -> ParserResult? {
         guard let htmlJSON = encodeAsJSONString(html),
               let urlString = encodeAsJSONString(url.absoluteString) else {
-            Logger.parser.debug("Failed to encode parameters")
+            Logger.parser.debugPublic("Failed to encode parameters")
             return nil
         }
 
@@ -96,7 +96,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
         guard let result = context.evaluateScript(script),
               !result.isUndefined,
               !result.isNull else {
-            Logger.parser.debug("Parser returned undefined/null")
+            Logger.parser.debugPublic("Parser returned undefined/null")
             return nil
         }
 
@@ -128,7 +128,7 @@ final class LuegoParserDataSource: LuegoParserDataSourceProtocol {
             return ParserResult(success: true, content: content, metadata: metadata, error: nil)
         } else {
             let error = result.objectForKeyedSubscript("error")?.toString()
-            Logger.parser.debug("Parsing failed: \(error ?? "unknown error")")
+            Logger.parser.debugPublic("Parsing failed: \(error ?? "unknown error")")
             return ParserResult(success: false, content: nil, metadata: nil, error: error)
         }
     }

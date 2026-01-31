@@ -39,8 +39,8 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
 
     func checkForUpdates() async -> SDKUpdateResult {
         do {
-            Logger.sdk.debug("─────────────────────────────────────────────")
-            Logger.sdk.debug("Checking for updates...")
+            Logger.sdk.debugPublic("─────────────────────────────────────────────")
+            Logger.sdk.debugPublic("Checking for updates...")
 
             let remoteVersions = try await sdkDataSource.fetchVersions()
             let localVersions = cacheDataSource.loadVersions()
@@ -60,7 +60,7 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
 
                 if needsDownload {
                     let reason = !fileExists ? "missing" : "outdated"
-                    Logger.sdk.debug("↓ Downloading \(bundleName) (\(reason))")
+                    Logger.sdk.debugPublic("↓ Downloading \(bundleName) (\(reason))")
 
                     let data = try await sdkDataSource.downloadBundle(name: bundleName)
                     cacheDataSource.saveBundle(name: bundleName, data: data)
@@ -97,8 +97,8 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
                 )
             }
         } catch {
-            Logger.sdk.error("✗ Update failed: \(error.localizedDescription)")
-            Logger.sdk.debug("─────────────────────────────────────────────")
+            Logger.sdk.errorPublic("✗ Update failed: \(error.localizedDescription)")
+            Logger.sdk.debugPublic("─────────────────────────────────────────────")
             return .failed(error)
         }
     }
@@ -110,14 +110,14 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
         guard versionMismatch || !fileExists else { return false }
 
         let reason = !fileExists ? "missing" : "outdated"
-        Logger.sdk.debug("↓ Downloading rules (\(reason))")
+        Logger.sdk.debugPublic("↓ Downloading rules (\(reason))")
 
         do {
             let rules = try await sdkDataSource.fetchRules()
             cacheDataSource.saveRules(rules)
             return true
         } catch {
-            Logger.sdk.warning("⚠ Rules refresh failed: \(error)")
+            Logger.sdk.warningPublic("⚠ Rules refresh failed: \(error)")
             return false
         }
     }
@@ -133,7 +133,7 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
         for name in AppConfiguration.sdkBundleNames {
             guard let data = cacheDataSource.loadBundle(name: name),
                   let script = String(data: data, encoding: .utf8) else {
-                Logger.sdk.warning("⚠ Failed to load bundle: \(name)")
+                Logger.sdk.warningPublic("⚠ Failed to load bundle: \(name)")
                 return nil
             }
             bundles[name] = script
@@ -168,11 +168,11 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
             let parserMatch = parserRemote == parserLocal
             let rulesMatch = rulesRemote == rulesLocal
 
-            Logger.sdk.debug("Parser: \(parserLocal) → \(parserRemote) \(parserMatch ? "✓" : "↑")")
-            Logger.sdk.debug("Rules:  \(rulesLocal) → \(rulesRemote) \(rulesMatch ? "✓" : "↑")")
+            Logger.sdk.debugPublic("Parser: \(parserLocal) → \(parserRemote) \(parserMatch ? "✓" : "↑")")
+            Logger.sdk.debugPublic("Rules:  \(rulesLocal) → \(rulesRemote) \(rulesMatch ? "✓" : "↑")")
         } else {
-            Logger.sdk.debug("Parser: (none) → \(parserRemote) ↓")
-            Logger.sdk.debug("Rules:  (none) → \(rulesRemote) ↓")
+            Logger.sdk.debugPublic("Parser: (none) → \(parserRemote) ↓")
+            Logger.sdk.debugPublic("Rules:  (none) → \(rulesRemote) ↓")
         }
     }
 
@@ -186,7 +186,7 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
         let rulesVersion = remoteVersions.rules.version
 
         if downloadedBundles.isEmpty && !rulesRefreshed {
-            Logger.sdk.debug("✓ Ready (v\(parserVersion), rules: \(rulesVersion)) - all cached")
+            Logger.sdk.debugPublic("✓ Ready (v\(parserVersion), rules: \(rulesVersion)) - all cached")
         } else {
             var updates: [String] = []
             if !downloadedBundles.isEmpty {
@@ -195,8 +195,8 @@ final class LuegoSDKManager: LuegoSDKManagerProtocol {
             if rulesRefreshed {
                 updates.append("rules")
             }
-            Logger.sdk.debug("✓ Ready (v\(parserVersion), rules: \(rulesVersion)) - updated: \(updates.joined(separator: ", "))")
+            Logger.sdk.debugPublic("✓ Ready (v\(parserVersion), rules: \(rulesVersion)) - updated: \(updates.joined(separator: ", "))")
         }
-        Logger.sdk.debug("─────────────────────────────────────────────")
+        Logger.sdk.debugPublic("─────────────────────────────────────────────")
     }
 }

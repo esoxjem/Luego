@@ -51,7 +51,7 @@ final class SyncStatusObserver: SyncStatusObservable {
                 handleSyncEvent(notification)
             }
         }
-        Logger.cloudKit.info("SyncStatusObserver initialized")
+        Logger.cloudKit.infoPublic("SyncStatusObserver initialized")
     }
 
     private func handleSyncEvent(_ notification: Notification) {
@@ -68,17 +68,17 @@ final class SyncStatusObserver: SyncStatusObservable {
         if event.endDate == nil {
             debounceTask?.cancel()
             updateState(.syncing)
-            Logger.cloudKit.debug("\(eventType) started")
+            Logger.cloudKit.debugPublic("\(eventType) started")
         } else if let error = event.error {
             debounceTask?.cancel()
             let (message, needsSignIn) = classifyError(error)
             updateState(.error(message: message, needsSignIn: needsSignIn))
-            Logger.cloudKit.error("\(eventType) failed: \(error.localizedDescription)")
+            Logger.cloudKit.errorPublic("\(eventType) failed: \(error.localizedDescription)")
         } else {
             debounceTask?.cancel()
             lastSyncTime = Date()
             updateState(.success)
-            Logger.cloudKit.info("\(eventType) completed")
+            Logger.cloudKit.infoPublic("\(eventType) completed")
 
             debounceTask = Task {
                 try? await Task.sleep(for: .seconds(3))

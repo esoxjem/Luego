@@ -67,7 +67,7 @@ final class SharingService: SharingServiceProtocol {
                         Logger.sharing.debug("Duplicate detected via constraint: \(validatedURL.absoluteString)")
                         latestProcessedTimestamp = max(latestProcessedTimestamp, sharedURL.timestamp)
                     } else {
-                        Logger.sharing.error("Failed to save article and no existing article found: \(error.localizedDescription)")
+                        Logger.sharing.errorPublic("Failed to save article and no existing article found: \(error.localizedDescription)")
                     }
                 }
             } catch {

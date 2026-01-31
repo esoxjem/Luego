@@ -27,12 +27,12 @@ final class ReaderViewModel {
         Logger.reader.debug("loadContent() called for article \(article.id)")
 
         guard articleContent == nil else {
-            Logger.reader.debug("Content already loaded, skipping")
+            Logger.reader.debugPublic("Content already loaded, skipping")
             return
         }
 
         loadingTask?.cancel()
-        Logger.reader.debug("Starting content load")
+        Logger.reader.debugPublic("Starting content load")
 
         isLoading = true
         errorMessage = nil
@@ -49,11 +49,11 @@ final class ReaderViewModel {
 
                 article = updatedArticle
                 articleContent = updatedArticle.content
-                Logger.reader.debug("Content loaded successfully")
+                Logger.reader.debugPublic("Content loaded successfully")
             } catch is CancellationError {
                 Logger.reader.debug("loadContent cancelled for article \(article.id)")
             } catch {
-                Logger.reader.error("loadContent failed: \(error.localizedDescription)")
+                Logger.reader.errorPublic("loadContent failed: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
 
@@ -68,7 +68,7 @@ final class ReaderViewModel {
         Logger.reader.debug("refreshContent() called for article \(article.id)")
 
         loadingTask?.cancel()
-        Logger.reader.debug("Starting content refresh")
+        Logger.reader.debugPublic("Starting content refresh")
 
         isLoading = true
         errorMessage = nil
@@ -85,11 +85,11 @@ final class ReaderViewModel {
 
                 article = updatedArticle
                 articleContent = updatedArticle.content
-                Logger.reader.debug("Content refreshed successfully")
+                Logger.reader.debugPublic("Content refreshed successfully")
             } catch is CancellationError {
                 Logger.reader.debug("refreshContent cancelled for article \(article.id)")
             } catch {
-                Logger.reader.error("refreshContent failed: \(error.localizedDescription)")
+                Logger.reader.errorPublic("refreshContent failed: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
 
