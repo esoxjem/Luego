@@ -16,6 +16,8 @@ enum ReaderServiceError: Error, LocalizedError {
 protocol ReaderServiceProtocol: Sendable {
     func fetchContent(for article: Article, forceRefresh: Bool) async throws -> Article
     func updateReadPosition(articleId: UUID, position: Double) async throws
+    func createHighlight(for article: Article, range: NSRange, text: String, color: HighlightColor) throws -> Highlight
+    func deleteHighlight(_ highlight: Highlight) throws
 }
 
 @MainActor
@@ -77,6 +79,22 @@ final class ReaderService: ReaderServiceProtocol {
         }
 
         article.readPosition = position
+        try modelContext.save()
+    }
+
+    func createHighlight(for article: Article, range: NSRange, text: String, color: HighlightColor) throws -> Highlight {
+        let highlight = Highlight(range: range, text: text, color: color)
+        highlight.article = article
+        article.highlights.append(highlight)
+        try modelContext.save()
+        return highlight
+    }
+
+    func deleteHighlight(_ highlight: Highlight) throws {
+        if let article = highlight.article {
+            article.highlights.removeAll { $0.id == highlight.id }
+        }
+        modelContext.delete(highlight)
         try modelContext.save()
     }
 }

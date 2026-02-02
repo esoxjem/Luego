@@ -8,6 +8,12 @@ final class ReaderViewModel {
     var articleContent: String?
     var isLoading: Bool
     var errorMessage: String?
+    var selectedRange: NSRange = NSRange(location: 0, length: 0)
+    var selectedHighlight: Highlight?
+    var highlightError: String?
+
+    var showHighlightMenu: Bool { selectedRange.length > 0 }
+    var highlights: [Highlight] { article.highlights }
 
     @ObservationIgnored
     private var loadingTask: Task<Void, Never>?
@@ -108,6 +114,31 @@ final class ReaderViewModel {
             try await readerService.updateReadPosition(articleId: article.id, position: clampedPosition)
         } catch {
             errorMessage = "Failed to save read position: \(error.localizedDescription)"
+        }
+    }
+
+    func createHighlight(color: HighlightColor) {
+        guard selectedRange.length > 0,
+              let content = article.content else { return }
+
+        let nsString = content as NSString
+        guard selectedRange.location + selectedRange.length <= nsString.length else { return }
+        let selectedText = nsString.substring(with: selectedRange)
+
+        do {
+            _ = try readerService.createHighlight(for: article, range: selectedRange, text: selectedText, color: color)
+            selectedRange = NSRange(location: 0, length: 0)
+        } catch {
+            highlightError = "Could not save highlight"
+        }
+    }
+
+    func deleteHighlight(_ highlight: Highlight) {
+        do {
+            try readerService.deleteHighlight(highlight)
+            selectedHighlight = nil
+        } catch {
+            highlightError = "Could not delete highlight"
         }
     }
 }

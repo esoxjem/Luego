@@ -1,5 +1,4 @@
 import SwiftUI
-import MarkdownUI
 
 struct ReaderView: View {
     @Bindable var viewModel: ReaderViewModel
@@ -20,6 +19,8 @@ struct ReaderView: View {
                     article: viewModel.article,
                     content: content,
                     formattedDate: formattedDate,
+                    highlights: viewModel.highlights,
+                    showHighlightMenu: viewModel.showHighlightMenu,
                     scrollPosition: $scrollPosition,
                     contentHeight: $contentHeight,
                     viewHeight: $viewHeight,
@@ -27,7 +28,9 @@ struct ReaderView: View {
                     hasRestoredPosition: $hasRestoredPosition,
                     onUpdateReadPosition: updateReadPosition,
                     onRestoreScrollPosition: restoreScrollPosition,
-                    onDisappear: handleDisappear
+                    onDisappear: handleDisappear,
+                    onSelectionChange: { range in viewModel.selectedRange = range },
+                    onHighlightColor: { color in viewModel.createHighlight(color: color) }
                 )
             } else if let error = viewModel.errorMessage {
                 ArticleErrorView(
@@ -57,6 +60,8 @@ struct ArticleReaderModeView: View {
     let article: Article
     let content: String
     let formattedDate: String
+    let highlights: [Highlight]
+    let showHighlightMenu: Bool
     @Binding var scrollPosition: CGFloat
     @Binding var contentHeight: CGFloat
     @Binding var viewHeight: CGFloat
@@ -65,6 +70,8 @@ struct ArticleReaderModeView: View {
     let onUpdateReadPosition: () -> Void
     let onRestoreScrollPosition: (ScrollViewProxy) -> Void
     let onDisappear: () -> Void
+    let onSelectionChange: (NSRange) -> Void
+    let onHighlightColor: (HighlightColor) -> Void
 
     var body: some View {
         GeometryReader { outerGeo in
@@ -80,9 +87,11 @@ struct ArticleReaderModeView: View {
 
                         Divider()
 
-                        Markdown(stripFirstH1FromMarkdown(content, matchingTitle: article.title))
-                            .markdownTheme(.reader)
-                            .markdownImageProvider(ReaderImageProvider())
+                        SelectableTextView(
+                            markdown: stripFirstH1FromMarkdown(content, matchingTitle: article.title),
+                            highlights: highlights,
+                            onSelectionChange: onSelectionChange
+                        )
                     }
                     .fontDesign(.serif)
                     .padding(.vertical)
@@ -103,6 +112,17 @@ struct ArticleReaderModeView: View {
                 .coordinateSpace(name: "scrollView")
                 .background(Color.gitHubBackground)
                 .onDisappear(perform: onDisappear)
+                .overlay(alignment: .top) {
+                    if showHighlightMenu {
+                        HighlightMenuView(
+                            onColorSelected: onHighlightColor,
+                            onDelete: nil
+                        )
+                        .padding(.top, 60)
+                        .transition(.opacity.combined(with: .scale))
+                        .animation(.easeInOut(duration: 0.2), value: showHighlightMenu)
+                    }
+                }
             }
         }
     }

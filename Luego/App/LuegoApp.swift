@@ -13,6 +13,7 @@ struct LuegoApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Article.self,
+            Highlight.self,
         ])
         let modelConfiguration = ModelConfiguration(
             schema: schema,
