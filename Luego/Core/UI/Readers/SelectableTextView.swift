@@ -87,17 +87,14 @@ struct SelectableTextViewRepresentable: NSViewRepresentable {
 #endif
 
 private func buildAttributedString(markdown: String) -> NSAttributedString {
-    let result: NSMutableAttributedString
-
-    if let parsed = try? AttributedString(markdown: markdown, options: .init(
+    guard let parsed = try? AttributedString(markdown: markdown, options: .init(
         interpretedSyntax: .full,
         failurePolicy: .returnPartiallyParsedIfPossible
-    )) {
-        result = NSMutableAttributedString(parsed)
-    } else {
-        result = NSMutableAttributedString(string: markdown)
+    )) else {
+        return NSMutableAttributedString(string: markdown)
     }
 
+    let result = buildAttributedStringWithParagraphBreaks(from: parsed)
     let fullRange = NSRange(location: 0, length: result.length)
 
     #if os(iOS)
@@ -114,6 +111,30 @@ private func buildAttributedString(markdown: String) -> NSAttributedString {
     let paragraphStyle = NSMutableParagraphStyle()
     paragraphStyle.lineSpacing = 6
     result.addAttribute(.paragraphStyle, value: paragraphStyle, range: fullRange)
+
+    return result
+}
+
+private func buildAttributedStringWithParagraphBreaks(from attributedString: AttributedString) -> NSMutableAttributedString {
+    let result = NSMutableAttributedString()
+    var lastParagraphId: Int? = nil
+
+    for run in attributedString.runs {
+        if let intent = attributedString[run.range].presentationIntent {
+            for component in intent.components {
+                if case .paragraph = component.kind {
+                    let id = component.identity
+                    if let lastId = lastParagraphId, id != lastId {
+                        result.append(NSAttributedString(string: "\n\n"))
+                    }
+                    lastParagraphId = id
+                }
+            }
+        }
+
+        let runAttributedString = AttributedString(attributedString[run.range])
+        result.append(NSAttributedString(runAttributedString))
+    }
 
     return result
 }
