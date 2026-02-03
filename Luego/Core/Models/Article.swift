@@ -24,7 +24,7 @@ final class Article {
     var wordCount: Int?
 
     @Relationship(deleteRule: .cascade, inverse: \Highlight.article)
-    var highlights: [Highlight] = []
+    var highlights: [Highlight]?
 
     var domain: String {
         url.host() ?? url.absoluteString

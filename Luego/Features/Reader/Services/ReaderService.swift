@@ -85,14 +85,17 @@ final class ReaderService: ReaderServiceProtocol {
     func createHighlight(for article: Article, range: NSRange, text: String, color: HighlightColor) throws -> Highlight {
         let highlight = Highlight(range: range, text: text, color: color)
         highlight.article = article
-        article.highlights.append(highlight)
+        if article.highlights == nil {
+            article.highlights = []
+        }
+        article.highlights?.append(highlight)
         try modelContext.save()
         return highlight
     }
 
     func deleteHighlight(_ highlight: Highlight) throws {
         if let article = highlight.article {
-            article.highlights.removeAll { $0.id == highlight.id }
+            article.highlights?.removeAll { $0.id == highlight.id }
         }
         modelContext.delete(highlight)
         try modelContext.save()

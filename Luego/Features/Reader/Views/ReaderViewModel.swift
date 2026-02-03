@@ -13,7 +13,7 @@ final class ReaderViewModel {
     var highlightError: String?
 
     var showHighlightMenu: Bool { selectedRange.length > 0 }
-    var highlights: [Highlight] { article.highlights }
+    var highlights: [Highlight] { article.highlights ?? [] }
 
     @ObservationIgnored
     private var loadingTask: Task<Void, Never>?
