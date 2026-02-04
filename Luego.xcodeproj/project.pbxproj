@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		607598D12EC2300000BEE86E /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 607598D02EC2300000BEE86E /* MarkdownUI */; };
+		607598D12EC2300000BEE86E /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = 607598D02EC2300000BEE86E /* Textual */; };
 		608D75732EC33EA6002DD532 /* LuegoShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -126,7 +126,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				607598D12EC2300000BEE86E /* MarkdownUI in Frameworks */,
+				607598D12EC2300000BEE86E /* Textual in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -196,7 +196,7 @@
 			);
 			name = Luego;
 			packageProductDependencies = (
-				607598D02EC2300000BEE86E /* MarkdownUI */,
+				607598D02EC2300000BEE86E /* Textual */,
 			);
 			productName = Luego;
 			productReference = 6075988F2EC1FC8D00BEE86E /* Luego.app */;
@@ -279,7 +279,7 @@
 			mainGroup = 607598862EC1FC8D00BEE86E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "textual" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 607598902EC1FC8D00BEE86E /* Products */;
@@ -753,21 +753,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+		607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "textual" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui.git";
+			repositoryURL = "https://github.com/gonzalezreal/textual.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.3.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		607598D02EC2300000BEE86E /* MarkdownUI */ = {
+		607598D02EC2300000BEE86E /* Textual */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
-			productName = MarkdownUI;
+			package = 607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "textual" */;
+			productName = Textual;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

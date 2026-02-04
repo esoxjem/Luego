@@ -1,4 +1,3 @@
-import NetworkImage
 import SwiftUI
 
 struct ArticleRowView: View {
@@ -187,15 +186,17 @@ struct ArticleThumbnailView: View {
     @ViewBuilder
     private var thumbnailContent: some View {
         if let url = secureURL {
-            NetworkImage(url: url) { state in
-                switch state {
+            AsyncImage(url: url) { phase in
+                switch phase {
                 case .empty:
                     placeholderView
-                case .success(let image, _):
+                case .success(let image):
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 case .failure:
+                    placeholderView
+                @unknown default:
                     placeholderView
                 }
             }

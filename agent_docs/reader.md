@@ -63,10 +63,8 @@ Located in `Core/UI/Readers/`, these components are shared between Reader and Di
 | File | Description |
 |------|-------------|
 | `MarkdownUtilities.swift` | H1 stripping to avoid duplicate titles, fuzzy title matching |
-| `ReaderTheme.swift` | `.gitHubBackground` color and `.reader` markdown theme |
+| `ReaderTheme.swift` | `.gitHubBackground` color and `.reader` structured text style (Textual) |
 | `DomainChip.swift` | Clickable domain chip linking to article URL |
-| `ReaderMarkdownImageView.swift` | Async image loading for markdown content |
-| `ReaderImageProvider.swift` | MarkdownUI ImageProvider using shared image view |
 
 ### Markdown H1 Stripping
 

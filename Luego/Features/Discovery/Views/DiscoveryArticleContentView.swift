@@ -1,5 +1,5 @@
 import SwiftUI
-import MarkdownUI
+import Textual
 
 struct DiscoveryArticleContentView: View {
     let article: EphemeralArticle
@@ -13,14 +13,16 @@ struct DiscoveryArticleContentView: View {
                     feedTitle: article.feedTitle,
                     formattedDate: formattedDate
                 )
+                .fontDesign(.serif)
 
                 Divider()
 
-                Markdown(stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
-                    .markdownTheme(.reader)
-                    .markdownImageProvider(ReaderImageProvider())
+                StructuredText(markdown: stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
+                    .textual.structuredTextStyle(.reader)
+                    .textual.imageAttachmentLoader(.image())
+                    .textual.textSelection(.enabled)
             }
-            .fontDesign(.serif)
+            .fontDesign(.default)
             .padding(.vertical)
             .padding(.horizontal, 24)
             .frame(maxWidth: .infinity)

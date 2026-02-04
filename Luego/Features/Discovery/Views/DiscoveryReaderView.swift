@@ -1,5 +1,4 @@
 import SwiftUI
-import MarkdownUI
 
 struct DiscoveryReaderView: View {
     @Bindable var viewModel: DiscoveryViewModel
