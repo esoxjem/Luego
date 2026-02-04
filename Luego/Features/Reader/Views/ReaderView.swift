@@ -84,6 +84,7 @@ struct ArticleReaderModeView: View {
                         StructuredText(markdown: stripFirstH1FromMarkdown(content, matchingTitle: article.title))
                             .textual.structuredTextStyle(.reader)
                             .textual.imageAttachmentLoader(.image())
+                            .textual.textSelection(.enabled)
                     }
                     .fontDesign(.default)
                     .padding(.vertical)

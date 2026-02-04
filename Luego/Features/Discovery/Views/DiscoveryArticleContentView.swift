@@ -20,6 +20,7 @@ struct DiscoveryArticleContentView: View {
                 StructuredText(markdown: stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
                     .textual.structuredTextStyle(.reader)
                     .textual.imageAttachmentLoader(.image())
+                    .textual.textSelection(.enabled)
             }
             .fontDesign(.default)
             .padding(.vertical)
