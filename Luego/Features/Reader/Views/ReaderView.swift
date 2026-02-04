@@ -1,5 +1,5 @@
 import SwiftUI
-import MarkdownUI
+import Textual
 
 struct ReaderView: View {
     @Bindable var viewModel: ReaderViewModel
@@ -77,14 +77,15 @@ struct ArticleReaderModeView: View {
                             url: article.url,
                             formattedDate: formattedDate
                         )
+                        .fontDesign(.serif)
 
                         Divider()
 
-                        Markdown(stripFirstH1FromMarkdown(content, matchingTitle: article.title))
-                            .markdownTheme(.reader)
-                            .markdownImageProvider(ReaderImageProvider())
+                        StructuredText(markdown: stripFirstH1FromMarkdown(content, matchingTitle: article.title))
+                            .textual.structuredTextStyle(.reader)
+                            .textual.imageAttachmentLoader(.image())
                     }
-                    .fontDesign(.serif)
+                    .fontDesign(.default)
                     .padding(.vertical)
                     .padding(.horizontal, 24)
                     .frame(maxWidth: .infinity)
