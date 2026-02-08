@@ -40,7 +40,7 @@ enum ReaderLayout {
         let paddingForMaxWidth = max(24, (containerWidth - maxContentWidth) / 2)
         return max(proportional, paddingForMaxWidth)
         #else
-        return 24
+        return 40
         #endif
     }
 }
