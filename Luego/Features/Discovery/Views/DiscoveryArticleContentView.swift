@@ -5,29 +5,28 @@ struct DiscoveryArticleContentView: View {
     let article: EphemeralArticle
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                DiscoveryArticleHeaderView(
-                    title: article.title,
-                    url: article.url,
-                    feedTitle: article.feedTitle,
-                    formattedDate: formattedDate
-                )
+        GeometryReader { geo in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    DiscoveryArticleHeaderView(
+                        title: article.title,
+                        url: article.url,
+                        feedTitle: article.feedTitle,
+                        formattedDate: formattedDate
+                    )
+
+                    Divider()
+
+                    StructuredText(markdown: stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
+                        .readerContentStyle()
+                }
                 .fontDesign(.serif)
-
-                Divider()
-
-                StructuredText(markdown: stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
-                    .textual.structuredTextStyle(.reader)
-                    .textual.imageAttachmentLoader(.image())
-                    .textual.textSelection(.enabled)
+                .padding(.vertical)
+                .padding(.horizontal, ReaderLayout.horizontalPadding(for: geo.size.width))
+                .frame(maxWidth: .infinity)
             }
-            .fontDesign(.default)
-            .padding(.vertical)
-            .padding(.horizontal, 24)
-            .frame(maxWidth: .infinity)
+            .background(Color.gitHubBackground)
         }
-        .background(Color.gitHubBackground)
     }
 
     private var formattedDate: String {

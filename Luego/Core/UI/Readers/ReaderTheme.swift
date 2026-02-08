@@ -22,3 +22,25 @@ extension Color {
 extension StructuredText.Style where Self == StructuredText.GitHubStyle {
     static var reader: StructuredText.GitHubStyle { .gitHub }
 }
+
+extension View {
+    func readerContentStyle() -> some View {
+        self
+            .textual.structuredTextStyle(.reader)
+            .textual.imageAttachmentLoader(.image())
+            .textual.textSelection(.enabled)
+    }
+}
+
+enum ReaderLayout {
+    static func horizontalPadding(for containerWidth: CGFloat) -> CGFloat {
+        #if os(macOS)
+        let proportional = containerWidth * 0.15
+        let maxContentWidth: CGFloat = 800
+        let paddingForMaxWidth = max(24, (containerWidth - maxContentWidth) / 2)
+        return max(proportional, paddingForMaxWidth)
+        #else
+        return 24
+        #endif
+    }
+}
