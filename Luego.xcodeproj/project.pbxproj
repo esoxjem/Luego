@@ -511,7 +511,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.01.31;
+				MARKETING_VERSION = 2026.02.08;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -560,7 +560,8 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.01.31;
+				MARKETING_VERSION = 2026.02.08;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "luego-mac-prod-profile";
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
