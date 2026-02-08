@@ -83,6 +83,9 @@ conductor.local/
 # Conductor agent collaboration directory
 .context/
 
+# Git worktrees (local development only)
+.worktrees/
+
 # Xcode user state (explicit)
 *.xcuserstate
 
