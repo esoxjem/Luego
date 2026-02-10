@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 import CloudKit
+import SwiftData
 
 #if os(iOS)
 import UIKit
@@ -29,11 +30,14 @@ final class SyncStatusObserver: SyncStatusObservable {
     private(set) var lastSyncTime: Date?
 
     @ObservationIgnored
+    private let modelContext: ModelContext
+    @ObservationIgnored
     private var observerTask: Task<Void, Never>?
     @ObservationIgnored
     private var debounceTask: Task<Void, Never>?
 
-    init() {
+    init(modelContext: ModelContext) {
+        self.modelContext = modelContext
         observeCloudKitEvents()
     }
 
@@ -73,18 +77,56 @@ final class SyncStatusObserver: SyncStatusObservable {
             debounceTask?.cancel()
             let (message, needsSignIn) = classifyError(error)
             updateState(.error(message: message, needsSignIn: needsSignIn))
-            Logger.cloudKit.error("\(eventType) failed: \(error.localizedDescription)")
+            logSyncError(eventType: eventType, error: error)
         } else {
             debounceTask?.cancel()
             lastSyncTime = Date()
             updateState(.success)
-            Logger.cloudKit.info("\(eventType) completed")
+            Logger.cloudKit.info("\(eventType) completed successfully")
+
+            if event.type == .import {
+                logArticleCounts(after: eventType)
+            }
 
             debounceTask = Task {
                 try? await Task.sleep(for: .seconds(3))
                 guard !Task.isCancelled else { return }
                 if state == .success { updateState(.idle) }
             }
+        }
+    }
+
+    private func logSyncError(eventType: String, error: Error) {
+        if let ckError = error as? CKError {
+            Logger.cloudKit.error("\(eventType) failed — CKError code: \(ckError.code.rawValue), domain: \(ckError.errorCode), description: \(ckError.localizedDescription)")
+            if let retryAfter = ckError.retryAfterSeconds {
+                Logger.cloudKit.error("\(eventType) — server suggests retry after \(retryAfter)s")
+            }
+            if let partialErrors = ckError.partialErrorsByItemID {
+                Logger.cloudKit.error("\(eventType) — partial errors for \(partialErrors.count) items")
+            }
+        } else {
+            Logger.cloudKit.error("\(eventType) failed — \(error.localizedDescription)")
+        }
+    }
+
+    private func logArticleCounts(after eventType: String) {
+        do {
+            let allDescriptor = FetchDescriptor<Article>()
+            let total = try modelContext.fetchCount(allDescriptor)
+
+            let favPredicate = #Predicate<Article> { $0.isFavorite }
+            let favDescriptor = FetchDescriptor<Article>(predicate: favPredicate)
+            let favorites = try modelContext.fetchCount(favDescriptor)
+
+            let archPredicate = #Predicate<Article> { $0.isArchived }
+            let archDescriptor = FetchDescriptor<Article>(predicate: archPredicate)
+            let archived = try modelContext.fetchCount(archDescriptor)
+
+            let readingList = total - favorites - archived
+            Logger.cloudKit.info("Article counts after \(eventType) — total: \(total), reading list: \(readingList), favorites: \(favorites), archived: \(archived)")
+        } catch {
+            Logger.cloudKit.error("Failed to fetch article counts: \(error.localizedDescription)")
         }
     }
 

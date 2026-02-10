@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
 
 @main
 struct LuegoApp: App {
@@ -40,6 +41,9 @@ struct LuegoApp: App {
                 .task(id: "sdkInit") {
                     await diContainer.sdkManager.ensureSDKReady()
                 }
+                .task(id: "launchDiagnostics") {
+                    await logLaunchDiagnostics()
+                }
         }
         .modelContainer(sharedModelContainer)
         #if os(macOS)
@@ -54,6 +58,34 @@ struct LuegoApp: App {
             )
         }
         #endif
+    }
+}
+
+extension LuegoApp {
+    @MainActor
+    private func logLaunchDiagnostics() async {
+        do {
+            let status = try await CKContainer(identifier: "iCloud.com.esoxjem.Luego").accountStatus()
+            let statusName = switch status {
+            case .available: "available"
+            case .noAccount: "noAccount"
+            case .restricted: "restricted"
+            case .couldNotDetermine: "couldNotDetermine"
+            case .temporarilyUnavailable: "temporarilyUnavailable"
+            @unknown default: "unknown(\(status.rawValue))"
+            }
+            Logger.cloudKit.info("Launch diagnostics — iCloud account status: \(statusName)")
+        } catch {
+            Logger.cloudKit.error("Launch diagnostics — failed to check iCloud account: \(error.localizedDescription)")
+        }
+
+        do {
+            let descriptor = FetchDescriptor<Article>()
+            let count = try sharedModelContainer.mainContext.fetchCount(descriptor)
+            Logger.cloudKit.info("Launch diagnostics — article count at startup: \(count)")
+        } catch {
+            Logger.cloudKit.error("Launch diagnostics — failed to count articles: \(error.localizedDescription)")
+        }
     }
 }
 

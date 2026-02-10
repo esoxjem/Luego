@@ -61,7 +61,7 @@ final class DIContainer {
     var sdkManager: LuegoSDKManagerProtocol { luegoSDKManager }
 
     private lazy var _syncStatusObserver: SyncStatusObserver = {
-        SyncStatusObserver()
+        SyncStatusObserver(modelContext: modelContext)
     }()
 
     var syncObserver: SyncStatusObserver { _syncStatusObserver }
