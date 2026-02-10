@@ -1,19 +1,25 @@
 import Testing
 import Foundation
+import SwiftData
 @testable import Luego
 
 @Suite("SyncStatusObserver Tests")
 @MainActor
 struct SyncStatusObserverTests {
+    private func makeObserver() throws -> SyncStatusObserver {
+        let container = try createTestModelContainer()
+        return SyncStatusObserver(modelContext: container.mainContext)
+    }
+
     @Test("initial state is idle")
-    func initialStateIsIdle() async {
-        let observer = SyncStatusObserver()
+    func initialStateIsIdle() async throws {
+        let observer = try makeObserver()
         #expect(observer.state == .idle)
     }
 
     @Test("lastSyncTime starts as nil")
-    func lastSyncTimeStartsNil() async {
-        let observer = SyncStatusObserver()
+    func lastSyncTimeStartsNil() async throws {
+        let observer = try makeObserver()
         #expect(observer.lastSyncTime == nil)
     }
 
@@ -28,8 +34,8 @@ struct SyncStatusObserverTests {
     }
 
     @Test("dismissError does nothing when in idle state")
-    func dismissErrorDoesNothingWhenIdle() async {
-        let observer = SyncStatusObserver()
+    func dismissErrorDoesNothingWhenIdle() async throws {
+        let observer = try makeObserver()
         #expect(observer.state == .idle)
 
         observer.dismissError()
