@@ -44,6 +44,11 @@ struct LuegoApp: App {
                 .task(id: "launchDiagnostics") {
                     await logLaunchDiagnostics()
                 }
+                #if os(macOS)
+                .task(id: "pushRegistration") {
+                    NSApplication.shared.registerForRemoteNotifications()
+                }
+                #endif
         }
         .modelContainer(sharedModelContainer)
         #if os(macOS)
