@@ -16,13 +16,42 @@ struct ContentView: View {
     @State private var selectedArticle: Article?
     @State private var selectedTab = 0
 
+    #if os(macOS)
+    @AppStorage("streaming_logs_enabled") private var streamingLogsEnabled = false
+    #endif
+
     var body: some View {
         if horizontalSizeClass == .regular {
+            #if os(macOS)
+            regularLayoutWithStreamingLogs
+            #else
             iPadLayout
+            #endif
         } else {
             iPhoneLayout
         }
     }
+
+    #if os(macOS)
+    @ViewBuilder
+    private var regularLayoutWithStreamingLogs: some View {
+        if streamingLogsEnabled {
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    iPadLayout
+                        .frame(height: geo.size.height * 0.6)
+
+                    Divider()
+
+                    StreamingLogsView(logStream: LogStream.shared)
+                        .frame(height: geo.size.height * 0.4)
+                }
+            }
+        } else {
+            iPadLayout
+        }
+    }
+    #endif
 
     @ViewBuilder
     private var iPadLayout: some View {

@@ -452,6 +452,15 @@ struct SettingsMacLayout: View {
                     }
                 }
 
+                SettingsCard {
+                    SettingsSectionHeader(
+                        title: "Developer",
+                        subtitle: "Tools for monitoring and debugging."
+                    )
+                    SettingsCardDivider()
+                    StreamingLogsToggle()
+                }
+
                 AppVersionCard(sdkVersionString: viewModel.sdkVersionString)
             }
             .padding(.horizontal, 24)
@@ -747,6 +756,38 @@ struct AppVersionCard: View {
                 sdkVersionString: sdkVersionString
             )
         }
+    }
+}
+
+struct StreamingLogsToggle: View {
+    @AppStorage("streaming_logs_enabled") private var isEnabled = false
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Streaming Logs")
+                    .foregroundStyle(.primary)
+
+                Text("Show real-time app logs in the main window.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Toggle("", isOn: $isEnabled)
+                .toggleStyle(.switch)
+                .labelsHidden()
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.4))
+        )
     }
 }
 #endif
