@@ -29,20 +29,24 @@ struct ContentView: View {
         if selectedFilter == .discovery {
             NavigationSplitView {
                 SidebarView(selection: $selectedFilter)
+                    .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
             } detail: {
                 DiscoveryPane()
             }
         } else {
             NavigationSplitView {
                 SidebarView(selection: $selectedFilter)
+                    .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
             } content: {
                 ArticleListPane(
                     filter: selectedFilter,
                     selectedArticle: $selectedArticle,
                     onDiscover: { selectedFilter = .discovery }
                 )
+                .navigationSplitViewColumnWidth(min: 300, ideal: 320, max: 400)
             } detail: {
                 DetailPane(article: selectedArticle)
+                    .navigationSplitViewColumnWidth(min: 500, ideal: 500)
             }
         }
     }
