@@ -13,6 +13,9 @@ struct DetailPane: View {
                 EmptyDetailView()
             }
         }
+        #if os(macOS)
+        .background(MacAppBackground())
+        #endif
         .onChange(of: article?.id) { _, _ in
             if let newArticle = article, let container = diContainer {
                 readerViewModel = container.makeReaderViewModel(article: newArticle)

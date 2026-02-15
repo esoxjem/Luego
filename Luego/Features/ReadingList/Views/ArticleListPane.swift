@@ -32,6 +32,9 @@ struct ArticleListPane: View {
                 ProgressView()
             }
         }
+        #if os(macOS)
+        .background(MacAppBackground())
+        #endif
         .navigationTitle(filter.title)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {

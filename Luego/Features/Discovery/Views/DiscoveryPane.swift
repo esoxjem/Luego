@@ -13,6 +13,9 @@ struct DiscoveryPane: View {
                 ProgressView()
             }
         }
+        #if os(macOS)
+        .background(MacAppBackground())
+        #endif
         .task {
             if viewModel == nil, let container = diContainer {
                 viewModel = container.makeDiscoveryViewModel()
