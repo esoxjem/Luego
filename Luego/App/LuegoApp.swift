@@ -11,7 +11,10 @@ import CloudKit
 
 @main
 struct LuegoApp: App {
-    var sharedModelContainer: ModelContainer = {
+    let sharedModelContainer: ModelContainer
+    @State private var diContainer: DIContainer
+
+    init() {
         let schema = Schema([
             Article.self,
         ])
@@ -22,15 +25,12 @@ struct LuegoApp: App {
         )
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            self.sharedModelContainer = container
+            self._diContainer = State(initialValue: DIContainer(modelContext: container.mainContext))
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
-
-    @MainActor
-    private var diContainer: DIContainer {
-        DIContainer(modelContext: sharedModelContainer.mainContext)
     }
 
     var body: some Scene {
@@ -85,6 +85,17 @@ extension LuegoApp {
             Logger.cloudKit.info("Launch diagnostics — article count at startup: \(count)")
         } catch {
             Logger.cloudKit.error("Launch diagnostics — failed to count articles: \(error.localizedDescription)")
+        }
+
+        do {
+            let container = CKContainer(identifier: "iCloud.com.esoxjem.Luego")
+            let subscriptions = try await container.privateCloudDatabase.allSubscriptions()
+            Logger.cloudKit.info("Launch diagnostics — active subscriptions: \(subscriptions.count)")
+            for subscription in subscriptions {
+                Logger.cloudKit.debug("Launch diagnostics — subscription: \(subscription.subscriptionID), type: \(subscription.subscriptionType.rawValue)")
+            }
+        } catch {
+            Logger.cloudKit.warning("Launch diagnostics — failed to fetch subscriptions: \(error.localizedDescription)")
         }
     }
 }
