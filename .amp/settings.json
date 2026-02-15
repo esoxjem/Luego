@@ -1,5 +1,5 @@
 {
-  "mcpServers": {
+  "amp.mcpServers": {
     "XcodeBuildMCP": {
       "command": "xcodebuildmcp",
       "args": ["mcp"],

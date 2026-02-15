@@ -1,0 +1,2 @@
+PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.dev.LuegoShareExtension
+INFOPLIST_KEY_CFBundleDisplayName = Luego Dev
