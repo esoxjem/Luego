@@ -42,22 +42,15 @@ struct SettingsView: View {
 
             Section {
                 CopyDiagnosticsButton()
-            } header: {
-                Text("Developer")
-            } footer: {
-                Text("Tools for monitoring and debugging.")
-            }
-
-            Section {
                 ForceReSyncButton(
                     isSyncing: viewModel.isForceSyncing,
                     didSync: viewModel.didForceSync,
                     onSync: { Task { await viewModel.forceReSync() } }
                 )
             } header: {
-                Text("CloudKit Sync")
+                Text("Developer")
             } footer: {
-                Text("Re-sync all articles to iCloud if they're not appearing on other devices.")
+                Text("Tools for monitoring and debugging.")
             }
 
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
@@ -977,6 +970,8 @@ struct ForceReSyncButton: View {
     let isSyncing: Bool
     let didSync: Bool
     let onSync: () -> Void
+    @State private var rotationAngle: Double = 0
+    @State private var checkmarkScale: CGFloat = 0.5
 
     var body: some View {
         Button(action: onSync) {
@@ -993,11 +988,26 @@ struct ForceReSyncButton: View {
                 Spacer()
 
                 if isSyncing {
-                    ProgressView()
-                        .controlSize(.small)
+                    Image(systemName: "arrow.clockwise.icloud")
+                        .foregroundStyle(Color.accentColor)
+                        .rotationEffect(.degrees(rotationAngle))
+                        .onAppear {
+                            withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                                rotationAngle = 360
+                            }
+                        }
+                        .onDisappear {
+                            rotationAngle = 0
+                        }
                 } else if didSync {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
+                        .scaleEffect(checkmarkScale)
+                        .onAppear {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                                checkmarkScale = 1.0
+                            }
+                        }
                 } else {
                     Image(systemName: "arrow.clockwise.icloud")
                         .foregroundStyle(.secondary)
