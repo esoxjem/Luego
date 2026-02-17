@@ -9,4 +9,6 @@ struct AppConfiguration {
     static let luegoAPITimeout: TimeInterval = 30
 
     static let sdkBundleNames = ["linkedom", "readability", "turndown", "parser"]
+
+    static let cloudKitContainerIdentifier = "iCloud.com.esoxjem.Luego"
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import CloudKit
 
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
@@ -40,6 +41,15 @@ struct SettingsView: View {
             )
 
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
+
+            Section {
+                CopyDiagnosticsButton()
+            } header: {
+                SettingsSectionHeader(
+                    title: "Developer",
+                    subtitle: "Tools for monitoring and debugging."
+                )
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
@@ -458,7 +468,10 @@ struct SettingsMacLayout: View {
                         subtitle: "Tools for monitoring and debugging."
                     )
                     SettingsCardDivider()
-                    StreamingLogsToggle()
+                    VStack(spacing: 10) {
+                        StreamingLogsToggle()
+                        CopyDiagnosticsButton()
+                    }
                 }
 
                 AppVersionCard(sdkVersionString: viewModel.sdkVersionString)
@@ -791,3 +804,144 @@ struct StreamingLogsToggle: View {
     }
 }
 #endif
+
+struct CopyDiagnosticsButton: View {
+    @State private var showCopiedToast = false
+    @State private var isLoading = false
+
+    var body: some View {
+        Button(action: {
+            Task { await copyDiagnostics() }
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Copy Diagnostics")
+                        .foregroundStyle(.primary)
+
+                    Text("Export device info for troubleshooting sync issues.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if showCopiedToast {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Image(systemName: "doc.on.doc")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            #if os(macOS)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(nsColor: .separatorColor).opacity(0.4))
+            )
+            #endif
+        }
+        .buttonStyle(.plain)
+        .disabled(isLoading)
+    }
+
+    private func copyDiagnostics() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        let diagnostics = await gatherDiagnostics()
+
+        await MainActor.run {
+            #if os(macOS)
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(diagnostics, forType: .string)
+            #else
+            UIPasteboard.general.string = diagnostics
+            #endif
+
+            showCopiedToast = true
+        }
+
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+
+        await MainActor.run {
+            showCopiedToast = false
+        }
+    }
+
+    private func gatherDiagnostics() async -> String {
+        var lines: [String] = []
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+
+        lines.append("=== Luego Diagnostics ===")
+        lines.append("Generated: \(dateFormatter.string(from: Date()))")
+        lines.append("")
+
+        // App Info
+        let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        lines.append("App Bundle ID: \(bundleID)")
+        lines.append("App Version: \(version)")
+        lines.append("Build Number: \(build)")
+        #if os(iOS)
+        lines.append("Platform: iOS \(UIDevice.current.systemVersion)")
+        #elseif os(macOS)
+        lines.append("Platform: macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        #endif
+        lines.append("")
+
+        // CloudKit Info
+        lines.append("CloudKit Container: \(AppConfiguration.cloudKitContainerIdentifier)")
+
+        // Fetch CloudKit info in parallel
+        let container = CKContainer(identifier: AppConfiguration.cloudKitContainerIdentifier)
+
+        async let accountStatusTask = fetchAccountStatus(for: container)
+        async let subscriptionsTask = fetchSubscriptions(for: container)
+
+        let (accountStatus, subscriptions) = await (accountStatusTask, subscriptionsTask)
+
+        lines.append("iCloud Account Status: \(accountStatus)")
+        lines.append("Active CloudKit Subscriptions: \(subscriptions.count)")
+        for sub in subscriptions {
+            lines.append("  - \(sub.subscriptionID) (type: \(sub.subscriptionType.rawValue))")
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
+    private func fetchAccountStatus(for container: CKContainer) async -> String {
+        do {
+            let status = try await container.accountStatus()
+            switch status {
+            case .available: return "available"
+            case .noAccount: return "noAccount"
+            case .restricted: return "restricted"
+            case .couldNotDetermine: return "couldNotDetermine"
+            case .temporarilyUnavailable: return "temporarilyUnavailable"
+            @unknown default: return "unknown(\(status.rawValue))"
+            }
+        } catch {
+            return "error: \(error.localizedDescription)"
+        }
+    }
+
+    private func fetchSubscriptions(for container: CKContainer) async -> [CKSubscription] {
+        do {
+            return try await container.privateCloudDatabase.allSubscriptions()
+        } catch {
+            return []
+        }
+    }
+}
+
+

@@ -21,7 +21,7 @@ struct LuegoApp: App {
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
-            cloudKitDatabase: .private("iCloud.com.esoxjem.Luego")
+            cloudKitDatabase: .private(AppConfiguration.cloudKitContainerIdentifier)
         )
 
         do {
@@ -64,8 +64,17 @@ struct LuegoApp: App {
 extension LuegoApp {
     @MainActor
     private func logLaunchDiagnostics() async {
+        // Log app identity info
+        let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        Logger.cloudKit.info("Launch diagnostics — App: \(bundleID) v\(appVersion) (\(buildNumber))")
+
+        // Log CloudKit container info
+        Logger.cloudKit.info("Launch diagnostics — CloudKit container: \(AppConfiguration.cloudKitContainerIdentifier)")
+
         do {
-            let status = try await CKContainer(identifier: "iCloud.com.esoxjem.Luego").accountStatus()
+            let status = try await CKContainer(identifier: AppConfiguration.cloudKitContainerIdentifier).accountStatus()
             let statusName = switch status {
             case .available: "available"
             case .noAccount: "noAccount"
@@ -88,7 +97,7 @@ extension LuegoApp {
         }
 
         do {
-            let container = CKContainer(identifier: "iCloud.com.esoxjem.Luego")
+            let container = CKContainer(identifier: AppConfiguration.cloudKitContainerIdentifier)
             let subscriptions = try await container.privateCloudDatabase.allSubscriptions()
             Logger.cloudKit.info("Launch diagnostics — active subscriptions: \(subscriptions.count)")
             for subscription in subscriptions {
@@ -97,6 +106,13 @@ extension LuegoApp {
         } catch {
             Logger.cloudKit.warning("Launch diagnostics — failed to fetch subscriptions: \(error.localizedDescription)")
         }
+
+        // Log platform info for cross-device comparison
+        #if os(iOS)
+        Logger.cloudKit.info("Launch diagnostics — Platform: iOS")
+        #elseif os(macOS)
+        Logger.cloudKit.info("Launch diagnostics — Platform: macOS")
+        #endif
     }
 }
 

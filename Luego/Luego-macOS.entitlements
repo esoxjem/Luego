@@ -7,7 +7,7 @@
 	<key>com.apple.security.network.client</key>
 	<true/>
 	<key>aps-environment</key>
-	<string>development</string>
+	<string>production</string>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.esoxjem.Luego</string>
