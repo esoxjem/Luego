@@ -82,9 +82,18 @@ final class SettingsViewModel {
         isForceSyncing = true
         didForceSync = false
 
+        let syncStartTime = Date()
+
         do {
             let count = try await articleService.forceReSyncAllArticles()
             forceSyncCount = count
+
+            let elapsed = Date().timeIntervalSince(syncStartTime)
+            let minDuration: TimeInterval = 1.5
+            if elapsed < minDuration {
+                try? await Task.sleep(nanoseconds: UInt64((minDuration - elapsed) * 1_000_000_000))
+            }
+
             didForceSync = true
         } catch {
             Logger.cloudKit.error("Force re-sync failed: \(error.localizedDescription)")

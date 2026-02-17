@@ -11,33 +11,24 @@ final class Logger: Sendable {
 
     func debug(_ message: String) {
         osLogger.debug("\(message, privacy: .public)")
-        #if os(macOS)
         stream(message, level: .debug)
-        #endif
     }
 
     func info(_ message: String) {
         osLogger.info("\(message, privacy: .public)")
-        #if os(macOS)
         stream(message, level: .info)
-        #endif
     }
 
     func warning(_ message: String) {
         osLogger.warning("\(message, privacy: .public)")
-        #if os(macOS)
         stream(message, level: .warning)
-        #endif
     }
 
     func error(_ message: String) {
         osLogger.error("\(message, privacy: .public)")
-        #if os(macOS)
         stream(message, level: .error)
-        #endif
     }
 
-    #if os(macOS)
     private func stream(_ message: String, level: LogLevel) {
         let cat = category
         Task { @MainActor in
@@ -46,7 +37,6 @@ final class Logger: Sendable {
             )
         }
     }
-    #endif
 }
 
 extension Logger {

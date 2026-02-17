@@ -937,6 +937,22 @@ struct CopyDiagnosticsButton: View {
         for sub in subscriptions {
             lines.append("  - \(sub.subscriptionID) (type: \(sub.subscriptionType.rawValue))")
         }
+        lines.append("")
+
+        // Recent Logs
+        let logDateFormatter = DateFormatter()
+        logDateFormatter.dateFormat = "HH:mm:ss"
+
+        lines.append("--- Recent Logs (last 500 entries) ---")
+        let recentLogs = LogStream.shared.entries.suffix(500)
+        if recentLogs.isEmpty {
+            lines.append("No logs captured yet.")
+        } else {
+            for entry in recentLogs {
+                let time = logDateFormatter.string(from: entry.timestamp)
+                lines.append("[\(time)] [\(entry.category)] [\(entry.level.rawValue)] \(entry.message)")
+            }
+        }
 
         return lines.joined(separator: "\n")
     }
@@ -975,7 +991,7 @@ struct ForceReSyncButton: View {
         Button(action: onSync) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Force Re-sync")
+                    Text(isSyncing ? "Syncing..." : "Force Re-sync")
                         .foregroundStyle(.primary)
 
                     Text("Push all local articles to iCloud")
@@ -987,7 +1003,7 @@ struct ForceReSyncButton: View {
 
                 if isSyncing {
                     ProgressView()
-                        .controlSize(.small)
+                        .controlSize(.regular)
                 } else if didSync {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
