@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 @Observable
 @MainActor
@@ -8,19 +9,25 @@ final class SettingsViewModel {
     var isCheckingForUpdates = false
     var updateResult: SDKUpdateResult?
     var showUpdateAlert = false
+    var isForceSyncing = false
+    var didForceSync = false
+    var forceSyncCount = 0
 
     private let preferencesDataSource: DiscoveryPreferencesDataSourceProtocol
     private let discoveryService: DiscoveryServiceProtocol
     private let sdkManager: LuegoSDKManagerProtocol
+    private let articleService: ArticleServiceProtocol
 
     init(
         preferencesDataSource: DiscoveryPreferencesDataSourceProtocol,
         discoveryService: DiscoveryServiceProtocol,
-        sdkManager: LuegoSDKManagerProtocol
+        sdkManager: LuegoSDKManagerProtocol,
+        articleService: ArticleServiceProtocol
     ) {
         self.preferencesDataSource = preferencesDataSource
         self.discoveryService = discoveryService
         self.sdkManager = sdkManager
+        self.articleService = articleService
         self.selectedDiscoverySource = preferencesDataSource.getSelectedSource()
     }
 
@@ -68,6 +75,28 @@ final class SettingsViewModel {
             return "Parser \(parser) · Rules \(rules)"
         case .failed(let error):
             return error.localizedDescription
+        }
+    }
+
+    func forceReSync() async {
+        isForceSyncing = true
+        didForceSync = false
+
+        do {
+            let count = try await articleService.forceReSyncAllArticles()
+            forceSyncCount = count
+            didForceSync = true
+        } catch {
+            Logger.cloudKit.error("Force re-sync failed: \(error.localizedDescription)")
+        }
+
+        isForceSyncing = false
+
+        if didForceSync {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            await MainActor.run {
+                didForceSync = false
+            }
         }
     }
 }

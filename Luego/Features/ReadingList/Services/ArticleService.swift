@@ -10,6 +10,7 @@ protocol ArticleServiceProtocol: Sendable {
     func toggleFavorite(id: UUID) async throws
     func toggleArchive(id: UUID) async throws
     func saveEphemeralArticle(_ ephemeralArticle: EphemeralArticle) async throws -> Article
+    func forceReSyncAllArticles() async throws -> Int
 }
 
 @MainActor
@@ -135,5 +136,17 @@ final class ArticleService: ArticleServiceProtocol {
         let predicate = #Predicate<Article> { $0.url == url }
         let descriptor = FetchDescriptor<Article>(predicate: predicate)
         return try? modelContext.fetch(descriptor).first
+    }
+
+    func forceReSyncAllArticles() async throws -> Int {
+        let descriptor = FetchDescriptor<Article>()
+        let articles = try modelContext.fetch(descriptor)
+
+        for article in articles {
+            article.savedDate = article.savedDate.addingTimeInterval(0.001)
+        }
+
+        try modelContext.save()
+        return articles.count
     }
 }

@@ -42,6 +42,11 @@ struct SettingsView: View {
 
             Section {
                 CopyDiagnosticsButton()
+                ForceReSyncButton(
+                    isSyncing: viewModel.isForceSyncing,
+                    didSync: viewModel.didForceSync,
+                    onSync: { Task { await viewModel.forceReSync() } }
+                )
             } header: {
                 Text("Developer")
             } footer: {
@@ -483,6 +488,11 @@ struct SettingsMacLayout: View {
                     VStack(spacing: 10) {
                         StreamingLogsToggle()
                         CopyDiagnosticsButton()
+                        ForceReSyncButton(
+                            isSyncing: viewModel.isForceSyncing,
+                            didSync: viewModel.didForceSync,
+                            onSync: { Task { await viewModel.forceReSync() } }
+                        )
                     }
                 }
 
@@ -953,6 +963,53 @@ struct CopyDiagnosticsButton: View {
         } catch {
             return []
         }
+    }
+}
+
+struct ForceReSyncButton: View {
+    let isSyncing: Bool
+    let didSync: Bool
+    let onSync: () -> Void
+
+    var body: some View {
+        Button(action: onSync) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Force Re-sync")
+                        .foregroundStyle(.primary)
+
+                    Text("Push all local articles to iCloud")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if isSyncing {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if didSync {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Image(systemName: "arrow.clockwise.icloud")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            #if os(macOS)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(nsColor: .separatorColor).opacity(0.4))
+            )
+            #endif
+        }
+        .buttonStyle(.plain)
+        .disabled(isSyncing)
     }
 }
 

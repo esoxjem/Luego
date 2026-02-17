@@ -149,7 +149,8 @@ final class DIContainer {
         SettingsViewModel(
             preferencesDataSource: discoveryPreferencesDataSource,
             discoveryService: discoveryService,
-            sdkManager: luegoSDKManager
+            sdkManager: luegoSDKManager,
+            articleService: articleService
         )
     }
 }
