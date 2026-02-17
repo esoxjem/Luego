@@ -42,15 +42,22 @@ struct SettingsView: View {
 
             Section {
                 CopyDiagnosticsButton()
+            } header: {
+                Text("Developer")
+            } footer: {
+                Text("Tools for monitoring and debugging.")
+            }
+
+            Section {
                 ForceReSyncButton(
                     isSyncing: viewModel.isForceSyncing,
                     didSync: viewModel.didForceSync,
                     onSync: { Task { await viewModel.forceReSync() } }
                 )
             } header: {
-                Text("Developer")
+                Text("CloudKit Sync")
             } footer: {
-                Text("Tools for monitoring and debugging.")
+                Text("Re-sync all articles to iCloud if they're not appearing on other devices.")
             }
 
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
