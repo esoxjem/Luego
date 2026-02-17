@@ -40,19 +40,16 @@ struct SettingsView: View {
                 onCheck: { Task { await viewModel.checkForSDKUpdates() } }
             )
 
-            AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
-
             Section {
                 CopyDiagnosticsButton()
             } header: {
-                SettingsSectionHeader(
-                    title: "Developer",
-                    subtitle: "Tools for monitoring and debugging."
-                )
+                Text("Developer")
+            } footer: {
+                Text("Tools for monitoring and debugging.")
             }
+
+            AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
         .navigationTitle("Settings")
         #if os(iOS)
         .toolbar {
@@ -84,10 +81,9 @@ struct DiscoverySettingsSection: View {
                 onSourceChanged: onSourceChanged
             )
         } header: {
-            SettingsSectionHeader(
-                title: "Discovery",
-                subtitle: "Choose a source for finding new articles."
-            )
+            Text("Discovery")
+        } footer: {
+            Text("Choose a source for finding new articles.")
         }
     }
 }
@@ -126,12 +122,6 @@ struct DiscoverySourceRow: View {
             }
             .contentShape(Rectangle())
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
-        )
         .buttonStyle(.plain)
     }
 }
@@ -177,14 +167,20 @@ struct RefreshArticlePoolSection: View {
     var body: some View {
         Section {
             Button(action: onRefresh) {
-                RefreshArticlePoolAction(didRefresh: didRefresh)
+                HStack {
+                    Label("Refresh Article Pool", systemImage: "arrow.clockwise")
+
+                    Spacer()
+
+                    if didRefresh {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(.green)
+                    }
+                }
             }
             .disabled(didRefresh)
-        } header: {
-            SettingsSectionHeader(
-                title: "Content Cache",
-                subtitle: "Reset discovery results when the pool feels stale."
-            )
+        } footer: {
+            Text("Clears the cached article pool and fetches fresh articles on next discovery.")
         }
     }
 }
@@ -196,14 +192,20 @@ struct SDKUpdateSection: View {
     var body: some View {
         Section {
             Button(action: onCheck) {
-                SDKUpdateAction(isChecking: isChecking)
+                HStack {
+                    Label("Check for SDK Updates", systemImage: "arrow.triangle.2.circlepath")
+
+                    Spacer()
+
+                    if isChecking {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
             }
             .disabled(isChecking)
-        } header: {
-            SettingsSectionHeader(
-                title: "Parsing SDK",
-                subtitle: "Stay current with the latest extraction improvements."
-            )
+        } footer: {
+            Text("Downloads the latest parsing rules and parser if available.")
         }
     }
 }
@@ -229,15 +231,6 @@ struct SyncStatusSection: View {
         }
     }
 
-    private var statusSymbolName: String {
-        switch state {
-        case .idle: "checkmark"
-        case .syncing: "arrow.triangle.2.circlepath"
-        case .success: "checkmark.circle"
-        case .error: "exclamationmark.triangle"
-        }
-    }
-
     private var formattedTime: String? {
         guard let time = lastSyncTime else { return nil }
         return DateFormatters.time.string(from: time)
@@ -245,17 +238,25 @@ struct SyncStatusSection: View {
 
     var body: some View {
         Section {
-            SyncStatusContent(
-                statusText: statusText,
-                statusSymbolName: statusSymbolName,
-                statusColor: statusColor,
-                formattedTime: formattedTime
-            )
-        } header: {
-            SettingsSectionHeader(
-                title: "Sync",
-                subtitle: "Articles stay consistent across devices via iCloud."
-            )
+            HStack {
+                Label("iCloud Sync", systemImage: "icloud")
+
+                Spacer()
+
+                Text(statusText)
+                    .foregroundStyle(statusColor)
+            }
+
+            if let timeText = formattedTime {
+                HStack {
+                    Text("Last synced")
+                    Spacer()
+                    Text(timeText)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } footer: {
+            Text("Articles sync automatically across your devices via iCloud.")
         }
     }
 }
@@ -271,15 +272,24 @@ struct AppVersionSection: View {
 
     var body: some View {
         Section {
-            AppVersionContent(
-                appVersionString: appVersionString,
-                sdkVersionString: sdkVersionString
-            )
+            VStack(spacing: 4) {
+                Text(appVersionString)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                if let sdkVersion = sdkVersionString {
+                    Text(sdkVersion)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .frame(maxWidth: .infinity)
             .listRowBackground(Color.clear)
         }
     }
 }
 
+#if os(macOS)
 struct SettingsSectionHeader: View {
     let title: String
     let subtitle: String
@@ -401,6 +411,8 @@ struct AppVersionContent: View {
         .padding(.vertical, 6)
     }
 }
+
+#endif
 
 #if os(macOS)
 struct SettingsMacLayout: View {
