@@ -1,177 +1,129 @@
 # AGENTS.md
 
-This file provides guidance for Droid instances working with the Luego codebase.
+Working agreement for agents in the Luego repository.
 
-## Project Overview
+## Operating Model
 
-**Luego** is a minimal read-it-later iOS/macOS app built with SwiftUI and Swift 5.0, targeting iOS 26.0+ and macOS. It uses SwiftData with CloudKit sync for persistence.
+- Keep the main agent focused on requirements, key decisions, and final outputs.
+- Use specialized sub-agents in parallel for exploration, implementation, testing, and analysis.
+- Return concise sub-agent summaries instead of raw intermediate logs.
 
-## Build and Test Commands
+## Skills Available
 
-Use **XcodeBuildMCP** tools for building and testing:
+- [$axiom-cloud-sync](/Users/arunsasidharan/.agents/skills/axiom-cloud-sync/SKILL.md): CloudKit vs iCloud Drive decisions, offline-first sync architecture.
+- [$axiom-cloud-sync-diag](/Users/arunsasidharan/.agents/skills/axiom-cloud-sync-diag/SKILL.md): Systematic diagnostics for CloudKit and iCloud Drive sync failures.
+- [$axiom-cloudkit-ref](/Users/arunsasidharan/.agents/skills/axiom-cloudkit-ref/SKILL.md): CloudKit APIs and modern patterns, including CKSyncEngine and conflict handling.
 
-### Building
-```json
-// Build for iOS Simulator
-xcodebuildmcp___build_sim
+## Project Snapshot
 
-// Build for macOS (use extraArgs)
-xcodebuildmcp___build_sim with extraArgs: ["-destination", "platform=macOS"]
+- Product: Luego, a minimal read-it-later app.
+- Stack: SwiftUI + Swift 5.0.
+- Platforms: iOS 26.0+, iPadOS 26.0+, macOS 15.0+.
+- Persistence: SwiftData + CloudKit private database.
+- CloudKit container: `iCloud.com.esoxjem.Luego`.
+- Extra target: `LuegoShareExtension/` for share-sheet ingestion.
+
+## First Run Setup
+
+Run the repository setup step before the first build:
+
+```bash
+ln -sf "$CONDUCTOR_ROOT_PATH/Luego/Core/Configuration/Secrets.swift" ./Luego/Core/Configuration/Secrets.swift
 ```
 
-### Testing
-```json
-// Run all tests on iOS Simulator
-xcodebuildmcp___test_sim
+Then open the project:
 
-// Run specific test class
-xcodebuildmcp___test_sim with extraArgs: ["-only-testing:LuegoTests/ArticleServiceTests"]
-
-// Run tests on macOS
-xcodebuildmcp___test_sim with extraArgs: ["-destination", "platform=macOS"]
-```
-
-### Project Discovery
-```json
-// List available simulators
-xcodebuildmcp___list_sims
-
-// Discover projects in workspace
-xcodebuildmcp___discover_projs
-
-// List schemes
-xcodebuildmcp___list_schemes
-```
-
-### Opening the Project
 ```bash
 open Luego.xcodeproj
 ```
 
-## Architecture
+## Build And Test
 
-### Service-Based Feature Organization
+Use XcodeBuildMCP wrappers when available.
 
-Luego uses **vertical slices by feature** with shared infrastructure:
-
-```
-Features/                    # Feature modules (vertical slices)
-├── ReadingList/            # Article CRUD, list management
-│   ├── Services/           # ArticleService.swift
-│   └── Views/              # ArticleListView, ArticleListViewModel
-├── Reader/                 # Article reading, position tracking
-│   ├── Services/           # ReaderService.swift
-│   └── Views/              # ReaderView, ReaderViewModel
-├── Discovery/              # Random article exploration
-│   ├── Services/           # DiscoveryService.swift
-│   ├── DataSources/        # KagiSmallWebDataSource, BlogrollDataSource
-│   └── Views/              # DiscoveryView, DiscoveryViewModel
-├── Sharing/                # Share extension integration
-│   ├── Services/           # SharingService.swift
-│   └── DataSources/        # SharedStorage, UserDefaultsDataSource
-└── Settings/               # App settings
-    └── Views/              # SettingsView, SettingsViewModel
-
-Core/                       # Shared infrastructure
-├── Models/                 # SwiftData @Model classes
-├── DataSources/            # Shared data access (MetadataDataSource)
-├── DI/                     # DIContainer.swift
-└── Configuration/          # AppConfiguration.swift
-
-App/                        # Application entry point
-├── LuegoApp.swift
-└── ContentView.swift
+```bash
+xcodebuildmcp___build_sim
+xcodebuildmcp___build_macos
+xcodebuildmcp___test_sim
+xcodebuildmcp___test_macos
+xcodebuildmcp___list_sims
+xcodebuildmcp___discover_projs
+xcodebuildmcp___list_schemes
 ```
 
-### Dependency Flow
+Fallback raw `xcodebuild` commands:
 
-```
-View → ViewModel → Service → DataSource → SwiftData
-```
-
-All services are marked with `@MainActor` because they access SwiftData's `ModelContext`. The `DIContainer` creates and wires dependencies lazily.
-
-### Key Patterns
-
-**Dependency Injection:**
-```swift
-// In LuegoApp.swift
-.environment(\diContainer, diContainer)
-
-// In Views
-@Environment(\.diContainer) private var diContainer
-let viewModel = diContainer.makeArticleListViewModel()
+```bash
+xcodebuild -project Luego.xcodeproj -scheme Luego -configuration Debug -destination "platform=iOS Simulator,name=iPhone 17,OS=latest" build
+xcodebuild -project Luego.xcodeproj -scheme Luego -configuration Debug -destination "platform=macOS" build
+xcodebuild test -project Luego.xcodeproj -scheme Luego -destination "platform=iOS Simulator,name=iPhone 17,OS=latest"
+xcodebuild test -project Luego.xcodeproj -scheme Luego -destination "platform=macOS"
 ```
 
-**Service Protocols:** All services implement protocols for testability:
-- `ArticleServiceProtocol` - CRUD, favorites, archive
-- `ReaderServiceProtocol` - Content fetching, position updates
-- `DiscoveryServiceProtocol` - Random article fetching
-- `SharingServiceProtocol` - Share extension sync
+Run a specific test target/class:
 
-**Adding New Features:**
-1. Update model in `/Core/Models/` if needed
-2. Create service in `/Features/<Feature>/Services/` (mark with `@MainActor`)
-3. Create ViewModel in `/Features/<Feature>/Views/`
-4. Create View in `/Features/<Feature>/Views/`
-5. Wire up in `DIContainer` - add service and factory method
-
-## Data Persistence
-
-**SwiftData with CloudKit Sync:**
-```swift
-ModelConfiguration(
-    schema: schema,
-    isStoredInMemoryOnly: false,
-    cloudKitDatabase: .private("iCloud.com.esoxjem.Luego")
-)
+```bash
+xcodebuild test -project Luego.xcodeproj -scheme Luego -destination "platform=iOS Simulator,name=iPhone 17,OS=latest" -only-testing:LuegoTests/Features/ReadingList/Services/ArticleServiceTests
 ```
 
-**Content Fetching Layer:**
-1. `LuegoSDKDataSource` - Remote parsing service with caching
-2. `MetadataDataSource` - Direct HTML fetching fallback
-3. `ContentDataSource` - Coordinates SDK and local fallback
+## Repository Map
 
-## Testing
+- `Luego/App/`: app entry and root navigation.
+- `Luego/Core/`: shared infrastructure (`Configuration`, `DI`, `Models`, `DataSources`, UI helpers).
+- `Luego/Features/`: vertical feature slices (`ReadingList`, `Reader`, `Discovery`, `Sharing`, `Settings`).
+- `LuegoShareExtension/`: macOS/iOS share extension target.
+- `LuegoTests/`: mirrors app structure (`Core`, `Features`, `Integration`, `TestSupport/Mocks`).
+- `agent_docs/`: focused feature docs (`discovery.md`, `reader.md`).
+- `docs/prevention/`: known pitfalls and prevention playbooks.
 
-Uses **Swift Testing** framework (`@Suite`, `@Test`, `#expect`).
+## Architecture Rules
 
-**Test Structure:**
-- `LuegoTests/Features/` mirrors `Luego/Features/`
-- `LuegoTests/Core/` mirrors `Luego/Core/`
-- `LuegoTests/TestSupport/Mocks/` contains mock implementations
+- Keep this dependency flow: `View -> ViewModel -> Service -> DataSource -> SwiftData`.
+- Services touching `ModelContext` must be `@MainActor`.
+- Every service should have a protocol for testability.
+- Wire dependencies only through `DIContainer`.
+- When adding a feature:
+1. Add/update model in `Luego/Core/Models/` if required.
+2. Add service in `Luego/Features/<Feature>/Services/`.
+3. Add view model and views in `Luego/Features/<Feature>/Views/`.
+4. Register factories in `Luego/Core/DI/DIContainer.swift`.
 
-**Mock Pattern:**
-```swift
-@MainActor
-final class MockArticleService: ArticleServiceProtocol {
-    var saveCallCount = 0
-    var shouldThrowOnSave = false
+## Data And Sync Rules
 
-    func save(_ article: Article) async throws -> Article {
-        saveCallCount += 1
-        if shouldThrowOnSave { throw TestError.mockError }
-        return article
-    }
-}
-```
+- Use SwiftData with CloudKit private DB in app configuration.
+- Keep content fetch layering intact:
+1. `LuegoSDKDataSource` for primary parsing/caching.
+2. `MetadataDataSource` as fallback.
+3. `ContentDataSource` as coordinator.
+- Preserve offline-first behavior and avoid blocking the main thread during sync-sensitive flows.
 
-## Platform Support
+## Testing Rules
 
-Implement features for **iOS, iPad, and macOS simultaneously**:
-- Use `#if os(macOS)` / `#if os(iOS)` for platform-specific code
-- macOS uses separate entitlements file (`Luego-macOS.entitlements`)
-- macOS window sizing: `.defaultSize(width: 1000, height: 700)`
+- Framework: Swift Testing (`@Suite`, `@Test`, `#expect`).
+- Mirror production structure in tests.
+- Prefer deterministic unit tests over broad integration tests unless behavior spans layers.
+- Reuse or extend mocks in `LuegoTests/TestSupport/Mocks/`.
+- For new services/view models, add tests in the matching feature subtree.
 
-## Coding Guidelines
+## Platform Rules
 
-- **No inline comments** - use well-named functions instead
-- **No `// MARK:`** sections - organize by abstraction level
-- **SwiftUI View Organization:** Main view first, child components follow, extensions last
-- **Modern patterns:** `@Observable` (not ObservableObject), `async/await`, `@MainActor`, `#Preview`
+- Implement and verify changes for iOS, iPadOS, and macOS together.
+- Use platform guards (`#if os(iOS)`, `#if os(macOS)`) only where behavior truly differs.
+- Keep entitlements in sync with target capabilities:
+  - `Luego/Luego.entitlements`
+  - `Luego/Luego-macOS.entitlements`
+  - `LuegoShareExtension/LuegoShareExtension.entitlements`
 
-## Feature Documentation
+## Coding Rules
 
-Consult `agent_docs/` before modifying features:
-- `agent_docs/discovery.md` - Discovery feature
-- `agent_docs/reader.md` - Reader feature
+- No inline comments.
+- No `// MARK:` sections.
+- Prefer clear naming and small functions over commentary.
+- Use modern Swift patterns: `@Observable`, `async/await`, `@MainActor`, `#Preview`.
+- SwiftUI organization: root view first, supporting subviews next, extensions last.
+
+## Before Merging
+
+1. Build for simulator and macOS.
+2. Run relevant test suites (or full tests when changes are cross-cutting).
+3. Check `agent_docs/` and `docs/prevention/` for regressions in known risky areas.
