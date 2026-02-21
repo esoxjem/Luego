@@ -8,6 +8,7 @@ struct SettingsViewModelTests {
     var mockPreferencesDataSource: MockDiscoveryPreferencesDataSource
     var mockDiscoveryService: MockDiscoveryService
     var mockSDKManager: MockLuegoSDKManager
+    var mockArticleService: MockArticleService
     var viewModel: SettingsViewModel
 
     init() {
@@ -15,23 +16,26 @@ struct SettingsViewModelTests {
         mockPreferencesDataSource.selectedSource = .kagiSmallWeb
         mockDiscoveryService = MockDiscoveryService()
         mockSDKManager = MockLuegoSDKManager()
+        mockArticleService = MockArticleService()
         viewModel = SettingsViewModel(
             preferencesDataSource: mockPreferencesDataSource,
             discoveryService: mockDiscoveryService,
-            sdkManager: mockSDKManager
+            sdkManager: mockSDKManager,
+            articleService: mockArticleService
         )
     }
 
     @Test("init loads selected source from preferences")
     func initLoadsSelectedSource() {
-        mockPreferencesDataSource.selectedSource = .blogroll
+        mockPreferencesDataSource.selectedSource = DiscoverySource.blogroll
         let vm = SettingsViewModel(
             preferencesDataSource: mockPreferencesDataSource,
             discoveryService: mockDiscoveryService,
-            sdkManager: mockSDKManager
+            sdkManager: mockSDKManager,
+            articleService: mockArticleService
         )
 
-        #expect(vm.selectedDiscoverySource == .blogroll)
+        #expect(vm.selectedDiscoverySource == DiscoverySource.blogroll)
     }
 
     @Test("sdkVersionString returns formatted version when available")
@@ -50,17 +54,17 @@ struct SettingsViewModelTests {
 
     @Test("updateDiscoverySource updates preferences")
     func updateDiscoverySourceUpdatesPreferences() {
-        viewModel.updateDiscoverySource(.blogroll)
+        viewModel.updateDiscoverySource(DiscoverySource.blogroll)
 
         #expect(mockPreferencesDataSource.setSelectedSourceCallCount == 1)
-        #expect(mockPreferencesDataSource.lastSetSource == .blogroll)
+        #expect(mockPreferencesDataSource.lastSetSource == DiscoverySource.blogroll)
     }
 
     @Test("updateDiscoverySource updates local property")
     func updateDiscoverySourceUpdatesLocal() {
-        viewModel.updateDiscoverySource(.blogroll)
+        viewModel.updateDiscoverySource(DiscoverySource.blogroll)
 
-        #expect(viewModel.selectedDiscoverySource == .blogroll)
+        #expect(viewModel.selectedDiscoverySource == DiscoverySource.blogroll)
     }
 
     @Test("refreshArticlePool clears all caches")

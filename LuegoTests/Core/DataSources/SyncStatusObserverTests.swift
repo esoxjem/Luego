@@ -6,21 +6,33 @@ import SwiftData
 @Suite("SyncStatusObserver Tests")
 @MainActor
 struct SyncStatusObserverTests {
-    private func makeObserver() throws -> SyncStatusObserver {
+    private struct ObserverFixture {
+        let container: ModelContainer
+        let observer: SyncStatusObserver
+    }
+
+    private func makeObserver(startObservers: Bool = false) throws -> ObserverFixture {
         let container = try createTestModelContainer()
-        return SyncStatusObserver(modelContext: container.mainContext)
+        let observer = SyncStatusObserver(modelContext: container.mainContext, startObservers: startObservers)
+        return ObserverFixture(container: container, observer: observer)
     }
 
     @Test("initial state is idle")
     func initialStateIsIdle() async throws {
-        let observer = try makeObserver()
-        #expect(observer.state == .idle)
+        let fixture = try makeObserver()
+        #expect(fixture.observer.state == .idle)
     }
 
     @Test("lastSyncTime starts as nil")
     func lastSyncTimeStartsNil() async throws {
-        let observer = try makeObserver()
-        #expect(observer.lastSyncTime == nil)
+        let fixture = try makeObserver()
+        #expect(fixture.observer.lastSyncTime == nil)
+    }
+
+    @Test("observer startup can be explicitly enabled")
+    func observerStartupCanBeEnabled() async throws {
+        let fixture = try makeObserver(startObservers: true)
+        #expect(fixture.observer.observersAreActiveForTesting == true)
     }
 
     @Test("dismissError resets to idle when in error state")
@@ -35,12 +47,12 @@ struct SyncStatusObserverTests {
 
     @Test("dismissError does nothing when in idle state")
     func dismissErrorDoesNothingWhenIdle() async throws {
-        let observer = try makeObserver()
-        #expect(observer.state == .idle)
+        let fixture = try makeObserver()
+        #expect(fixture.observer.state == .idle)
 
-        observer.dismissError()
+        fixture.observer.dismissError()
 
-        #expect(observer.state == .idle)
+        #expect(fixture.observer.state == .idle)
     }
 
     @Test("dismissError does nothing when in syncing state")

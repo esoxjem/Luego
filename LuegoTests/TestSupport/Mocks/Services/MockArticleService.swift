@@ -10,6 +10,7 @@ final class MockArticleService: ArticleServiceProtocol {
     var toggleFavoriteCallCount = 0
     var toggleArchiveCallCount = 0
     var saveEphemeralArticleCallCount = 0
+    var forceReSyncAllArticlesCallCount = 0
 
     var lastAddedURL: URL?
     var lastDeletedId: UUID?
@@ -28,6 +29,8 @@ final class MockArticleService: ArticleServiceProtocol {
     var shouldThrowOnToggleFavorite = false
     var shouldThrowOnToggleArchive = false
     var shouldThrowOnSaveEphemeralArticle = false
+    var shouldThrowOnForceReSyncAllArticles = false
+    var forceReSyncAllArticlesReturnCount = 0
 
     enum MockError: Error {
         case mockError
@@ -89,5 +92,13 @@ final class MockArticleService: ArticleServiceProtocol {
             throw MockError.mockError
         }
         return articleToReturn ?? ArticleFixtures.createArticle(url: ephemeralArticle.url)
+    }
+
+    func forceReSyncAllArticles() async throws -> Int {
+        forceReSyncAllArticlesCallCount += 1
+        if shouldThrowOnForceReSyncAllArticles {
+            throw MockError.mockError
+        }
+        return forceReSyncAllArticlesReturnCount
     }
 }

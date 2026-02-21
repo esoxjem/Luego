@@ -43,8 +43,13 @@ final class SyncStatusObserver: SyncStatusObservable {
     @ObservationIgnored
     private var saveNotificationTask: Task<Void, Never>?
 
-    init(modelContext: ModelContext) {
+    var observersAreActiveForTesting: Bool {
+        observerTask != nil && saveNotificationTask != nil
+    }
+
+    init(modelContext: ModelContext, startObservers: Bool = true) {
         self.modelContext = modelContext
+        guard startObservers else { return }
         observeCloudKitEvents()
         startNetworkMonitoring()
         observeModelContextSaves()
@@ -58,11 +63,12 @@ final class SyncStatusObserver: SyncStatusObservable {
     }
 
     private func observeCloudKitEvents() {
-        observerTask = Task {
+        observerTask = Task { [weak self] in
             let notifications = NotificationCenter.default.notifications(
                 named: NSPersistentCloudKitContainer.eventChangedNotification
             )
             for await notification in notifications {
+                guard let self else { break }
                 handleSyncEvent(notification)
             }
         }
@@ -91,11 +97,12 @@ final class SyncStatusObserver: SyncStatusObservable {
     }
 
     private func observeModelContextSaves() {
-        saveNotificationTask = Task {
+        saveNotificationTask = Task { [weak self] in
             let notifications = NotificationCenter.default.notifications(
                 named: .NSManagedObjectContextDidSave
             )
             for await notification in notifications {
+                guard let self else { break }
                 logContextSave(notification)
             }
         }

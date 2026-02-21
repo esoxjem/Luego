@@ -5,7 +5,7 @@ Working agreement for agents in the Luego repository.
 ## Operating Model
 
 - Keep the main agent focused on requirements, key decisions, and final outputs.
-- Use specialized sub-agents in parallel for exploration, implementation, testing, and analysis.
+- Use specialized sub-agents in parallel for exploration, analysis, implementation and testing.
 - Return concise sub-agent summaries instead of raw intermediate logs.
 
 ## Skills Available
