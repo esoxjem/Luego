@@ -32,6 +32,9 @@ final class MockArticleService: ArticleServiceProtocol {
     var shouldThrowOnForceReSyncAllArticles = false
     var forceReSyncAllArticlesReturnCount = 0
 
+    var shouldSuspendForceReSync = false
+    var continuationForForceReSync: CheckedContinuation<Int, Error>?
+
     enum MockError: Error {
         case mockError
     }
@@ -98,6 +101,11 @@ final class MockArticleService: ArticleServiceProtocol {
         forceReSyncAllArticlesCallCount += 1
         if shouldThrowOnForceReSyncAllArticles {
             throw MockError.mockError
+        }
+        if shouldSuspendForceReSync {
+            return try await withCheckedThrowingContinuation { continuation in
+                self.continuationForForceReSync = continuation
+            }
         }
         return forceReSyncAllArticlesReturnCount
     }

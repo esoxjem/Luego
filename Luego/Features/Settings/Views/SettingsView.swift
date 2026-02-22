@@ -243,26 +243,33 @@ struct SyncStatusSection: View {
         return DateFormatters.time.string(from: time)
     }
 
+    private var accessibilityStatusValue: String {
+        if let timeText = formattedTime {
+            return "\(statusText). Last synced at \(timeText)"
+        }
+        return statusText
+    }
+
     var body: some View {
         Section {
-            HStack {
-                Label("iCloud Sync", systemImage: "icloud")
-
-                Spacer()
-
-                Text(statusText)
-                    .foregroundStyle(statusColor)
-            }
-
-            if let timeText = formattedTime {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("Last synced")
+                    Label("iCloud Sync", systemImage: "icloud")
                     Spacer()
-                    Text(timeText)
-                        .foregroundStyle(.secondary)
+                    Text(statusText)
+                        .foregroundStyle(statusColor)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.trailing)
+                }
+                if let timeText = formattedTime {
+                    Text("Last synced at \(timeText)")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
                 }
             }
-
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("iCloud Sync")
+            .accessibilityValue(accessibilityStatusValue)
             ForceReSyncButton(
                 isSyncing: isSyncing,
                 didSync: didSync,
@@ -356,6 +363,13 @@ struct SyncStatusContent: View {
     let statusColor: Color
     let formattedTime: String?
 
+    private var accessibilityStatusValue: String {
+        if let timeText = formattedTime {
+            return "\(statusText). Last synced at \(timeText)"
+        }
+        return statusText
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             HStack {
@@ -370,10 +384,14 @@ struct SyncStatusContent: View {
             }
 
             if let timeText = formattedTime {
-                LabeledContent("Last synced", value: timeText)
+                Text("Last synced at \(timeText)")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("iCloud Sync")
+        .accessibilityValue(accessibilityStatusValue)
     }
 }
 
@@ -1054,7 +1072,7 @@ struct ForceReSyncButton: View {
                     Text(isSyncing ? "Syncing..." : "Force Re-sync")
                         .foregroundStyle(.primary)
 
-                    Text("Push all local articles to iCloud")
+                    Text("Push local articles to iCloud")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

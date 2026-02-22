@@ -25,6 +25,26 @@ struct SettingsViewModelTests {
         )
     }
 
+    func awaitWithTimeout(_ message: String) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(5))
+        while clock.now < deadline {
+            if message == "syncing" && viewModel.isForceSyncing == true && mockArticleService.continuationForForceReSync != nil {
+                return
+            }
+            if message == "didSync" && viewModel.didForceSync == true {
+                return
+            }
+            await Task.yield()
+        }
+        throw TimeoutError(message: "Timeout waiting for \(message)")
+    }
+
+    struct TimeoutError: Error, CustomStringConvertible {
+        let message: String
+        var description: String { message }
+    }
+
     @Test("init loads selected source from preferences")
     func initLoadsSelectedSource() {
         mockPreferencesDataSource.selectedSource = DiscoverySource.blogroll
@@ -81,5 +101,45 @@ struct SettingsViewModelTests {
         viewModel.refreshArticlePool()
 
         #expect(viewModel.didRefreshPool == true)
+    }
+
+    @Test("forceReSync succeeds and observes transient states")
+    func forceReSyncSucceeds() async throws {
+        mockArticleService.shouldSuspendForceReSync = true
+        mockArticleService.forceReSyncAllArticlesReturnCount = 5
+
+        let task = Task {
+            await viewModel.forceReSync()
+        }
+
+        try await awaitWithTimeout("syncing")
+        #expect(viewModel.isForceSyncing == true)
+        #expect(viewModel.didForceSync == false)
+
+        try? await Task.sleep(nanoseconds: 1_600_000_000)
+
+        mockArticleService.continuationForForceReSync?.resume(returning: 5)
+        mockArticleService.continuationForForceReSync = nil
+
+        try await awaitWithTimeout("didSync")
+        #expect(viewModel.didForceSync == true)
+
+        await task.value
+
+        #expect(viewModel.isForceSyncing == false)
+        #expect(viewModel.didForceSync == false)
+        #expect(viewModel.forceSyncCount == 5)
+        #expect(mockArticleService.forceReSyncAllArticlesCallCount == 1)
+    }
+
+    @Test("forceReSync handles failure gracefully")
+    func forceReSyncHandlesFailure() async {
+        mockArticleService.shouldThrowOnForceReSyncAllArticles = true
+
+        await viewModel.forceReSync()
+
+        #expect(viewModel.didForceSync == false)
+        #expect(viewModel.isForceSyncing == false)
+        #expect(mockArticleService.forceReSyncAllArticlesCallCount == 1)
     }
 }
