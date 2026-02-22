@@ -33,10 +33,34 @@ final class MockArticleService: ArticleServiceProtocol {
     var forceReSyncAllArticlesReturnCount = 0
 
     var shouldSuspendForceReSync = false
-    var continuationForForceReSync: CheckedContinuation<Int, Error>?
+    private var continuationForForceReSync: CheckedContinuation<Int, Error>?
 
     enum MockError: Error {
         case mockError
+    }
+
+    func suspendNextForceReSync() {
+        shouldSuspendForceReSync = true
+    }
+
+    func resumeForceReSync(returning value: Int) {
+        guard let continuation = continuationForForceReSync else { return }
+        continuationForForceReSync = nil
+        continuation.resume(returning: value)
+    }
+
+    func resumeForceReSync(throwing error: Error) {
+        guard let continuation = continuationForForceReSync else { return }
+        continuationForForceReSync = nil
+        continuation.resume(throwing: error)
+    }
+
+    func clearForceReSyncContinuation() {
+        continuationForForceReSync = nil
+    }
+
+    var hasPendingForceReSyncContinuation: Bool {
+        continuationForForceReSync != nil
     }
 
     func getAllArticles() async throws -> [Article] {

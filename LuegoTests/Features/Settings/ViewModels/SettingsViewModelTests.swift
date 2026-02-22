@@ -29,7 +29,7 @@ struct SettingsViewModelTests {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: .seconds(5))
         while clock.now < deadline {
-            if message == "syncing" && viewModel.isForceSyncing == true && mockArticleService.continuationForForceReSync != nil {
+            if message == "syncing" && viewModel.isForceSyncing == true && mockArticleService.hasPendingForceReSyncContinuation {
                 return
             }
             if message == "didSync" && viewModel.didForceSync == true {
@@ -105,11 +105,15 @@ struct SettingsViewModelTests {
 
     @Test("forceReSync succeeds and observes transient states")
     func forceReSyncSucceeds() async throws {
-        mockArticleService.shouldSuspendForceReSync = true
+        mockArticleService.suspendNextForceReSync()
         mockArticleService.forceReSyncAllArticlesReturnCount = 5
 
         let task = Task {
             await viewModel.forceReSync()
+        }
+
+        defer {
+            mockArticleService.clearForceReSyncContinuation()
         }
 
         try await awaitWithTimeout("syncing")
@@ -118,8 +122,7 @@ struct SettingsViewModelTests {
 
         try? await Task.sleep(nanoseconds: 1_600_000_000)
 
-        mockArticleService.continuationForForceReSync?.resume(returning: 5)
-        mockArticleService.continuationForForceReSync = nil
+        mockArticleService.resumeForceReSync(returning: 5)
 
         try await awaitWithTimeout("didSync")
         #expect(viewModel.didForceSync == true)
