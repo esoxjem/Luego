@@ -56,6 +56,7 @@ struct LuegoApp: App {
                 viewModel: diContainer.makeSettingsViewModel(),
                 syncStatusObserver: diContainer.syncObserver
             )
+            .modelContainer(sharedModelContainer)
         }
         #endif
     }
@@ -92,6 +93,30 @@ extension LuegoApp {
             let descriptor = FetchDescriptor<Article>()
             let count = try sharedModelContainer.mainContext.fetchCount(descriptor)
             Logger.cloudKit.info("Launch diagnostics — article count at startup: \(count)")
+
+            #if DEBUG
+            do {
+                let articles = try sharedModelContainer.mainContext.fetch(descriptor)
+                let sortedArticles = articles.sorted { lhs, rhs in
+                    let lhsURL = lhs.url.absoluteString
+                    let rhsURL = rhs.url.absoluteString
+
+                    if lhsURL == rhsURL {
+                        return lhs.id.uuidString < rhs.id.uuidString
+                    }
+
+                    return lhsURL < rhsURL
+                }
+
+                Logger.cloudKit.info("Launch diagnostics — article identity count: \(sortedArticles.count)")
+
+                for article in sortedArticles {
+                    Logger.cloudKit.info("Launch diagnostics — article identity: \(article.id.uuidString) | \(article.url.absoluteString)")
+                }
+            } catch {
+                Logger.cloudKit.error("Launch diagnostics — failed to fetch article identities: \(error.localizedDescription)")
+            }
+            #endif
         } catch {
             Logger.cloudKit.error("Launch diagnostics — failed to count articles: \(error.localizedDescription)")
         }
@@ -114,6 +139,7 @@ extension LuegoApp {
         Logger.cloudKit.info("Launch diagnostics — Platform: macOS")
         #endif
     }
+
 }
 
 private struct DIContainerKey: EnvironmentKey {

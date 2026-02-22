@@ -1,5 +1,6 @@
 import SwiftUI
 import CloudKit
+import SwiftData
 
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
@@ -828,6 +829,7 @@ struct StreamingLogsToggle: View {
 #endif
 
 struct CopyDiagnosticsButton: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var showCopiedToast = false
     @State private var isLoading = false
 
@@ -939,6 +941,12 @@ struct CopyDiagnosticsButton: View {
         }
         lines.append("")
 
+        let articleIdentityLines = await MainActor.run {
+            articleIdentitySnapshotLines()
+        }
+        lines.append(contentsOf: articleIdentityLines)
+        lines.append("")
+
         // Recent Logs
         let logDateFormatter = DateFormatter()
         logDateFormatter.dateFormat = "HH:mm:ss"
@@ -955,6 +963,39 @@ struct CopyDiagnosticsButton: View {
         }
 
         return lines.joined(separator: "\n")
+    }
+
+    @MainActor
+    private func articleIdentitySnapshotLines() -> [String] {
+        var lines: [String] = ["--- Article Identity Snapshot (id | url) ---"]
+
+        do {
+            let articles = try modelContext.fetch(FetchDescriptor<Article>())
+            let sortedArticles = articles.sorted { lhs, rhs in
+                let lhsURL = lhs.url.absoluteString
+                let rhsURL = rhs.url.absoluteString
+
+                if lhsURL == rhsURL {
+                    return lhs.id.uuidString < rhs.id.uuidString
+                }
+
+                return lhsURL < rhsURL
+            }
+
+            lines.append("Article Identity Count: \(sortedArticles.count)")
+
+            if sortedArticles.isEmpty {
+                lines.append("No local articles.")
+            } else {
+                for article in sortedArticles {
+                    lines.append("\(article.id.uuidString) | \(article.url.absoluteString)")
+                }
+            }
+        } catch {
+            lines.append("Failed to fetch local articles: \(error.localizedDescription)")
+        }
+
+        return lines
     }
 
     private func fetchAccountStatus(for container: CKContainer) async -> String {
@@ -1028,5 +1069,4 @@ struct ForceReSyncButton: View {
         .disabled(isSyncing)
     }
 }
-
 
