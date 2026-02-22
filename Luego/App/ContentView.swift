@@ -36,17 +36,14 @@ struct ContentView: View {
     @ViewBuilder
     private var regularLayoutWithStreamingLogs: some View {
         if streamingLogsEnabled {
-            GeometryReader { geo in
-                VStack(spacing: 0) {
-                    iPadLayout
-                        .frame(height: geo.size.height * 0.6)
+            VSplitView {
+                iPadLayout
+                    .frame(minHeight: 360)
 
-                    Divider()
-
-                    StreamingLogsView(logStream: LogStream.shared)
-                        .frame(height: geo.size.height * 0.4)
-                }
+                StreamingLogsView(logStream: LogStream.shared)
+                    .frame(minHeight: 220)
             }
+            .frame(minWidth: 1000, minHeight: 700)
         } else {
             iPadLayout
         }
@@ -102,4 +99,3 @@ struct ContentView: View {
         }
     }
 }
-
