@@ -979,7 +979,9 @@ struct CopyDiagnosticsButton: View {
         lines.append("")
 
         let articleIdentityLines = await MainActor.run {
-            articleIdentitySnapshotLines()
+            ArticleIdentitySnapshotFormatter.lines {
+                try modelContext.fetch(FetchDescriptor<Article>())
+            }
         }
         lines.append(contentsOf: articleIdentityLines)
         lines.append("")
@@ -1000,39 +1002,6 @@ struct CopyDiagnosticsButton: View {
         }
 
         return lines.joined(separator: "\n")
-    }
-
-    @MainActor
-    private func articleIdentitySnapshotLines() -> [String] {
-        var lines: [String] = ["--- Article Identity Snapshot (id | url) ---"]
-
-        do {
-            let articles = try modelContext.fetch(FetchDescriptor<Article>())
-            let sortedArticles = articles.sorted { lhs, rhs in
-                let lhsURL = lhs.url.absoluteString
-                let rhsURL = rhs.url.absoluteString
-
-                if lhsURL == rhsURL {
-                    return lhs.id.uuidString < rhs.id.uuidString
-                }
-
-                return lhsURL < rhsURL
-            }
-
-            lines.append("Article Identity Count: \(sortedArticles.count)")
-
-            if sortedArticles.isEmpty {
-                lines.append("No local articles.")
-            } else {
-                for article in sortedArticles {
-                    lines.append("\(article.id.uuidString) | \(article.url.absoluteString)")
-                }
-            }
-        } catch {
-            lines.append("Failed to fetch local articles: \(error.localizedDescription)")
-        }
-
-        return lines
     }
 
     private func fetchAccountStatus(for container: CKContainer) async -> String {
@@ -1057,6 +1026,50 @@ struct CopyDiagnosticsButton: View {
         } catch {
             return []
         }
+    }
+}
+
+enum ArticleIdentitySnapshotFormatter {
+    static func lines(for articles: [Article]) -> [String] {
+        let sortedArticles = articles.sorted {
+            let lhsURL = $0.url.absoluteString
+            let rhsURL = $1.url.absoluteString
+
+            if lhsURL == rhsURL {
+                return $0.id.uuidString < $1.id.uuidString
+            }
+
+            return lhsURL < rhsURL
+        }
+
+        return articleIdentitySnapshotLines(sortedArticles)
+    }
+
+    static func lines(fetcher: () throws -> [Article]) -> [String] {
+        do {
+            return lines(for: try fetcher())
+        } catch {
+            return [
+                "--- Article Identity Snapshot (id | url) ---",
+                "Failed to fetch local articles: \(error.localizedDescription)"
+            ]
+        }
+    }
+
+    private static func articleIdentitySnapshotLines(_ sortedArticles: [Article]) -> [String] {
+        var lines = ["--- Article Identity Snapshot (id | url) ---"]
+        lines.append("Article Identity Count: \(sortedArticles.count)")
+
+        if sortedArticles.isEmpty {
+            lines.append("No local articles.")
+            return lines
+        }
+
+        for article in sortedArticles {
+            lines.append("\(article.id.uuidString) | \(article.url.absoluteString)")
+        }
+
+        return lines
     }
 }
 

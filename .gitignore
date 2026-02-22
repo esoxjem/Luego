@@ -100,4 +100,3 @@ Makefile
 *.profraw
 *.profdata
 .factory/commands/deploy-testflight.md
-.sisyphus
