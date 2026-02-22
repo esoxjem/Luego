@@ -23,7 +23,10 @@ struct SettingsView: View {
         Form {
             SyncStatusSection(
                 state: resolvedObserver?.state ?? .idle,
-                lastSyncTime: resolvedObserver?.lastSyncTime
+                lastSyncTime: resolvedObserver?.lastSyncTime,
+                isSyncing: viewModel.isForceSyncing,
+                didSync: viewModel.didForceSync,
+                onSync: { Task { await viewModel.forceReSync() } }
             )
 
             DiscoverySettingsSection(
@@ -43,11 +46,6 @@ struct SettingsView: View {
 
             Section {
                 CopyDiagnosticsButton()
-                ForceReSyncButton(
-                    isSyncing: viewModel.isForceSyncing,
-                    didSync: viewModel.didForceSync,
-                    onSync: { Task { await viewModel.forceReSync() } }
-                )
             } header: {
                 Text("Developer")
             } footer: {
@@ -219,6 +217,9 @@ struct SDKUpdateSection: View {
 struct SyncStatusSection: View {
     let state: SyncState
     let lastSyncTime: Date?
+    let isSyncing: Bool
+    let didSync: Bool
+    let onSync: () -> Void
 
     private var statusText: String {
         switch state {
@@ -261,6 +262,12 @@ struct SyncStatusSection: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            ForceReSyncButton(
+                isSyncing: isSyncing,
+                didSync: didSync,
+                onSync: onSync
+            )
         } footer: {
             Text("Articles sync automatically across your devices via iCloud.")
         }
@@ -437,7 +444,13 @@ struct SettingsMacLayout: View {
                         subtitle: "Articles stay consistent across devices via iCloud."
                     )
                     SettingsCardDivider()
-                    SyncStatusCard(state: state, lastSyncTime: lastSyncTime)
+                    SyncStatusCard(
+                        state: state,
+                        lastSyncTime: lastSyncTime,
+                        isSyncing: viewModel.isForceSyncing,
+                        didSync: viewModel.didForceSync,
+                        onSync: { Task { await viewModel.forceReSync() } }
+                    )
                 }
 
                 SettingsCard {
@@ -489,11 +502,6 @@ struct SettingsMacLayout: View {
                     VStack(spacing: 10) {
                         StreamingLogsToggle()
                         CopyDiagnosticsButton()
-                        ForceReSyncButton(
-                            isSyncing: viewModel.isForceSyncing,
-                            didSync: viewModel.didForceSync,
-                            onSync: { Task { await viewModel.forceReSync() } }
-                        )
                     }
                 }
 
@@ -734,6 +742,9 @@ struct DiscoverySettingsCardContent: View {
 struct SyncStatusCard: View {
     let state: SyncState
     let lastSyncTime: Date?
+    let isSyncing: Bool
+    let didSync: Bool
+    let onSync: () -> Void
 
     private var statusText: String {
         switch state {
@@ -767,12 +778,20 @@ struct SyncStatusCard: View {
     }
 
     var body: some View {
-        SyncStatusContent(
-            statusText: statusText,
-            statusSymbolName: statusSymbolName,
-            statusColor: statusColor,
-            formattedTime: formattedTime
-        )
+        VStack(spacing: 10) {
+            SyncStatusContent(
+                statusText: statusText,
+                statusSymbolName: statusSymbolName,
+                statusColor: statusColor,
+                formattedTime: formattedTime
+            )
+
+            ForceReSyncButton(
+                isSyncing: isSyncing,
+                didSync: didSync,
+                onSync: onSync
+            )
+        }
     }
 }
 
@@ -1069,4 +1088,3 @@ struct ForceReSyncButton: View {
         .disabled(isSyncing)
     }
 }
-
