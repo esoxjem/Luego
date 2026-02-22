@@ -46,6 +46,7 @@ final class MockArticleService: ArticleServiceProtocol {
     func resumeForceReSync(returning value: Int) {
         guard let continuation = continuationForForceReSync else { return }
         continuationForForceReSync = nil
+        shouldSuspendForceReSync = false
         continuation.resume(returning: value)
     }
 
@@ -55,8 +56,12 @@ final class MockArticleService: ArticleServiceProtocol {
         continuation.resume(throwing: error)
     }
 
-    func clearForceReSyncContinuation() {
-        continuationForForceReSync = nil
+    func cancelPendingForceReSync() {
+        if let continuation = continuationForForceReSync {
+            continuationForForceReSync = nil
+            shouldSuspendForceReSync = false
+            continuation.resume(throwing: CancellationError())
+        }
     }
 
     var hasPendingForceReSyncContinuation: Bool {

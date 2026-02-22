@@ -113,7 +113,8 @@ struct SettingsViewModelTests {
         }
 
         defer {
-            mockArticleService.clearForceReSyncContinuation()
+            task.cancel()
+            mockArticleService.cancelPendingForceReSync()
         }
 
         try await awaitWithTimeout("syncing")
