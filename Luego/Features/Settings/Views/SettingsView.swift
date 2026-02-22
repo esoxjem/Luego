@@ -74,6 +74,94 @@ struct SettingsView: View {
     }
 }
 
+struct IOSSettingsRow<TitleAccessory: View, Trailing: View>: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    var showsIcon: Bool = true
+    var iconColor: Color = .accentColor
+    @ViewBuilder var titleAccessory: TitleAccessory
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if showsIcon {
+                Image(systemName: systemImage)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(iconColor)
+                    .frame(width: 20)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(title)
+                        .foregroundStyle(.primary)
+
+                    titleAccessory
+                }
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 12)
+
+            trailing
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+extension IOSSettingsRow where TitleAccessory == EmptyView {
+    init(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        showsIcon: Bool = true,
+        iconColor: Color = .accentColor,
+        @ViewBuilder trailing: () -> Trailing
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.systemImage = systemImage
+        self.showsIcon = showsIcon
+        self.iconColor = iconColor
+        self.titleAccessory = EmptyView()
+        self.trailing = trailing()
+    }
+}
+
+struct IOSDiscoverySourceRow: View {
+    let source: DiscoverySource
+    let isSelected: Bool
+    let onTap: () -> Void
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button(action: onTap) {
+            IOSSettingsRow(
+                title: source.displayName,
+                subtitle: source.descriptionText,
+                systemImage: "safari",
+                showsIcon: false,
+                iconColor: .accentColor
+            ) {
+                if let websiteURL = source.websiteURL {
+                    SourceWebsiteLinkButton(url: websiteURL, openURL: openURL)
+                }
+            } trailing: {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct DiscoverySettingsSection: View {
     @Binding var selectedSource: DiscoverySource
     let onSourceChanged: (DiscoverySource) -> Void
@@ -136,6 +224,7 @@ struct DiscoverySettingsContent: View {
 
     var body: some View {
         ForEach(DiscoverySource.allCases, id: \.self) { source in
+            #if os(macOS)
             DiscoverySourceRow(
                 source: source,
                 isSelected: selectedSource == source,
@@ -144,6 +233,16 @@ struct DiscoverySettingsContent: View {
                     onSourceChanged(source)
                 }
             )
+            #else
+            IOSDiscoverySourceRow(
+                source: source,
+                isSelected: selectedSource == source,
+                onTap: {
+                    selectedSource = source
+                    onSourceChanged(source)
+                }
+            )
+            #endif
         }
     }
 }
@@ -171,17 +270,18 @@ struct RefreshArticlePoolSection: View {
     var body: some View {
         Section {
             Button(action: onRefresh) {
-                HStack {
-                    Label("Refresh Article Pool", systemImage: "arrow.clockwise")
-
-                    Spacer()
-
+                IOSSettingsRow(
+                    title: "Refresh Article Pool",
+                    subtitle: "Clears cached articles and fetches fresh results.",
+                    systemImage: "arrow.clockwise"
+                ) {
                     if didRefresh {
-                        Image(systemName: "checkmark")
+                        Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                     }
                 }
             }
+            .buttonStyle(.plain)
             .disabled(didRefresh)
         } footer: {
             Text("Clears the cached article pool and fetches fresh articles on next discovery.")
@@ -196,17 +296,18 @@ struct SDKUpdateSection: View {
     var body: some View {
         Section {
             Button(action: onCheck) {
-                HStack {
-                    Label("Check for SDK Updates", systemImage: "arrow.triangle.2.circlepath")
-
-                    Spacer()
-
+                IOSSettingsRow(
+                    title: "Check for SDK Updates",
+                    subtitle: "Downloads the latest parser rules when available.",
+                    systemImage: "arrow.triangle.2.circlepath"
+                ) {
                     if isChecking {
                         ProgressView()
                             .controlSize(.small)
                     }
                 }
             }
+            .buttonStyle(.plain)
             .disabled(isChecking)
         } footer: {
             Text("Downloads the latest parsing rules and parser if available.")
@@ -250,22 +351,26 @@ struct SyncStatusSection: View {
         return statusText
     }
 
+    private var statusSubtitle: String {
+        if let timeText = formattedTime {
+            return "Last synced at \(timeText)"
+        }
+        return "Sync status is shown after your first successful update."
+    }
+
     var body: some View {
         Section {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Label("iCloud Sync", systemImage: "icloud")
-                    Spacer()
-                    Text(statusText)
-                        .foregroundStyle(statusColor)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.trailing)
-                }
-                if let timeText = formattedTime {
-                    Text("Last synced at \(timeText)")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
+            IOSSettingsRow(
+                title: "iCloud Sync",
+                subtitle: statusSubtitle,
+                systemImage: "icloud",
+                iconColor: .secondary
+            ) {
+                Text(statusText)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(statusColor)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.trailing)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("iCloud Sync")
@@ -874,6 +979,7 @@ struct CopyDiagnosticsButton: View {
         Button(action: {
             Task { await copyDiagnostics() }
         }) {
+            #if os(macOS)
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Copy Diagnostics")
@@ -897,7 +1003,6 @@ struct CopyDiagnosticsButton: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            #if os(macOS)
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -907,6 +1012,24 @@ struct CopyDiagnosticsButton: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.4))
             )
+            #else
+            IOSSettingsRow(
+                title: "Copy Diagnostics",
+                subtitle: "Export device info for troubleshooting sync issues.",
+                systemImage: "doc.on.doc"
+            ) {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if showCopiedToast {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
             #endif
         }
         .buttonStyle(.plain)
@@ -1080,6 +1203,7 @@ struct ForceReSyncButton: View {
 
     var body: some View {
         Button(action: onSync) {
+            #if os(macOS)
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(isSyncing ? "Syncing..." : "Force Re-sync")
@@ -1103,7 +1227,6 @@ struct ForceReSyncButton: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            #if os(macOS)
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -1113,6 +1236,24 @@ struct ForceReSyncButton: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.4))
             )
+            #else
+            IOSSettingsRow(
+                title: isSyncing ? "Syncing..." : "Force Re-sync",
+                subtitle: "Push local articles to iCloud",
+                systemImage: "arrow.clockwise.icloud"
+            ) {
+                if isSyncing {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if didSync {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
             #endif
         }
         .buttonStyle(.plain)
