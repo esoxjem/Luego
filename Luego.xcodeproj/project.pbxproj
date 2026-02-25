@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		607598D12EC2300000BEE86E /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = 607598D02EC2300000BEE86E /* Textual */; };
+		70D100012F70000000D10001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 70D100002F70000000D10001 /* Sparkle */; };
 		608D75732EC33EA6002DD532 /* LuegoShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 608D75692EC33EA6002DD532 /* LuegoShareExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -132,6 +133,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				70D100012F70000000D10001 /* Sparkle in Frameworks */,
 				607598D12EC2300000BEE86E /* Textual in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -216,6 +218,7 @@
 			);
 			name = Luego;
 			packageProductDependencies = (
+				70D100002F70000000D10001 /* Sparkle */,
 				607598D02EC2300000BEE86E /* Textual */,
 			);
 			productName = Luego;
@@ -299,6 +302,7 @@
 			mainGroup = 607598862EC1FC8D00BEE86E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				70D100022F70000000D10001 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "textual" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -577,6 +581,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_FILE[sdk=macosx*]" = "Configuration/Info-macOS.plist";
 				"INFOPLIST_FILE[sdk=iphoneos*]" = "Luego/Info-iOS.plist";
 				"INFOPLIST_FILE[sdk=iphonesimulator*]" = "Luego/Info-iOS.plist";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -588,6 +593,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 2026.02.17;
@@ -625,6 +631,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_FILE[sdk=macosx*]" = "Configuration/Info-macOS.plist";
 				"INFOPLIST_FILE[sdk=iphoneos*]" = "Luego/Info-iOS.plist";
 				"INFOPLIST_FILE[sdk=iphonesimulator*]" = "Luego/Info-iOS.plist";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -636,6 +643,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 2026.02.17;
@@ -674,6 +682,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_FILE[sdk=macosx*]" = "Configuration/Info-macOS.plist";
 				"INFOPLIST_FILE[sdk=iphoneos*]" = "Luego/Info-iOS.plist";
 				"INFOPLIST_FILE[sdk=iphonesimulator*]" = "Luego/Info-iOS.plist";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -685,6 +694,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 2026.02.17;
@@ -955,6 +965,14 @@
 				minimumVersion = 0.3.0;
 			};
 		};
+		70D100022F70000000D10001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -962,6 +980,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 607598CF2EC2300000BEE86E /* XCRemoteSwiftPackageReference "textual" */;
 			productName = Textual;
+		};
+		70D100002F70000000D10001 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 70D100022F70000000D10001 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

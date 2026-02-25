@@ -13,6 +13,9 @@ import CloudKit
 struct LuegoApp: App {
     let sharedModelContainer: ModelContainer
     @State private var diContainer: DIContainer
+    #if os(macOS)
+    @State private var appUpdateController = AppUpdateController()
+    #endif
 
     init() {
         let schema = Schema([
@@ -57,6 +60,16 @@ struct LuegoApp: App {
                 syncStatusObserver: diContainer.syncObserver
             )
             .modelContainer(sharedModelContainer)
+        }
+        .commands {
+            #if !DEBUG
+            CommandGroup(after: .appInfo) {
+                Divider()
+                Button("Check for Updates…") {
+                    appUpdateController.checkForUpdates()
+                }
+            }
+            #endif
         }
         #endif
     }
