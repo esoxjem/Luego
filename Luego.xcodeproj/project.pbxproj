@@ -121,11 +121,6 @@
 			path = .github;
 			sourceTree = "<group>";
 		};
-		60FB827E2EFA56B50039288F /* .claude */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = .claude;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -172,8 +167,7 @@
                         isa = PBXGroup;
                         children = (
                                 70C0F0002F60000000C0F001 /* Configuration */,
-                                60FB827E2EFA56B50039288F /* .claude */,
-                                60FB82782EFA56AA0039288F /* .github */,
+				60FB82782EFA56AA0039288F /* .github */,
                                 6060B4192EF509290021B178 /* agent_docs */,
 				600EEBCD2ED6C294005459C8 /* docs */,
 				601507252EC4B31A00CADAFB /* README.md */,
