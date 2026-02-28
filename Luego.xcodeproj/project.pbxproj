@@ -567,7 +567,7 @@
 				CODE_SIGN_ENTITLEMENTS = Luego/Luego.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Luego/Luego-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				ENABLE_APP_SANDBOX = YES;
@@ -590,7 +590,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -617,7 +617,7 @@
 				CODE_SIGN_ENTITLEMENTS = Luego/Luego.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Luego/Luego-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				ENABLE_APP_SANDBOX = YES;
@@ -640,7 +640,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "luego-mac-prod-profile";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -668,7 +668,7 @@
 				CODE_SIGN_ENTITLEMENTS = Luego/Luego.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Luego/Luego-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				ENABLE_APP_SANDBOX = YES;
@@ -691,7 +691,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "luego-mac-prod-profile";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -716,7 +716,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = LuegoShareExtension/LuegoShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -727,7 +727,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
@@ -750,7 +750,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = LuegoShareExtension/LuegoShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -761,7 +761,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
@@ -784,7 +784,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = LuegoShareExtension/LuegoShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -795,7 +795,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
@@ -817,7 +817,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -828,7 +828,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -848,7 +848,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -859,7 +859,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -879,7 +879,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = QTZUF46V7A;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -890,7 +890,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 2026.02.17;
+				MARKETING_VERSION = 2026.02.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.esoxjem.Luego.LuegoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
