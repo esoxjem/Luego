@@ -8,12 +8,6 @@ Working agreement for agents in the Luego repository.
 - Use specialized sub-agents in parallel for exploration, analysis, implementation and testing.
 - Return concise sub-agent summaries instead of raw intermediate logs.
 
-## Skills Available
-
-- [$axiom-cloud-sync](/Users/arunsasidharan/.agents/skills/axiom-cloud-sync/SKILL.md): CloudKit vs iCloud Drive decisions, offline-first sync architecture.
-- [$axiom-cloud-sync-diag](/Users/arunsasidharan/.agents/skills/axiom-cloud-sync-diag/SKILL.md): Systematic diagnostics for CloudKit and iCloud Drive sync failures.
-- [$axiom-cloudkit-ref](/Users/arunsasidharan/.agents/skills/axiom-cloudkit-ref/SKILL.md): CloudKit APIs and modern patterns, including CKSyncEngine and conflict handling.
-
 ## Project Snapshot
 
 - Product: Luego, a minimal read-it-later app.

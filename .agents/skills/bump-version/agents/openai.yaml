@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bump Version"
+  short_description: "Update Luego CalVer and build numbers safely"
+  default_prompt: "Update Luego MARKETING_VERSION and CURRENT_PROJECT_VERSION across all targets in Luego.xcodeproj/project.pbxproj using the CalVer policy."

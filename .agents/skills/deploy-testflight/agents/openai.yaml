@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deploy TestFlight"
+  short_description: "Archive and upload Luego iOS builds to TestFlight"
+  default_prompt: "Run the Luego iOS TestFlight deployment workflow with preflight checks, archive, export, and upload steps."
