@@ -79,6 +79,9 @@ Luego/Core/Configuration/Secrets.swift
 # Codex local state
 .codex/
 
+# Agent local state
+.agents/
+
 # Conductor local hooks (personal configuration)
 conductor.local/
 

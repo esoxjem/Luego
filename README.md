@@ -33,7 +33,7 @@ Luego follows an opinionated Clean Architecture implementation organized by feat
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/esoxjem/luego.git
+git clone https://github.com/quietform/Luego.git
 cd luego
 ```
 
