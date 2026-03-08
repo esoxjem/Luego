@@ -284,6 +284,7 @@ struct ArticleListEmptyState: View {
                 Button("Inspire Me") {
                     onDiscover()
                 }
+                .font(.nunito(.subheadline, weight: .semibold))
                 #if os(iOS)
                 .buttonStyle(.glassProminent)
                 #else
