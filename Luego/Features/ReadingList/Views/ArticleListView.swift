@@ -231,6 +231,7 @@ struct ArticleListEmptyState: View {
     let filter: ArticleFilter
     let onCopyAnimationConsumed: () -> Void
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var shouldAnimateCopy: Bool
     @State private var hasConsumedLaunchAnimation = false
 
@@ -260,39 +261,30 @@ struct ArticleListEmptyState: View {
         }
     }
 
+    private var verticalOffset: CGFloat {
+        #if os(iOS)
+        horizontalSizeClass == .compact ? -52 : 0
+        #else
+        0
+        #endif
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-
             VStack(spacing: 0) {
                 VStack(spacing: 8) {
                     artwork
-
-                    if filter.emptyStateNarrativeLines != nil {
-                        AnimatedEmptyStateTitle(
-                            text: filter.emptyStateTitle,
-                            animateOnAppear: shouldAnimateCopy
-                        )
-                    } else {
-                        Text(filter.emptyStateTitle)
-                            .font(.lora(.title2))
-                    }
+                    AnimatedEmptyStateTitle(
+                        text: filter.emptyStateTitle,
+                        animateOnAppear: shouldAnimateCopy
+                    )
                 }
                 .padding(.bottom, 12)
 
-                Group {
-                    if let narrativeLines = filter.emptyStateNarrativeLines {
-                        AnimatedNarrativeText(
-                            lines: narrativeLines,
-                            animateOnAppear: shouldAnimateCopy
-                        )
-                    } else {
-                        Text(filter.emptyStateDescription)
-                            .font(.nunito(.callout))
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
+                AnimatedNarrativeText(
+                    lines: filter.emptyStateLines,
+                    animateOnAppear: shouldAnimateCopy
+                )
 
                 if filter == .readingList {
                     Button("Inspire Me") {
@@ -316,15 +308,14 @@ struct ArticleListEmptyState: View {
             }
             .frame(maxWidth: 320)
             .padding(.horizontal, 24)
-
-            Spacer()
         }
         .task {
             guard shouldAnimateCopy, !hasConsumedLaunchAnimation else { return }
             hasConsumedLaunchAnimation = true
             onCopyAnimationConsumed()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .offset(y: verticalOffset)
         .background(Color.paperCream)
         .onDisappear {
             shouldAnimateCopy = false

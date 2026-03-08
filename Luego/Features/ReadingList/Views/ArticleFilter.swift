@@ -43,20 +43,20 @@ enum ArticleFilter: CaseIterable, Hashable {
         }
     }
 
-    var emptyStateDescription: String {
+    var emptyStateLines: [String] {
         switch self {
-        case .readingList: "Kike's looking for something good. Add your first article, and he'll watch over your reading list."
-        case .favorites: "Articles you favorite will appear here"
-        case .archived: "Archived articles will appear here"
-        case .discovery: "Tap shuffle to find interesting articles"
-        }
-    }
-
-    var emptyStateNarrativeLines: [String]? {
-        switch self {
-        case .readingList: [emptyStateDescription]
-        case .favorites, .archived, .discovery:
-            nil
+        case .readingList:
+            [
+                "Kike's looking for something good.",
+                "Add your first article.",
+                "He'll watch over your reading list."
+            ]
+        case .favorites:
+            ["Articles you favorite will appear here"]
+        case .archived:
+            ["Archived articles will appear here"]
+        case .discovery:
+            ["Tap shuffle to find interesting articles"]
         }
     }
 
