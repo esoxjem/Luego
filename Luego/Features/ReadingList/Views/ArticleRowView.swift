@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ArticleRowView: View {
     let article: Article
+    var isSelected: Bool = false
 
     var body: some View {
         #if os(macOS)
@@ -51,7 +52,8 @@ struct ArticleRowView: View {
             VStack(alignment: .leading, spacing: 4) {
                 ArticleTitleRow(
                     title: article.title,
-                    isFavorite: article.isFavorite
+                    isFavorite: article.isFavorite,
+                    isSelected: isSelected
                 )
 
                 if !article.excerpt.isEmpty {
@@ -94,11 +96,13 @@ struct ArticleRowView: View {
 struct ArticleTitleRow: View {
     let title: String
     let isFavorite: Bool
+    var isSelected: Bool = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
                 .font(.lora(.headline))
+                .foregroundStyle(isSelected ? Color.regularSelectionInk : Color.primary)
                 .lineLimit(2)
 
             Spacer(minLength: 4)

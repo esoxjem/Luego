@@ -5,6 +5,11 @@ extension Color {
     static let paperCream = Color(red: 250 / 255, green: 248 / 255, blue: 241 / 255)
     static let mascotPurple = Color(red: 223 / 255, green: 210 / 255, blue: 224 / 255)
     static let mascotPurpleInk = Color(red: 120 / 255, green: 98 / 255, blue: 125 / 255)
+    static let regularPanelBackground = paperCream
+    static let regularSelectionFill = mascotPurple.opacity(0.5)
+    static let regularSelectionInk = mascotPurpleInk
+    static let regularOutline = Color.primary.opacity(0.18)
+    static let regularGlassTint = mascotPurple.opacity(0.8)
 
     static let gitHubBackground: Color = {
         #if os(macOS)
@@ -28,6 +33,16 @@ extension StructuredText.Style where Self == StructuredText.GitHubStyle {
 }
 
 extension View {
+    func appNavigationChrome() -> some View {
+        #if os(iOS)
+        self
+            .toolbarBackground(Color.regularPanelBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+        #else
+        self
+        #endif
+    }
+
     func readerContentStyle() -> some View {
         self
             .textual.structuredTextStyle(.reader)

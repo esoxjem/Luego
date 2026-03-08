@@ -21,6 +21,8 @@ struct DiscoveryReaderView: View {
                     DiscoveryLoadingContentView(viewModel: viewModel)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.regularPanelBackground)
             .safeAreaInset(edge: .bottom) {
                 if viewModel.ephemeralArticle != nil && !viewModel.isLoading {
                     HStack {
@@ -59,6 +61,8 @@ struct DiscoveryReaderView: View {
                 }
             }
         }
+        .tint(Color.regularSelectionInk)
+        .appNavigationChrome()
     }
 
     private func openInBrowser() {
@@ -115,6 +119,7 @@ struct KagiSmallWebLoadingView: View {
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.regularPanelBackground)
         .animation(.easeInOut(duration: 0.3), value: pendingURL)
         .onAppear { isVisible = true }
         .onDisappear { isVisible = false }
@@ -181,7 +186,7 @@ struct DiscoveryBottomBar: View {
             .disabled(isSaved)
         }
         #if os(iOS)
-        .glassEffect(.regular.interactive().tint(.purple.opacity(0.8)))
+        .glassEffect(.regular.interactive().tint(Color.regularGlassTint))
         #else
         .background(.ultraThinMaterial, in: Capsule())
         #endif

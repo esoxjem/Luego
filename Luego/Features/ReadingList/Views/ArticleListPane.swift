@@ -39,6 +39,10 @@ struct ArticleListPane: View {
                 ProgressView()
             }
         }
+        #if os(iOS)
+        .background(Color.regularPanelBackground)
+        .appNavigationChrome()
+        #endif
         #if os(macOS)
         .background(MacAppBackground())
         #endif
@@ -109,10 +113,11 @@ struct SelectableArticleList: View {
                 Button {
                     selection = article
                 } label: {
-                    ArticleRowView(article: article)
+                    ArticleRowView(article: article, isSelected: selection?.id == article.id)
                 }
                 .buttonStyle(.plain)
-                .listRowBackground(selection?.id == article.id ? Color.accentColor.opacity(0.2) : Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowBackground(selectionBackground(isSelected: selection?.id == article.id))
                 #if os(macOS)
                 .contextMenu {
                     contextMenuItems(for: article)
@@ -132,6 +137,14 @@ struct SelectableArticleList: View {
         .listStyle(.inset)
         #endif
         .scrollContentBackground(.hidden)
+        .background(Color.regularPanelBackground)
+    }
+
+    private func selectionBackground(isSelected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .fill(isSelected ? Color.regularSelectionFill : Color.clear)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
     }
 
     #if os(macOS)

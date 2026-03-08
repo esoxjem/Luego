@@ -68,6 +68,8 @@ struct ContentView: View {
             } detail: {
                 DiscoveryPane()
             }
+            .tint(Color.regularSelectionInk)
+            .appNavigationChrome()
         } else {
             NavigationSplitView {
                 SidebarView(selection: $selectedFilter)
@@ -85,6 +87,8 @@ struct ContentView: View {
                 DetailPane(article: selectedArticle)
                     .navigationSplitViewColumnWidth(min: 500, ideal: 500)
             }
+            .tint(Color.regularSelectionInk)
+            .appNavigationChrome()
         }
     }
 

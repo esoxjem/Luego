@@ -13,6 +13,9 @@ struct DetailPane: View {
                 EmptyDetailView()
             }
         }
+        #if os(iOS)
+        .background(Color.regularPanelBackground)
+        #endif
         #if os(macOS)
         .background(MacAppBackground())
         #endif
@@ -42,10 +45,31 @@ struct DetailPane: View {
 
 struct EmptyDetailView: View {
     var body: some View {
-        ContentUnavailableView(
-            "No Article Selected",
-            systemImage: "doc.text",
-            description: Text("Select an article to start reading")
-        )
+        VStack(spacing: 24) {
+            ZStack {
+                Circle()
+                    .fill(Color.regularSelectionFill)
+                    .frame(width: 92, height: 92)
+
+                Image(systemName: "doc.text")
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundStyle(Color.regularSelectionInk)
+            }
+
+            VStack(spacing: 8) {
+                Text("No Article Selected")
+                    .font(.lora(.title2))
+
+                Text("Select an article to start reading")
+                    .font(.nunito(.body))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(24)
+        #if os(iOS)
+        .background(Color.regularPanelBackground)
+        #endif
     }
 }

@@ -13,6 +13,10 @@ struct DiscoveryPane: View {
                 ProgressView()
             }
         }
+        #if os(iOS)
+        .background(Color.regularPanelBackground)
+        .appNavigationChrome()
+        #endif
         #if os(macOS)
         .background(MacAppBackground())
         #endif
@@ -44,6 +48,8 @@ struct DiscoveryInlineView: View {
                 DiscoveryLoadingContentView(viewModel: viewModel)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.regularPanelBackground)
         .safeAreaInset(edge: .bottom) {
             if viewModel.ephemeralArticle != nil && !viewModel.isLoading {
                 HStack {

@@ -57,8 +57,10 @@ struct SettingsView: View {
                 AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
             }
             .scrollContentBackground(.hidden)
-            .background(Color.paperCream)
+            .background(Color.regularPanelBackground)
             .navigationTitle("Settings")
+            .tint(Color.regularSelectionInk)
+            .appNavigationChrome()
             #if os(iOS)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -151,7 +153,7 @@ struct IOSDiscoverySourceRow: View {
                 subtitle: source.descriptionText,
                 systemImage: "safari",
                 showsIcon: false,
-                iconColor: .accentColor
+                iconColor: .regularSelectionInk
             ) {
                 if let websiteURL = source.websiteURL {
                     SourceWebsiteLinkButton(url: websiteURL, openURL: openURL)
@@ -159,7 +161,7 @@ struct IOSDiscoverySourceRow: View {
             } trailing: {
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.regularSelectionInk)
                         .fontWeight(.semibold)
                 }
             }
