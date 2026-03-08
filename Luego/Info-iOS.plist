@@ -9,6 +9,7 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Lora.ttf</string>
+		<string>NunitoSans.ttf</string>
 	</array>
 </dict>
 </plist>

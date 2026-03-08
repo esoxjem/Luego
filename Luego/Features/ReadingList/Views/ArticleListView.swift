@@ -234,7 +234,7 @@ struct ArticleListEmptyState: View {
                 AnimatedNarrativeText(lines: narrativeLines)
             } else {
                 Text(filter.emptyStateDescription)
-                    .font(.lora(.callout))
+                    .font(.nunito(.callout))
             }
         } actions: {
             if filter == .readingList {
@@ -280,7 +280,7 @@ struct AnimatedNarrativeText: View {
         VStack(spacing: 6) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 Text(line)
-                    .font(.lora(.callout))
+                    .font(.nunito(.callout))
                     .opacity(visibleLineIndices.contains(index) ? 1 : 0)
                     .offset(y: visibleLineIndices.contains(index) ? 0 : 8)
                     .animation(

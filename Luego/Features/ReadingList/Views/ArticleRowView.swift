@@ -31,7 +31,7 @@ struct ArticleRowView: View {
 
                 if !article.excerpt.isEmpty {
                     Text(article.excerpt)
-                        .font(.lora(.subheadline))
+                        .font(.nunito(.subheadline))
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                         .padding(.top, 2)
@@ -56,7 +56,7 @@ struct ArticleRowView: View {
 
                 if !article.excerpt.isEmpty {
                     Text(article.excerpt)
-                        .font(.lora(.subheadline))
+                        .font(.nunito(.subheadline))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }

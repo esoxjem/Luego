@@ -9,36 +9,20 @@ import AppKit
 
 enum AppTypography {
     static let loraPostScriptName = "Lora-Regular"
+    static let nunitoPostScriptName = "NunitoSans-12ptRegular"
     private static let loraFileName = "Lora"
+    private static let nunitoFileName = "NunitoSans"
     private static let loraFileExtension = "ttf"
+    private static let nunitoFileExtension = "ttf"
     static let loraWeightAxisIdentifier = fourCharacterCode("wght")
+    static let nunitoWeightAxisIdentifier = fourCharacterCode("wght")
 
     static func registerFonts() {
-        guard let url = Bundle.main.url(forResource: loraFileName, withExtension: loraFileExtension) else {
-            return
-        }
-
-        var registrationError: Unmanaged<CFError>?
-        let didRegister = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &registrationError)
-
-        if didRegister {
-            return
-        }
-
-        guard let error = registrationError?.takeRetainedValue() else {
-            return
-        }
-
-        let alreadyRegisteredCode = CTFontManagerError.alreadyRegistered.rawValue
-        let domain = CFErrorGetDomain(error) as String
-        let code = CFErrorGetCode(error)
-
-        if domain == kCTFontManagerErrorDomain as String, code == alreadyRegisteredCode {
-            return
-        }
+        registerFont(named: loraFileName, extension: loraFileExtension)
+        registerFont(named: nunitoFileName, extension: nunitoFileExtension)
     }
 
-    static func loraSize(for textStyle: Font.TextStyle) -> CGFloat {
+    static func fontSize(for textStyle: Font.TextStyle) -> CGFloat {
         switch textStyle {
         case .largeTitle:
             34
@@ -53,9 +37,9 @@ enum AppTypography {
         case .subheadline:
             15
         case .body:
-            17
+            14
         case .callout:
-            16
+            14
         case .footnote:
             13
         case .caption:
@@ -67,7 +51,7 @@ enum AppTypography {
         }
     }
 
-    static func loraAxisValue(for weight: Font.Weight) -> CGFloat {
+    static func variableFontAxisValue(for weight: Font.Weight) -> CGFloat {
         switch weight {
         case .ultraLight:
             400
@@ -97,6 +81,31 @@ enum AppTypography {
             (partialResult << 8) | Int(character)
         }
     }
+
+    private static func registerFont(named fileName: String, extension fileExtension: String) {
+        guard let url = Bundle.main.url(forResource: fileName, withExtension: fileExtension) else {
+            return
+        }
+
+        var registrationError: Unmanaged<CFError>?
+        let didRegister = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &registrationError)
+
+        if didRegister {
+            return
+        }
+
+        guard let error = registrationError?.takeRetainedValue() else {
+            return
+        }
+
+        let alreadyRegisteredCode = CTFontManagerError.alreadyRegistered.rawValue
+        let domain = CFErrorGetDomain(error) as String
+        let code = CFErrorGetCode(error)
+
+        if domain == kCTFontManagerErrorDomain as String, code == alreadyRegisteredCode {
+            return
+        }
+    }
 }
 
 extension Font {
@@ -104,11 +113,25 @@ extension Font {
         #if os(iOS)
         Font(UIFont.lora(forTextStyle: textStyle.uiTextStyle, weight: weight))
         #elseif os(macOS)
-        Font(NSFont.lora(size: AppTypography.loraSize(for: textStyle), weight: weight))
+        Font(NSFont.lora(size: AppTypography.fontSize(for: textStyle), weight: weight))
         #else
         .custom(
             AppTypography.loraPostScriptName,
-            size: AppTypography.loraSize(for: textStyle),
+            size: AppTypography.fontSize(for: textStyle),
+            relativeTo: textStyle
+        )
+        #endif
+    }
+
+    static func nunito(_ textStyle: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
+        #if os(iOS)
+        Font(UIFont.nunito(forTextStyle: textStyle.uiTextStyle, weight: weight))
+        #elseif os(macOS)
+        Font(NSFont.nunito(size: AppTypography.fontSize(for: textStyle), weight: weight))
+        #else
+        .custom(
+            AppTypography.nunitoPostScriptName,
+            size: AppTypography.fontSize(for: textStyle),
             relativeTo: textStyle
         )
         #endif
@@ -119,11 +142,23 @@ extension Font {
 extension UIFont {
     static func lora(forTextStyle textStyle: UIFont.TextStyle, weight: Font.Weight = .regular) -> UIFont {
         let pointSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle).pointSize
-        let axisValue = AppTypography.loraAxisValue(for: weight)
+        let axisValue = AppTypography.variableFontAxisValue(for: weight)
         let variationAttributeName = UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
         let descriptor = UIFontDescriptor(fontAttributes: [
             .name: AppTypography.loraPostScriptName,
             variationAttributeName: [AppTypography.loraWeightAxisIdentifier: axisValue]
+        ])
+        let font = UIFont(descriptor: descriptor, size: pointSize)
+        return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
+    }
+
+    static func nunito(forTextStyle textStyle: UIFont.TextStyle, weight: Font.Weight = .regular) -> UIFont {
+        let pointSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle).pointSize
+        let axisValue = AppTypography.variableFontAxisValue(for: weight)
+        let variationAttributeName = UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
+        let descriptor = UIFontDescriptor(fontAttributes: [
+            .name: AppTypography.nunitoPostScriptName,
+            variationAttributeName: [AppTypography.nunitoWeightAxisIdentifier: axisValue]
         ])
         let font = UIFont(descriptor: descriptor, size: pointSize)
         return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
@@ -163,7 +198,7 @@ private extension Font.TextStyle {
 #elseif os(macOS)
 extension NSFont {
     static func lora(size: CGFloat, weight: Font.Weight = .regular) -> NSFont {
-        let axisValue = AppTypography.loraAxisValue(for: weight)
+        let axisValue = AppTypography.variableFontAxisValue(for: weight)
         let variationAttributeName = NSFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
         let descriptor = NSFontDescriptor(fontAttributes: [
             .name: AppTypography.loraPostScriptName,
@@ -172,6 +207,19 @@ extension NSFont {
 
         return NSFont(descriptor: descriptor, size: size)
             ?? NSFont(name: AppTypography.loraPostScriptName, size: size)
+            ?? .systemFont(ofSize: size)
+    }
+
+    static func nunito(size: CGFloat, weight: Font.Weight = .regular) -> NSFont {
+        let axisValue = AppTypography.variableFontAxisValue(for: weight)
+        let variationAttributeName = NSFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
+        let descriptor = NSFontDescriptor(fontAttributes: [
+            .name: AppTypography.nunitoPostScriptName,
+            variationAttributeName: [AppTypography.nunitoWeightAxisIdentifier: axisValue]
+        ])
+
+        return NSFont(descriptor: descriptor, size: size)
+            ?? NSFont(name: AppTypography.nunitoPostScriptName, size: size)
             ?? .systemFont(ofSize: size)
     }
 }

@@ -13,64 +13,67 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        #if os(macOS)
-        SettingsMacLayout(
-            viewModel: viewModel,
-            state: resolvedObserver?.state ?? .idle,
-            lastSyncTime: resolvedObserver?.lastSyncTime
-        )
-        #else
-        Form {
-            SyncStatusSection(
+        Group {
+            #if os(macOS)
+            SettingsMacLayout(
+                viewModel: viewModel,
                 state: resolvedObserver?.state ?? .idle,
-                lastSyncTime: resolvedObserver?.lastSyncTime,
-                isSyncing: viewModel.isForceSyncing,
-                didSync: viewModel.didForceSync,
-                onSync: { Task { await viewModel.forceReSync() } }
+                lastSyncTime: resolvedObserver?.lastSyncTime
             )
+            #else
+            Form {
+                SyncStatusSection(
+                    state: resolvedObserver?.state ?? .idle,
+                    lastSyncTime: resolvedObserver?.lastSyncTime,
+                    isSyncing: viewModel.isForceSyncing,
+                    didSync: viewModel.didForceSync,
+                    onSync: { Task { await viewModel.forceReSync() } }
+                )
 
-            DiscoverySettingsSection(
-                selectedSource: $viewModel.selectedDiscoverySource,
-                onSourceChanged: viewModel.updateDiscoverySource
-            )
+                DiscoverySettingsSection(
+                    selectedSource: $viewModel.selectedDiscoverySource,
+                    onSourceChanged: viewModel.updateDiscoverySource
+                )
 
-            RefreshArticlePoolSection(
-                didRefresh: viewModel.didRefreshPool,
-                onRefresh: viewModel.refreshArticlePool
-            )
+                RefreshArticlePoolSection(
+                    didRefresh: viewModel.didRefreshPool,
+                    onRefresh: viewModel.refreshArticlePool
+                )
 
-            SDKUpdateSection(
-                isChecking: viewModel.isCheckingForUpdates,
-                onCheck: { Task { await viewModel.checkForSDKUpdates() } }
-            )
+                SDKUpdateSection(
+                    isChecking: viewModel.isCheckingForUpdates,
+                    onCheck: { Task { await viewModel.checkForSDKUpdates() } }
+                )
 
-            Section {
-                CopyDiagnosticsButton()
-            } header: {
-                Text("Developer")
-            } footer: {
-                Text("Tools for monitoring and debugging.")
+                Section {
+                    CopyDiagnosticsButton()
+                } header: {
+                    Text("Developer")
+                } footer: {
+                    Text("Tools for monitoring and debugging.")
+                }
+
+                AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
             }
-
-            AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
-        }
-        .navigationTitle("Settings")
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Done") { dismiss() }
+            .navigationTitle("Settings")
+            #if os(iOS)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
             }
+            #endif
+            .alert(
+                viewModel.updateAlertTitle,
+                isPresented: $viewModel.showUpdateAlert
+            ) {
+                Button("OK") { }
+            } message: {
+                Text(viewModel.updateAlertMessage)
+            }
+            #endif
         }
-        #endif
-        .alert(
-            viewModel.updateAlertTitle,
-            isPresented: $viewModel.showUpdateAlert
-        ) {
-            Button("OK") { }
-        } message: {
-            Text(viewModel.updateAlertMessage)
-        }
-        #endif
+        .font(.nunito(.body))
     }
 }
 

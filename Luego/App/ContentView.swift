@@ -21,15 +21,18 @@ struct ContentView: View {
     #endif
 
     var body: some View {
-        if horizontalSizeClass == .regular {
-            #if os(macOS)
-            regularLayoutWithStreamingLogs
-            #else
-            iPadLayout
-            #endif
-        } else {
-            iPhoneLayout
+        Group {
+            if horizontalSizeClass == .regular {
+                #if os(macOS)
+                regularLayoutWithStreamingLogs
+                #else
+                iPadLayout
+                #endif
+            } else {
+                iPhoneLayout
+            }
         }
+        .font(.nunito(.body))
     }
 
     #if os(macOS)
