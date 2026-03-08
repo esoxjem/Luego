@@ -68,6 +68,8 @@ build/
 
 # Xcode derived data
 DerivedData/
+.DerivedData/
+.deriveddata/
 
 # Secrets (API keys - use Secrets.swift.template as reference)
 Luego/Core/Configuration/Secrets.swift

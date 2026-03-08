@@ -3,6 +3,8 @@ import Textual
 
 extension Color {
     static let paperCream = Color(red: 250 / 255, green: 248 / 255, blue: 241 / 255)
+    static let mascotPurple = Color(red: 223 / 255, green: 210 / 255, blue: 224 / 255)
+    static let mascotPurpleInk = Color(red: 120 / 255, green: 98 / 255, blue: 125 / 255)
 
     static let gitHubBackground: Color = {
         #if os(macOS)

@@ -299,12 +299,18 @@ struct ArticleListEmptyState: View {
                         onDiscover()
                     }
                     .font(.nunito(.subheadline, weight: .semibold))
+                    .foregroundStyle(.primary)
                     #if os(iOS)
                     .buttonStyle(.glassProminent)
                     #else
                     .buttonStyle(.borderedProminent)
                     #endif
-                    .tint(.purple)
+                    .buttonBorderShape(.capsule)
+                    .tint(.mascotPurple)
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.primary.opacity(0.18), lineWidth: 1)
+                    }
                     .padding(.top, 24)
                 }
             }
