@@ -209,18 +209,38 @@ struct ArticleListEmptyState: View {
     let onDiscover: () -> Void
     let filter: ArticleFilter
 
+    @ViewBuilder
+    private var artwork: some View {
+        if filter == .readingList {
+            Image("Kike")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 180, height: 180)
+        } else {
+            Image(systemName: filter.emptyStateIcon)
+                .font(.system(size: 64))
+                .foregroundStyle(filter.emptyStateIconColor)
+        }
+    }
+
     var body: some View {
         ContentUnavailableView {
             VStack(spacing: 8) {
-                Image(systemName: filter.emptyStateIcon)
-                    .font(.system(size: 64))
-                    .foregroundStyle(filter.emptyStateIconColor)
-                Text(filter.emptyStateTitle)
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                artwork
+                if filter.emptyStateNarrativeLines != nil {
+                    AnimatedEmptyStateTitle(text: filter.emptyStateTitle)
+                } else {
+                    Text(filter.emptyStateTitle)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                }
             }
         } description: {
-            Text(filter.emptyStateDescription)
+            if let narrativeLines = filter.emptyStateNarrativeLines {
+                AnimatedNarrativeText(lines: narrativeLines)
+            } else {
+                Text(filter.emptyStateDescription)
+            }
         } actions: {
             if filter == .readingList {
                 Button("Inspire Me") {
@@ -237,3 +257,56 @@ struct ArticleListEmptyState: View {
     }
 }
 
+struct AnimatedEmptyStateTitle: View {
+    let text: String
+
+    @State private var isTitleVisible = false
+
+    var body: some View {
+        Text(text)
+            .font(.title2)
+            .fontWeight(.semibold)
+            .opacity(isTitleVisible ? 1 : 0)
+            .offset(y: isTitleVisible ? 0 : 8)
+            .animation(.easeOut(duration: 0.7), value: isTitleVisible)
+            .task(id: text) {
+                isTitleVisible = false
+                try? await Task.sleep(for: .milliseconds(300))
+                isTitleVisible = true
+            }
+    }
+}
+
+struct AnimatedNarrativeText: View {
+    let lines: [String]
+
+    @State private var visibleLineIndices: Set<Int> = []
+
+    var body: some View {
+        VStack(spacing: 6) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                Text(line)
+                    .opacity(visibleLineIndices.contains(index) ? 1 : 0)
+                    .offset(y: visibleLineIndices.contains(index) ? 0 : 8)
+                    .animation(
+                        .easeOut(duration: 0.7).delay(Double(index) * 0.35),
+                        value: visibleLineIndices
+                    )
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .task(id: lines) {
+            visibleLineIndices = []
+
+            try? await Task.sleep(for: .milliseconds(620))
+
+            for index in lines.indices {
+                visibleLineIndices.insert(index)
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+        }
+    }
+}

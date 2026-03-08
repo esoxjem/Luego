@@ -36,7 +36,7 @@ enum ArticleFilter: CaseIterable, Hashable {
 
     var emptyStateTitle: String {
         switch self {
-        case .readingList: "No Articles"
+        case .readingList: "Hola!"
         case .favorites: "No Favorites"
         case .archived: "No Archived Articles"
         case .discovery: "Discover Something New"
@@ -45,10 +45,18 @@ enum ArticleFilter: CaseIterable, Hashable {
 
     var emptyStateDescription: String {
         switch self {
-        case .readingList: "Save your first article to get started"
+        case .readingList: "Kike's looking for something good. Add your first article, and he'll watch over your reading list."
         case .favorites: "Articles you favorite will appear here"
         case .archived: "Archived articles will appear here"
         case .discovery: "Tap shuffle to find interesting articles"
+        }
+    }
+
+    var emptyStateNarrativeLines: [String]? {
+        switch self {
+        case .readingList: [emptyStateDescription]
+        case .favorites, .archived, .discovery:
+            nil
         }
     }
 
