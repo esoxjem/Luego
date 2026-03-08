@@ -83,7 +83,7 @@ struct ArticleReaderModeView: View {
                         StructuredText(markdown: stripFirstH1FromMarkdown(content, matchingTitle: article.title))
                             .readerContentStyle()
                     }
-                    .fontDesign(.serif)
+                    .font(.lora(.body))
                     .padding(.vertical)
                     .padding(.horizontal, ReaderLayout.horizontalPadding(for: outerGeo.size.width))
                     .frame(maxWidth: .infinity)
@@ -172,7 +172,7 @@ struct ArticleHeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.title.weight(.bold))
+                .font(.lora(.title))
                 .foregroundColor(.primary)
 
             HStack {
@@ -181,7 +181,7 @@ struct ArticleHeaderView: View {
                 Spacer()
 
                 Text(formattedDate)
-                    .font(.subheadline)
+                    .font(.lora(.subheadline))
                     .foregroundStyle(.secondary)
             }
         }
@@ -295,4 +295,3 @@ extension ReaderView {
         }
     }
 }
-

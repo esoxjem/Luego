@@ -18,6 +18,8 @@ struct LuegoApp: App {
     #endif
 
     init() {
+        AppTypography.registerFonts()
+
         let schema = Schema([
             Article.self,
         ])

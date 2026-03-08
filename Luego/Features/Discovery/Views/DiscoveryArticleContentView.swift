@@ -20,7 +20,7 @@ struct DiscoveryArticleContentView: View {
                     StructuredText(markdown: stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
                         .readerContentStyle()
                 }
-                .fontDesign(.serif)
+                .font(.lora(.body))
                 .padding(.vertical)
                 .padding(.horizontal, ReaderLayout.horizontalPadding(for: geo.size.width))
                 .frame(maxWidth: .infinity)
@@ -46,7 +46,7 @@ struct DiscoveryArticleHeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.title.weight(.bold))
+                .font(.lora(.title))
                 .foregroundColor(.primary)
 
             HStack {
@@ -56,7 +56,7 @@ struct DiscoveryArticleHeaderView: View {
 
                 if !formattedDate.isEmpty {
                     Text(formattedDate)
-                        .font(.subheadline)
+                        .font(.lora(.subheadline))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -86,4 +86,3 @@ struct SourceAttributionChip: View {
         }
     }
 }
-

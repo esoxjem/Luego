@@ -31,7 +31,7 @@ struct ArticleRowView: View {
 
                 if !article.excerpt.isEmpty {
                     Text(article.excerpt)
-                        .font(.system(.subheadline, design: .serif))
+                        .font(.lora(.subheadline))
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                         .padding(.top, 2)
@@ -56,7 +56,7 @@ struct ArticleRowView: View {
 
                 if !article.excerpt.isEmpty {
                     Text(article.excerpt)
-                        .font(.system(.subheadline, design: .serif))
+                        .font(.lora(.subheadline))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -98,8 +98,7 @@ struct ArticleTitleRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
-                .font(.system(.headline, design: .serif))
-                .fontWeight(.medium)
+                .font(.lora(.headline))
                 .lineLimit(2)
 
             Spacer(minLength: 4)

@@ -130,12 +130,7 @@ struct ArticleListView: View {
     }
 
     private var serifBoldLargeTitleFont: UIFont {
-        UIFont(
-            descriptor: UIFontDescriptor.preferredFontDescriptor(withTextStyle: .largeTitle)
-                .withDesign(.serif)!
-                .withSymbolicTraits(.traitBold)!,
-            size: 0
-        )
+        .lora(forTextStyle: .largeTitle)
     }
     #endif
 }
@@ -231,8 +226,7 @@ struct ArticleListEmptyState: View {
                     AnimatedEmptyStateTitle(text: filter.emptyStateTitle)
                 } else {
                     Text(filter.emptyStateTitle)
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                        .font(.lora(.title2))
                 }
             }
         } description: {
@@ -240,6 +234,7 @@ struct ArticleListEmptyState: View {
                 AnimatedNarrativeText(lines: narrativeLines)
             } else {
                 Text(filter.emptyStateDescription)
+                    .font(.lora(.callout))
             }
         } actions: {
             if filter == .readingList {
@@ -264,8 +259,7 @@ struct AnimatedEmptyStateTitle: View {
 
     var body: some View {
         Text(text)
-            .font(.title2)
-            .fontWeight(.semibold)
+            .font(.lora(.title2))
             .opacity(isTitleVisible ? 1 : 0)
             .offset(y: isTitleVisible ? 0 : 8)
             .animation(.easeOut(duration: 0.7), value: isTitleVisible)
@@ -286,6 +280,7 @@ struct AnimatedNarrativeText: View {
         VStack(spacing: 6) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 Text(line)
+                    .font(.lora(.callout))
                     .opacity(visibleLineIndices.contains(index) ? 1 : 0)
                     .offset(y: visibleLineIndices.contains(index) ? 0 : 8)
                     .animation(
@@ -295,7 +290,6 @@ struct AnimatedNarrativeText: View {
                     .frame(maxWidth: .infinity)
             }
         }
-        .font(.callout)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
         .task(id: lines) {
