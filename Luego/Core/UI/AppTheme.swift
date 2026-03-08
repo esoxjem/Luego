@@ -2,18 +2,20 @@ import SwiftUI
 import Textual
 
 extension Color {
+    static let paperCream = Color(red: 250 / 255, green: 248 / 255, blue: 241 / 255)
+
     static let gitHubBackground: Color = {
         #if os(macOS)
         Color(nsColor: NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.darkAqua, .vibrantDark]) != nil
                 ? NSColor(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0, alpha: 1)
-                : .white
+                : NSColor(red: 0xfd / 255.0, green: 0xfc / 255.0, blue: 0xf5 / 255.0, alpha: 1)
         })
         #else
         Color(uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark
                 ? UIColor(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0, alpha: 1)
-                : .white
+                : UIColor(red: 0xfd / 255.0, green: 0xfc / 255.0, blue: 0xf5 / 255.0, alpha: 1)
         })
         #endif
     }()

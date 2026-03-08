@@ -11,5 +11,7 @@
 		<string>Lora.ttf</string>
 		<string>NunitoSans.ttf</string>
 	</array>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 </dict>
 </plist>

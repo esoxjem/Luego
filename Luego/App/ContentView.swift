@@ -22,15 +22,20 @@ struct ContentView: View {
     #endif
 
     var body: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                #if os(macOS)
-                regularLayoutWithStreamingLogs
-                #else
-                iPadLayout
-                #endif
-            } else {
-                iPhoneLayout
+        ZStack {
+            Color.paperCream
+                .ignoresSafeArea()
+
+            Group {
+                if horizontalSizeClass == .regular {
+                    #if os(macOS)
+                    regularLayoutWithStreamingLogs
+                    #else
+                    iPadLayout
+                    #endif
+                } else {
+                    iPhoneLayout
+                }
             }
         }
         .font(.nunito(.body))
@@ -86,26 +91,41 @@ struct ContentView: View {
     private var iPhoneLayout: some View {
         TabView(selection: $selectedTab) {
             Tab("", systemImage: "list.bullet", value: 0) {
-                NavigationStack {
-                    ArticleListView(
-                        filter: .readingList,
-                        shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateHomeEmptyStateOnLaunch,
-                        onEmptyStateAnimationConsumed: { shouldAnimateHomeEmptyStateOnLaunch = false }
-                    )
+                iPhoneTabBackground {
+                    NavigationStack {
+                        ArticleListView(
+                            filter: .readingList,
+                            shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateHomeEmptyStateOnLaunch,
+                            onEmptyStateAnimationConsumed: { shouldAnimateHomeEmptyStateOnLaunch = false }
+                        )
+                    }
                 }
             }
 
             Tab("", systemImage: "heart", value: 1) {
-                NavigationStack {
-                    ArticleListView(filter: .favorites)
+                iPhoneTabBackground {
+                    NavigationStack {
+                        ArticleListView(filter: .favorites)
+                    }
                 }
             }
 
             Tab("", systemImage: "archivebox.fill", value: 2) {
-                NavigationStack {
-                    ArticleListView(filter: .archived)
+                iPhoneTabBackground {
+                    NavigationStack {
+                        ArticleListView(filter: .archived)
+                    }
                 }
             }
+        }
+    }
+
+    private func iPhoneTabBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ZStack {
+            Color.paperCream
+                .ignoresSafeArea()
+
+            content()
         }
     }
 }

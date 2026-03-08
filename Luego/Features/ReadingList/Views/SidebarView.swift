@@ -56,6 +56,7 @@ struct SidebarView: View {
                 .listRowBackground(selection == filter ? Color.accentColor.opacity(0.2) : Color.clear)
             }
         }
+        .scrollContentBackground(.hidden)
         .navigationTitle("Luego")
         .safeAreaInset(edge: .bottom) {
             SidebarSyncFooter(

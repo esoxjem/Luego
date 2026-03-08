@@ -136,11 +136,14 @@ struct ArticleListView: View {
     #if os(iOS)
     private func configureNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
-        appearance.configureWithDefaultBackground()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(red: 250 / 255, green: 248 / 255, blue: 241 / 255, alpha: 1)
+        appearance.shadowColor = .clear
         appearance.largeTitleTextAttributes = [.font: serifBoldLargeTitleFont]
 
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
     }
 
     private var serifBoldLargeTitleFont: UIFont {
@@ -175,6 +178,8 @@ struct ArticleListContent: View {
                 ProgressView()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.paperCream)
     }
 }
 
@@ -256,48 +261,65 @@ struct ArticleListEmptyState: View {
     }
 
     var body: some View {
-        ContentUnavailableView {
-            VStack(spacing: 8) {
-                artwork
-                if filter.emptyStateNarrativeLines != nil {
-                    AnimatedEmptyStateTitle(
-                        text: filter.emptyStateTitle,
-                        animateOnAppear: shouldAnimateCopy
-                    )
-                } else {
-                    Text(filter.emptyStateTitle)
-                        .font(.lora(.title2))
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 0) {
+                VStack(spacing: 8) {
+                    artwork
+
+                    if filter.emptyStateNarrativeLines != nil {
+                        AnimatedEmptyStateTitle(
+                            text: filter.emptyStateTitle,
+                            animateOnAppear: shouldAnimateCopy
+                        )
+                    } else {
+                        Text(filter.emptyStateTitle)
+                            .font(.lora(.title2))
+                    }
+                }
+                .padding(.bottom, 12)
+
+                Group {
+                    if let narrativeLines = filter.emptyStateNarrativeLines {
+                        AnimatedNarrativeText(
+                            lines: narrativeLines,
+                            animateOnAppear: shouldAnimateCopy
+                        )
+                    } else {
+                        Text(filter.emptyStateDescription)
+                            .font(.nunito(.callout))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+
+                if filter == .readingList {
+                    Button("Inspire Me") {
+                        onDiscover()
+                    }
+                    .font(.nunito(.subheadline, weight: .semibold))
+                    #if os(iOS)
+                    .buttonStyle(.glassProminent)
+                    #else
+                    .buttonStyle(.borderedProminent)
+                    #endif
+                    .tint(.purple)
+                    .padding(.top, 24)
                 }
             }
-        } description: {
-            if let narrativeLines = filter.emptyStateNarrativeLines {
-                AnimatedNarrativeText(
-                    lines: narrativeLines,
-                    animateOnAppear: shouldAnimateCopy
-                )
-            } else {
-                Text(filter.emptyStateDescription)
-                    .font(.nunito(.callout))
-            }
-        } actions: {
-            if filter == .readingList {
-                Button("Inspire Me") {
-                    onDiscover()
-                }
-                .font(.nunito(.subheadline, weight: .semibold))
-                #if os(iOS)
-                .buttonStyle(.glassProminent)
-                #else
-                .buttonStyle(.borderedProminent)
-                #endif
-                .tint(.purple)
-            }
+            .frame(maxWidth: 320)
+            .padding(.horizontal, 24)
+
+            Spacer()
         }
         .task {
             guard shouldAnimateCopy, !hasConsumedLaunchAnimation else { return }
             hasConsumedLaunchAnimation = true
             onCopyAnimationConsumed()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.paperCream)
         .onDisappear {
             shouldAnimateCopy = false
         }

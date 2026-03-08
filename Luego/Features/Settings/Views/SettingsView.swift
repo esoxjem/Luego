@@ -52,9 +52,12 @@ struct SettingsView: View {
                 } footer: {
                     Text("Tools for monitoring and debugging.")
                 }
+                .listRowBackground(Color.paperCream)
 
                 AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.paperCream)
             .navigationTitle("Settings")
             #if os(iOS)
             .toolbar {
@@ -82,7 +85,7 @@ struct IOSSettingsRow<TitleAccessory: View, Trailing: View>: View {
     let subtitle: String
     let systemImage: String
     var showsIcon: Bool = true
-    var iconColor: Color = .accentColor
+    var iconColor: Color = .secondary
     @ViewBuilder var titleAccessory: TitleAccessory
     @ViewBuilder var trailing: Trailing
 
@@ -122,7 +125,7 @@ extension IOSSettingsRow where TitleAccessory == EmptyView {
         subtitle: String,
         systemImage: String,
         showsIcon: Bool = true,
-        iconColor: Color = .accentColor,
+        iconColor: Color = .secondary,
         @ViewBuilder trailing: () -> Trailing
     ) {
         self.title = title
@@ -156,7 +159,7 @@ struct IOSDiscoverySourceRow: View {
             } trailing: {
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
                 }
             }
@@ -180,6 +183,7 @@ struct DiscoverySettingsSection: View {
         } footer: {
             Text("Choose a source for finding new articles.")
         }
+        .listRowBackground(Color.paperCream)
     }
 }
 
@@ -289,6 +293,7 @@ struct RefreshArticlePoolSection: View {
         } footer: {
             Text("Clears the cached article pool and fetches fresh articles on next discovery.")
         }
+        .listRowBackground(Color.paperCream)
     }
 }
 
@@ -315,6 +320,7 @@ struct SDKUpdateSection: View {
         } footer: {
             Text("Downloads the latest parsing rules and parser if available.")
         }
+        .listRowBackground(Color.paperCream)
     }
 }
 
@@ -386,6 +392,7 @@ struct SyncStatusSection: View {
         } footer: {
             Text("Articles sync automatically across your devices via iCloud.")
         }
+        .listRowBackground(Color.paperCream)
     }
 }
 
@@ -408,11 +415,11 @@ struct AppVersionSection: View {
                 if let sdkVersion = sdkVersionString {
                     Text(sdkVersion)
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                    .foregroundStyle(.tertiary)
                 }
             }
             .frame(maxWidth: .infinity)
-            .listRowBackground(Color.clear)
+            .listRowBackground(Color.paperCream)
         }
     }
 }
@@ -654,15 +661,7 @@ struct SettingsMacLayout: View {
 struct SettingsMacBackground: View {
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(nsColor: .windowBackgroundColor),
-                    Color(nsColor: .windowBackgroundColor).opacity(0.85),
-                    Color(nsColor: .controlBackgroundColor)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.paperCream
             SettingsMeshBackdrop()
         }
         .ignoresSafeArea()

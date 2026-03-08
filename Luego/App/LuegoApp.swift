@@ -9,6 +9,10 @@ import SwiftUI
 import SwiftData
 import CloudKit
 
+#if os(iOS)
+import UIKit
+#endif
+
 @main
 struct LuegoApp: App {
     let sharedModelContainer: ModelContainer
@@ -19,6 +23,7 @@ struct LuegoApp: App {
 
     init() {
         AppTypography.registerFonts()
+        Self.configurePlatformAppearance()
 
         let schema = Schema([
             Article.self,
@@ -73,6 +78,32 @@ struct LuegoApp: App {
             }
             #endif
         }
+        #endif
+    }
+}
+
+private extension LuegoApp {
+    static func configurePlatformAppearance() {
+        #if os(iOS)
+        let backgroundColor = UIColor(red: 250 / 255, green: 248 / 255, blue: 241 / 255, alpha: 1)
+
+        let navigationBarAppearance = UINavigationBarAppearance()
+        navigationBarAppearance.configureWithOpaqueBackground()
+        navigationBarAppearance.backgroundColor = backgroundColor
+        navigationBarAppearance.shadowColor = .clear
+        navigationBarAppearance.largeTitleTextAttributes = [.font: UIFont.lora(forTextStyle: .largeTitle)]
+
+        UINavigationBar.appearance().standardAppearance = navigationBarAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navigationBarAppearance
+        UINavigationBar.appearance().compactAppearance = navigationBarAppearance
+
+        let tabBarAppearance = UITabBarAppearance()
+        tabBarAppearance.configureWithOpaqueBackground()
+        tabBarAppearance.backgroundColor = backgroundColor
+        tabBarAppearance.shadowColor = .clear
+
+        UITabBar.appearance().standardAppearance = tabBarAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
         #endif
     }
 }

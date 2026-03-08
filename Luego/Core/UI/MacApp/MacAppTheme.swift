@@ -4,15 +4,7 @@ import SwiftUI
 struct MacAppBackground: View {
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(nsColor: .windowBackgroundColor),
-                    Color(nsColor: .windowBackgroundColor).opacity(0.85),
-                    Color(nsColor: .controlBackgroundColor)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.paperCream
             MacAppMeshBackdrop()
         }
         .ignoresSafeArea()
