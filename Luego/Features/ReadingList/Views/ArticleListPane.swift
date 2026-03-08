@@ -5,6 +5,8 @@ struct ArticleListPane: View {
     let filter: ArticleFilter
     @Binding var selectedArticle: Article?
     let onDiscover: () -> Void
+    let shouldAnimateEmptyStateOnFirstAppearance: Bool
+    let onEmptyStateAnimationConsumed: () -> Void
     @Environment(\.diContainer) private var diContainer
     @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
     @State private var viewModel: ArticleListViewModel?
@@ -19,7 +21,12 @@ struct ArticleListPane: View {
         Group {
             if let viewModel {
                 if filteredArticles.isEmpty {
-                    ArticleListEmptyState(onDiscover: onDiscover, filter: filter)
+                    ArticleListEmptyState(
+                        onDiscover: onDiscover,
+                        filter: filter,
+                        shouldAnimateCopyOnFirstAppearance: filter == .readingList && shouldAnimateEmptyStateOnFirstAppearance,
+                        onCopyAnimationConsumed: onEmptyStateAnimationConsumed
+                    )
                 } else {
                     SelectableArticleList(
                         articles: filteredArticles,

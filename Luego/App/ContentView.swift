@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var selectedFilter: ArticleFilter = .readingList
     @State private var selectedArticle: Article?
     @State private var selectedTab = 0
+    @State private var shouldAnimateHomeEmptyStateOnLaunch = true
 
     #if os(macOS)
     @AppStorage("streaming_logs_enabled") private var streamingLogsEnabled = false
@@ -70,7 +71,9 @@ struct ContentView: View {
                 ArticleListPane(
                     filter: selectedFilter,
                     selectedArticle: $selectedArticle,
-                    onDiscover: { selectedFilter = .discovery }
+                    onDiscover: { selectedFilter = .discovery },
+                    shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateHomeEmptyStateOnLaunch,
+                    onEmptyStateAnimationConsumed: { shouldAnimateHomeEmptyStateOnLaunch = false }
                 )
                 .navigationSplitViewColumnWidth(min: 300, ideal: 320, max: 400)
             } detail: {
@@ -84,7 +87,11 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             Tab("", systemImage: "list.bullet", value: 0) {
                 NavigationStack {
-                    ArticleListView(filter: .readingList)
+                    ArticleListView(
+                        filter: .readingList,
+                        shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateHomeEmptyStateOnLaunch,
+                        onEmptyStateAnimationConsumed: { shouldAnimateHomeEmptyStateOnLaunch = false }
+                    )
                 }
             }
 

@@ -22,9 +22,21 @@ struct ArticleListView: View {
     @State private var showingDiscovery = false
     @State private var showingSettings = false
     let filter: ArticleFilter
+    let shouldAnimateEmptyStateOnFirstAppearance: Bool
+    let onEmptyStateAnimationConsumed: () -> Void
 
     private var filteredArticles: [Article] {
         filter.filtered(allArticles)
+    }
+
+    init(
+        filter: ArticleFilter,
+        shouldAnimateEmptyStateOnFirstAppearance: Bool = false,
+        onEmptyStateAnimationConsumed: @escaping () -> Void = {}
+    ) {
+        self.filter = filter
+        self.shouldAnimateEmptyStateOnFirstAppearance = shouldAnimateEmptyStateOnFirstAppearance
+        self.onEmptyStateAnimationConsumed = onEmptyStateAnimationConsumed
     }
 
     var body: some View {
@@ -33,7 +45,9 @@ struct ArticleListView: View {
             viewModel: viewModel,
             diContainer: diContainer,
             filter: filter,
-            onDiscover: { showingDiscovery = true }
+            onDiscover: { showingDiscovery = true },
+            shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateEmptyStateOnFirstAppearance,
+            onEmptyStateAnimationConsumed: onEmptyStateAnimationConsumed
         )
         .navigationTitle(filter.title)
         #if os(iOS)
@@ -141,12 +155,19 @@ struct ArticleListContent: View {
     let diContainer: DIContainer?
     let filter: ArticleFilter
     let onDiscover: () -> Void
+    let shouldAnimateEmptyStateOnFirstAppearance: Bool
+    let onEmptyStateAnimationConsumed: () -> Void
 
     var body: some View {
         Group {
             if let viewModel {
                 if articles.isEmpty {
-                    ArticleListEmptyState(onDiscover: onDiscover, filter: filter)
+                    ArticleListEmptyState(
+                        onDiscover: onDiscover,
+                        filter: filter,
+                        shouldAnimateCopyOnFirstAppearance: filter == .readingList && shouldAnimateEmptyStateOnFirstAppearance,
+                        onCopyAnimationConsumed: onEmptyStateAnimationConsumed
+                    )
                 } else {
                     ArticleList(articles: articles, viewModel: viewModel, diContainer: diContainer, filter: filter)
                 }
@@ -203,6 +224,22 @@ struct ArticleReaderDestination: View {
 struct ArticleListEmptyState: View {
     let onDiscover: () -> Void
     let filter: ArticleFilter
+    let onCopyAnimationConsumed: () -> Void
+
+    @State private var shouldAnimateCopy: Bool
+    @State private var hasConsumedLaunchAnimation = false
+
+    init(
+        onDiscover: @escaping () -> Void,
+        filter: ArticleFilter,
+        shouldAnimateCopyOnFirstAppearance: Bool = false,
+        onCopyAnimationConsumed: @escaping () -> Void = {}
+    ) {
+        self.onDiscover = onDiscover
+        self.filter = filter
+        self.onCopyAnimationConsumed = onCopyAnimationConsumed
+        _shouldAnimateCopy = State(initialValue: shouldAnimateCopyOnFirstAppearance)
+    }
 
     @ViewBuilder
     private var artwork: some View {
@@ -223,7 +260,10 @@ struct ArticleListEmptyState: View {
             VStack(spacing: 8) {
                 artwork
                 if filter.emptyStateNarrativeLines != nil {
-                    AnimatedEmptyStateTitle(text: filter.emptyStateTitle)
+                    AnimatedEmptyStateTitle(
+                        text: filter.emptyStateTitle,
+                        animateOnAppear: shouldAnimateCopy
+                    )
                 } else {
                     Text(filter.emptyStateTitle)
                         .font(.lora(.title2))
@@ -231,7 +271,10 @@ struct ArticleListEmptyState: View {
             }
         } description: {
             if let narrativeLines = filter.emptyStateNarrativeLines {
-                AnimatedNarrativeText(lines: narrativeLines)
+                AnimatedNarrativeText(
+                    lines: narrativeLines,
+                    animateOnAppear: shouldAnimateCopy
+                )
             } else {
                 Text(filter.emptyStateDescription)
                     .font(.nunito(.callout))
@@ -249,21 +292,34 @@ struct ArticleListEmptyState: View {
                 .tint(.purple)
             }
         }
+        .task {
+            guard shouldAnimateCopy, !hasConsumedLaunchAnimation else { return }
+            hasConsumedLaunchAnimation = true
+            onCopyAnimationConsumed()
+        }
+        .onDisappear {
+            shouldAnimateCopy = false
+        }
     }
 }
 
 struct AnimatedEmptyStateTitle: View {
     let text: String
+    let animateOnAppear: Bool
 
     @State private var isTitleVisible = false
 
     var body: some View {
         Text(text)
             .font(.lora(.title2))
-            .opacity(isTitleVisible ? 1 : 0)
-            .offset(y: isTitleVisible ? 0 : 8)
-            .animation(.easeOut(duration: 0.7), value: isTitleVisible)
+            .opacity(animateOnAppear ? (isTitleVisible ? 1 : 0) : 1)
+            .offset(y: animateOnAppear ? (isTitleVisible ? 0 : 8) : 0)
+            .animation(animateOnAppear ? .easeOut(duration: 0.7) : nil, value: isTitleVisible)
             .task(id: text) {
+                guard animateOnAppear else {
+                    isTitleVisible = true
+                    return
+                }
                 isTitleVisible = false
                 try? await Task.sleep(for: .milliseconds(300))
                 isTitleVisible = true
@@ -273,6 +329,7 @@ struct AnimatedEmptyStateTitle: View {
 
 struct AnimatedNarrativeText: View {
     let lines: [String]
+    let animateOnAppear: Bool
 
     @State private var visibleLineIndices: Set<Int> = []
 
@@ -281,10 +338,10 @@ struct AnimatedNarrativeText: View {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 Text(line)
                     .font(.nunito(.callout))
-                    .opacity(visibleLineIndices.contains(index) ? 1 : 0)
-                    .offset(y: visibleLineIndices.contains(index) ? 0 : 8)
+                    .opacity(animateOnAppear ? (visibleLineIndices.contains(index) ? 1 : 0) : 1)
+                    .offset(y: animateOnAppear ? (visibleLineIndices.contains(index) ? 0 : 8) : 0)
                     .animation(
-                        .easeOut(duration: 0.7).delay(Double(index) * 0.35),
+                        animateOnAppear ? .easeOut(duration: 0.7).delay(Double(index) * 0.35) : nil,
                         value: visibleLineIndices
                     )
                     .frame(maxWidth: .infinity)
@@ -293,6 +350,10 @@ struct AnimatedNarrativeText: View {
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
         .task(id: lines) {
+            guard animateOnAppear else {
+                visibleLineIndices = Set(lines.indices)
+                return
+            }
             visibleLineIndices = []
 
             try? await Task.sleep(for: .milliseconds(620))
