@@ -427,7 +427,7 @@ private struct MacAddArticleSheet: View {
     var body: some View {
         AddArticleView(viewModel: viewModel, existingArticles: allArticles)
             .accessibilityIdentifier("addArticle.container")
-            .frame(minWidth: 480, idealWidth: 520, minHeight: 260, idealHeight: 320)
+            .frame(minWidth: 460, idealWidth: 520, minHeight: 300, idealHeight: 340)
     }
 }
 #endif

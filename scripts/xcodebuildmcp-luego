@@ -5,15 +5,23 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 project_path="$project_root/Luego.xcodeproj"
 scheme="Luego"
 mac_app_name="Luego"
+default_configuration="Debug"
+debug_bundle_id="com.esoxjem.Luego.dev"
+beta_bundle_id="com.esoxjem.Luego.beta"
+release_bundle_id="com.esoxjem.Luego"
 iphone_simulator="iPhone 17"
 ipad_simulator="iPad Pro 13-inch (M4) (16GB)"
 
 raw_args=("$@")
 args=()
 simulator_name=""
+simulator_id=""
+configuration=""
+bundle_id=""
 workflow=""
 tool=""
 non_flag_count=0
+skip_runtime_stop=false
 
 has_flag() {
   local flag="$1"
@@ -25,6 +33,36 @@ has_flag() {
     fi
   done
   return 1
+}
+
+flag_value() {
+  local flag="$1"
+  shift
+  local previous=""
+  local arg
+  for arg in "$@"; do
+    if [[ "$previous" == "$flag" ]]; then
+      printf '%s\n' "$arg"
+      return 0
+    fi
+    previous="$arg"
+  done
+  return 1
+}
+
+default_bundle_id_for_configuration() {
+  local requested_configuration="$1"
+  case "$requested_configuration" in
+    Release)
+      printf '%s\n' "$release_bundle_id"
+      ;;
+    Beta)
+      printf '%s\n' "$beta_bundle_id"
+      ;;
+    *)
+      printf '%s\n' "$debug_bundle_id"
+      ;;
+  esac
 }
 
 for arg in "${raw_args[@]}"; do
@@ -48,6 +86,14 @@ for arg in "${raw_args[@]}"; do
       ;;
   esac
 done
+
+if has_flag --help "${raw_args[@]}" || has_flag -h "${raw_args[@]}" || has_flag --version "${raw_args[@]}" || has_flag -v "${raw_args[@]}"; then
+  skip_runtime_stop=true
+fi
+
+configuration="$(flag_value --configuration "${args[@]}" || true)"
+bundle_id="$(flag_value --bundle-id "${args[@]}" || true)"
+simulator_id="$(flag_value --simulator-id "${args[@]}" || true)"
 
 if [[ -z "$workflow" || -z "$tool" ]]; then
   exec xcodebuildmcp "${args[@]}"
@@ -75,7 +121,29 @@ if [[ "$workflow" == "simulator" ]] && supports_flag "--simulator-name" && ! has
   args+=("--simulator-name" "$simulator_name")
 fi
 
-if [[ "$workflow" == "macos" && ( "$tool" == "build-and-run" || "$tool" == "launch" ) ]]; then
+if [[ -z "$configuration" ]]; then
+  configuration="$default_configuration"
+fi
+
+if [[ -z "$bundle_id" ]]; then
+  bundle_id="$(default_bundle_id_for_configuration "$configuration")"
+fi
+
+if [[ "$skip_runtime_stop" == false && "$workflow" == "simulator" && ( "$tool" == "build-and-run" || "$tool" == "launch-app" || "$tool" == "launch-app-with-logs" ) ]]; then
+  stop_args=(simulator stop --bundle-id "$bundle_id")
+
+  if [[ -n "$simulator_id" ]]; then
+    stop_args+=(--simulator-id "$simulator_id")
+  elif [[ -n "$simulator_name" ]]; then
+    stop_args+=(--simulator-name "$simulator_name")
+  else
+    stop_args+=(--simulator-name "$iphone_simulator")
+  fi
+
+  xcodebuildmcp "${stop_args[@]}" >/dev/null 2>&1 || true
+fi
+
+if [[ "$skip_runtime_stop" == false && "$workflow" == "macos" && ( "$tool" == "build-and-run" || "$tool" == "launch" ) ]]; then
   xcodebuildmcp macos stop --app-name "$mac_app_name" >/dev/null 2>&1 || true
 fi
 
