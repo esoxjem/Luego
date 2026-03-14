@@ -38,6 +38,9 @@ extension View {
         self
             .toolbarBackground(Color.regularPanelBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+        #elseif os(macOS)
+        self
+            .toolbar(removing: .sidebarToggle)
         #else
         self
         #endif

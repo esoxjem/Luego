@@ -28,7 +28,7 @@ struct StreamingLogsView: View {
 
             StreamingLogsContent(entries: filteredEntries)
         }
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(Color.regularPanelBackground)
     }
 }
 
@@ -96,7 +96,7 @@ struct StreamingLogsHeader: View {
                 )
             }
         }
-        .background(.bar)
+        .background(Color.regularPanelBackground)
     }
 
     private func copyAllLogs() {
@@ -160,10 +160,10 @@ struct FilterChip: View {
                 .background(
                     Capsule()
                         .fill(isSelected
-                              ? Color.accentColor.opacity(0.2)
+                              ? Color.regularSelectionFill
                               : Color(nsColor: .separatorColor).opacity(0.15))
                 )
-                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                .foregroundStyle(isSelected ? Color.regularSelectionInk : .secondary)
         }
         .buttonStyle(.plain)
     }

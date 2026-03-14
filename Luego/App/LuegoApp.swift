@@ -69,6 +69,8 @@ struct LuegoApp: App {
             .modelContainer(sharedModelContainer)
         }
         .commands {
+            CommandGroup(replacing: .sidebar) {
+            }
             #if !DEBUG
             CommandGroup(after: .appInfo) {
                 Divider()

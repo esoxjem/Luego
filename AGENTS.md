@@ -40,6 +40,7 @@
 
 ## Testing Rules
 - Framework: Swift Testing (`@Suite`, `@Test`, `#expect`).
+- Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI (via `scripts/xcodebuildmcp-luego` when working in this repo) for builds and tests.
 - Mirror production structure in tests.
 - Prefer deterministic unit tests over broad integration tests unless behavior spans layers.
 - Reuse or extend mocks in `LuegoTests/TestSupport/Mocks/`.

@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+project_path="$project_root/Luego.xcodeproj"
+scheme="Luego"
+mac_app_name="Luego"
+iphone_simulator="iPhone 17"
+ipad_simulator="iPad Pro 13-inch (M4) (16GB)"
+
+raw_args=("$@")
+args=()
+simulator_name=""
+workflow=""
+tool=""
+non_flag_count=0
+
+has_flag() {
+  local flag="$1"
+  shift
+  local arg
+  for arg in "$@"; do
+    if [[ "$arg" == "$flag" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+for arg in "${raw_args[@]}"; do
+  case "$arg" in
+    --iphone)
+      simulator_name="$iphone_simulator"
+      ;;
+    --ipad)
+      simulator_name="$ipad_simulator"
+      ;;
+    *)
+      args+=("$arg")
+      if [[ "$arg" != -* ]]; then
+        non_flag_count=$((non_flag_count + 1))
+        if [[ $non_flag_count -eq 1 ]]; then
+          workflow="$arg"
+        elif [[ $non_flag_count -eq 2 ]]; then
+          tool="$arg"
+        fi
+      fi
+      ;;
+  esac
+done
+
+if [[ -z "$workflow" || -z "$tool" ]]; then
+  exec xcodebuildmcp "${args[@]}"
+fi
+
+help_text="$(xcodebuildmcp "$workflow" "$tool" --help 2>&1 || true)"
+
+supports_flag() {
+  local flag="$1"
+  [[ "$help_text" == *"$flag"* ]]
+}
+
+if supports_flag "--project-path" && ! has_flag "--project-path" "${args[@]}" && ! has_flag "--workspace-path" "${args[@]}"; then
+  args+=("--project-path" "$project_path")
+fi
+
+if supports_flag "--scheme" && ! has_flag "--scheme" "${args[@]}"; then
+  args+=("--scheme" "$scheme")
+fi
+
+if [[ "$workflow" == "simulator" ]] && supports_flag "--simulator-name" && ! has_flag "--simulator-name" "${args[@]}" && ! has_flag "--simulator-id" "${args[@]}"; then
+  if [[ -z "$simulator_name" ]]; then
+    simulator_name="$iphone_simulator"
+  fi
+  args+=("--simulator-name" "$simulator_name")
+fi
+
+if [[ "$workflow" == "macos" && ( "$tool" == "build-and-run" || "$tool" == "launch" ) ]]; then
+  xcodebuildmcp macos stop --app-name "$mac_app_name" >/dev/null 2>&1 || true
+fi
+
+exec xcodebuildmcp "${args[@]}"

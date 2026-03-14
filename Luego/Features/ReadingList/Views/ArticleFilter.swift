@@ -65,7 +65,7 @@ enum ArticleFilter: CaseIterable, Hashable {
         case .readingList: .gray
         case .favorites: .pink
         case .archived: .blue
-        case .discovery: .purple
+        case .discovery: .regularSelectionInk
         }
     }
 

@@ -217,7 +217,7 @@ struct DiscoverySourceRow: View {
 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(Color.regularSelectionInk)
                         .fontWeight(.semibold)
                 }
             }
@@ -649,6 +649,7 @@ struct SettingsMacLayout: View {
         }
         .background(SettingsMacBackground())
         .navigationTitle("Settings")
+        .tint(Color.regularSelectionInk)
         .alert(
             viewModel.updateAlertTitle,
             isPresented: $viewModel.showUpdateAlert
@@ -664,34 +665,9 @@ struct SettingsMacBackground: View {
     var body: some View {
         ZStack {
             Color.paperCream
-            SettingsMeshBackdrop()
+            MacAppMeshBackdrop()
         }
         .ignoresSafeArea()
-    }
-}
-
-struct SettingsMeshBackdrop: View {
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(LinearGradient(colors: [Color.accentColor.opacity(0.15), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 420, height: 420)
-                .blur(radius: 30)
-                .offset(x: -180, y: -220)
-
-            Circle()
-                .fill(LinearGradient(colors: [Color.blue.opacity(0.12), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 360, height: 360)
-                .blur(radius: 40)
-                .offset(x: 220, y: -120)
-
-            Circle()
-                .fill(LinearGradient(colors: [Color.mint.opacity(0.12), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 380, height: 380)
-                .blur(radius: 50)
-                .offset(x: 40, y: 260)
-        }
-        .allowsHitTesting(false)
     }
 }
 

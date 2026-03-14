@@ -47,6 +47,7 @@ struct ArticleListPane: View {
         .background(MacAppBackground())
         #endif
         .navigationTitle(filter.title)
+        #if !os(macOS)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if filter == .readingList {
@@ -69,11 +70,14 @@ struct ArticleListPane: View {
                 #endif
             }
         }
+        #endif
+        #if !os(macOS)
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
                 AddArticleView(viewModel: viewModel, existingArticles: allArticles)
             }
         }
+        #endif
         .sheet(isPresented: $showingSettings) {
             if let container = diContainer {
                 NavigationStack {
@@ -134,7 +138,7 @@ struct SelectableArticleList: View {
             }
         }
         #if os(macOS)
-        .listStyle(.inset)
+        .listStyle(.plain)
         #endif
         .scrollContentBackground(.hidden)
         .background(Color.regularPanelBackground)
@@ -143,7 +147,7 @@ struct SelectableArticleList: View {
     private func selectionBackground(isSelected: Bool) -> some View {
         RoundedRectangle(cornerRadius: 20, style: .continuous)
             .fill(isSelected ? Color.regularSelectionFill : Color.clear)
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 4)
             .padding(.vertical, 3)
     }
 
