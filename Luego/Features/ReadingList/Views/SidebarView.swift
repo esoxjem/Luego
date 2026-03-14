@@ -345,6 +345,7 @@ private struct MacSidebarActionButton: View {
         .buttonStyle(.plain)
         .help(title)
         .accessibilityLabel(title)
+        .accessibilityIdentifier("sidebar.action.addArticle")
         .onHover { hovered in
             withAnimation(.easeOut(duration: 0.16)) {
                 isHovered = hovered
@@ -407,6 +408,7 @@ struct SidebarSettingsButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Settings")
+        .accessibilityIdentifier("sidebar.action.settings")
         .help("Settings (⌘,)\n\(syncHelp)")
     }
 }

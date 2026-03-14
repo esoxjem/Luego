@@ -11,6 +11,7 @@ struct AddArticleView: View {
             Form {
                 Section {
                     TextField("Enter URL", text: $urlText)
+                        .accessibilityIdentifier("addArticle.urlField")
                         .textContentType(.URL)
                         #if os(iOS)
                         .keyboardType(.URL)
@@ -35,6 +36,7 @@ struct AddArticleView: View {
                 }
             }
             .navigationTitle("Add Article")
+            .accessibilityIdentifier("addArticle.sheet")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -43,6 +45,7 @@ struct AddArticleView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .accessibilityIdentifier("addArticle.cancel")
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -55,6 +58,7 @@ struct AddArticleView: View {
                             }
                         }
                     }
+                    .accessibilityIdentifier("addArticle.save")
                     .disabled(urlText.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading)
                 }
             }

@@ -18,8 +18,7 @@ struct ContentView: View {
     @State private var shouldAnimateHomeEmptyStateOnLaunch = true
 
     #if os(macOS)
-    @State private var showingAddArticle = false
-    @State private var addArticleViewModel: ArticleListViewModel?
+    @State private var addArticleSheet: MacAddArticleSheetState?
     @AppStorage("streaming_logs_enabled") private var streamingLogsEnabled = false
     @AppStorage("mac_article_list_column_width") private var storedArticleListColumnWidth = 300.0
     @State private var articleListDragStartWidth: Double?
@@ -54,10 +53,8 @@ struct ContentView: View {
         #if os(macOS)
         root
             .font(.nunito(.body))
-            .sheet(isPresented: $showingAddArticle, onDismiss: { addArticleViewModel = nil }) {
-                if let addArticleViewModel {
-                    MacAddArticleSheet(viewModel: addArticleViewModel)
-                }
+            .sheet(item: $addArticleSheet) { addArticleSheet in
+                MacAddArticleSheet(viewModel: addArticleSheet.viewModel)
             }
         #else
         root
@@ -145,8 +142,7 @@ struct ContentView: View {
 
     private func presentAddArticleSheet() {
         guard let container = diContainer else { return }
-        addArticleViewModel = container.makeArticleListViewModel()
-        showingAddArticle = true
+        addArticleSheet = MacAddArticleSheetState(viewModel: container.makeArticleListViewModel())
     }
 
     private func articleListColumnWidth(for totalWidth: CGFloat) -> CGFloat {
@@ -419,12 +415,19 @@ struct ContentView: View {
 }
 
 #if os(macOS)
+private struct MacAddArticleSheetState: Identifiable {
+    let id = UUID()
+    let viewModel: ArticleListViewModel
+}
+
 private struct MacAddArticleSheet: View {
     let viewModel: ArticleListViewModel
     @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
 
     var body: some View {
         AddArticleView(viewModel: viewModel, existingArticles: allArticles)
+            .accessibilityIdentifier("addArticle.container")
+            .frame(minWidth: 480, idealWidth: 520, minHeight: 260, idealHeight: 320)
     }
 }
 #endif
