@@ -9,7 +9,20 @@ import UIKit
 
 class ShareViewController: UIViewController, UIAdaptivePresentationControllerDelegate {
 
+    private enum SharedItemKind {
+        case url
+        case text
+    }
+
+    private struct SharedItemCandidate {
+        let provider: NSItemProvider
+        let kind: SharedItemKind
+    }
+
     private let successView = SuccessView()
+    private var pendingCandidates: [SharedItemCandidate] = []
+    private var nextCandidateIndex = 0
+    private var lastProcessingError: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -49,21 +62,79 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
             return
         }
 
-        for item in inputItems {
-            guard let attachments = item.attachments else { continue }
+        pendingCandidates = sharedItemCandidates(from: inputItems)
+        nextCandidateIndex = 0
+        lastProcessingError = nil
 
-            for provider in attachments {
-                if provider.hasItemConformingToTypeIdentifier("public.url") {
-                    handleURLProvider(provider)
-                    return
-                } else if provider.hasItemConformingToTypeIdentifier("public.plain-text") {
-                    handleTextProvider(provider)
-                    return
-                }
-            }
+        guard !pendingCandidates.isEmpty else {
+            completeWithError(message: "No URL found")
+            return
         }
 
-        completeWithError(message: "No URL found")
+        processNextCandidate()
+    }
+
+    private func sharedItemCandidates(from inputItems: [NSExtensionItem]) -> [SharedItemCandidate] {
+        inputItems.flatMap { item in
+            (item.attachments ?? []).compactMap { provider in
+                if provider.hasItemConformingToTypeIdentifier("public.url") {
+                    return SharedItemCandidate(provider: provider, kind: .url)
+                }
+                if provider.hasItemConformingToTypeIdentifier("public.plain-text") {
+                    return SharedItemCandidate(provider: provider, kind: .text)
+                }
+                return nil
+            }
+        }
+    }
+
+    private func processNextCandidate() {
+        guard nextCandidateIndex < pendingCandidates.count else {
+            completeWithError(message: lastProcessingError ?? "No URL found")
+            return
+        }
+
+        let candidate = pendingCandidates[nextCandidateIndex]
+        nextCandidateIndex += 1
+
+        switch candidate.kind {
+        case .url:
+            handleURLProvider(candidate.provider)
+        case .text:
+            handleTextProvider(candidate.provider)
+        }
+    }
+
+    private func finishProcessingCandidate(url: URL?, errorMessage: String?) {
+        if let url {
+            saveURL(url)
+            return
+        }
+
+        if let errorMessage {
+            lastProcessingError = errorMessage
+        }
+
+        processNextCandidate()
+    }
+
+    nonisolated private static func isSupportedWebURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else {
+            return false
+        }
+
+        return scheme == "http" || scheme == "https"
+    }
+
+    nonisolated private static func extractURL(from text: String) -> URL? {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return nil
+        }
+
+        let range = NSRange(text.startIndex..., in: text)
+        return detector.matches(in: text, options: [], range: range)
+            .compactMap(\.url)
+            .first(where: Self.isSupportedWebURL)
     }
 
     private func handleURLProvider(_ provider: NSItemProvider) {
@@ -75,7 +146,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
                 extractedURL = nil
                 errorMessage = "Failed to load URL: \(error.localizedDescription)"
             } else if let url = item as? URL {
-                if url.scheme == "http" || url.scheme == "https" {
+                if Self.isSupportedWebURL(url) {
                     extractedURL = url
                     errorMessage = nil
                 } else {
@@ -83,7 +154,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
                     errorMessage = "Only web URLs are supported"
                 }
             } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
-                if url.scheme == "http" || url.scheme == "https" {
+                if Self.isSupportedWebURL(url) {
                     extractedURL = url
                     errorMessage = nil
                 } else {
@@ -97,11 +168,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
 
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                if let url = extractedURL {
-                    self.saveURL(url)
-                } else {
-                    self.completeWithError(message: errorMessage ?? "Unknown error")
-                }
+                self.finishProcessingCandidate(url: extractedURL, errorMessage: errorMessage ?? "Unknown error")
             }
         }
     }
@@ -114,7 +181,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
             if let error {
                 extractedURL = nil
                 errorMessage = "Failed to load text: \(error.localizedDescription)"
-            } else if let text = item as? String, let url = URL(string: text), url.scheme == "http" || url.scheme == "https" {
+            } else if let text = item as? String, let url = Self.extractURL(from: text) {
                 extractedURL = url
                 errorMessage = nil
             } else {
@@ -124,11 +191,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
 
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                if let url = extractedURL {
-                    self.saveURL(url)
-                } else {
-                    self.completeWithError(message: errorMessage ?? "Unknown error")
-                }
+                self.finishProcessingCandidate(url: extractedURL, errorMessage: errorMessage ?? "Unknown error")
             }
         }
     }
