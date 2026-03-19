@@ -118,25 +118,6 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
         processNextCandidate()
     }
 
-    nonisolated private static func isSupportedWebURL(_ url: URL) -> Bool {
-        guard let scheme = url.scheme?.lowercased() else {
-            return false
-        }
-
-        return scheme == "http" || scheme == "https"
-    }
-
-    nonisolated private static func extractURL(from text: String) -> URL? {
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
-            return nil
-        }
-
-        let range = NSRange(text.startIndex..., in: text)
-        return detector.matches(in: text, options: [], range: range)
-            .compactMap(\.url)
-            .first(where: Self.isSupportedWebURL)
-    }
-
     private func handleURLProvider(_ provider: NSItemProvider) {
         provider.loadItem(forTypeIdentifier: "public.url", options: nil) { @Sendable [weak self] (item, error) in
             let extractedURL: URL?
@@ -146,7 +127,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
                 extractedURL = nil
                 errorMessage = "Failed to load URL: \(error.localizedDescription)"
             } else if let url = item as? URL {
-                if Self.isSupportedWebURL(url) {
+                if SharedTextURLExtractor.isSupportedWebURL(url) {
                     extractedURL = url
                     errorMessage = nil
                 } else {
@@ -154,7 +135,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
                     errorMessage = "Only web URLs are supported"
                 }
             } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
-                if Self.isSupportedWebURL(url) {
+                if SharedTextURLExtractor.isSupportedWebURL(url) {
                     extractedURL = url
                     errorMessage = nil
                 } else {
@@ -181,7 +162,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
             if let error {
                 extractedURL = nil
                 errorMessage = "Failed to load text: \(error.localizedDescription)"
-            } else if let text = item as? String, let url = Self.extractURL(from: text) {
+            } else if let text = item as? String, let url = SharedTextURLExtractor.extractFirstSupportedWebURL(from: text) {
                 extractedURL = url
                 errorMessage = nil
             } else {

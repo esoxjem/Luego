@@ -196,6 +196,40 @@ struct DiscoverySourceRow: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
+        #if os(macOS)
+        Button(action: onTap) {
+            SettingsControlSurface(isSelected: isSelected) {
+                HStack(spacing: 14) {
+                    SettingsRowGlyph(symbolName: "safari", isSelected: isSelected)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 6) {
+                            Text(source.displayName)
+                                .font(.nunito(.subheadline, weight: .semibold))
+                                .foregroundStyle(.primary)
+
+                            if let websiteURL = source.websiteURL {
+                                SourceWebsiteLinkButton(url: websiteURL, openURL: openURL)
+                            }
+                        }
+
+                        Text(source.descriptionText)
+                            .font(.nunito(.footnote))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.mascotPurpleInk)
+                    }
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        #else
         Button(action: onTap) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -224,6 +258,7 @@ struct DiscoverySourceRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        #endif
     }
 }
 
@@ -432,12 +467,13 @@ struct SettingsSectionHeader: View {
     let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.headline)
+                .font(.lora(.title3, weight: .semibold))
             Text(subtitle)
-                .font(.caption)
+                .font(.nunito(.footnote))
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: 420, alignment: .leading)
         }
         .textCase(nil)
     }
@@ -452,11 +488,15 @@ struct SettingsActionRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
+            SettingsRowGlyph(symbolName: systemImage, isSelected: showsCheckmark)
+
             VStack(alignment: .leading, spacing: 4) {
-                Label(title, systemImage: systemImage)
+                Text(title)
+                    .font(.nunito(.subheadline, weight: .semibold))
                     .foregroundStyle(.primary)
+
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.nunito(.footnote))
                     .foregroundStyle(.secondary)
             }
 
@@ -467,10 +507,13 @@ struct SettingsActionRow: View {
                     .controlSize(.small)
             } else if showsCheckmark {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.mascotPurpleInk)
+            } else {
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 6)
     }
 }
 
@@ -479,6 +522,7 @@ struct SyncStatusContent: View {
     let statusSymbolName: String
     let statusColor: Color
     let formattedTime: String?
+    let emphasizesGlyph: Bool
 
     private var accessibilityStatusValue: String {
         if let timeText = formattedTime {
@@ -488,22 +532,34 @@ struct SyncStatusContent: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Label("iCloud Sync", systemImage: "icloud")
-                    .labelStyle(.titleAndIcon)
+        SettingsControlSurface {
+            HStack(spacing: 14) {
+                SettingsRowGlyph(symbolName: "icloud", isSelected: emphasizesGlyph)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("iCloud Sync")
+                        .font(.nunito(.subheadline, weight: .semibold))
+                        .foregroundStyle(.primary)
+
+                    if let timeText = formattedTime {
+                        Text("Last synced at \(timeText)")
+                            .font(.nunito(.footnote))
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 Spacer()
 
-                Label(statusText, systemImage: statusSymbolName)
-                    .foregroundStyle(statusColor)
-                    .labelStyle(.titleOnly)
-            }
-
-            if let timeText = formattedTime {
-                Text("Last synced at \(timeText)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Image(systemName: statusSymbolName)
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(statusText)
+                        .font(.nunito(.footnote, weight: .semibold))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.trailing)
+                }
+                .frame(maxWidth: 180, alignment: .trailing)
+                .foregroundStyle(statusColor)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -570,7 +626,7 @@ struct SettingsMacLayout: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: 20) {
                 SettingsHero(state: state)
 
                 SettingsCard {
@@ -642,9 +698,9 @@ struct SettingsMacLayout: View {
 
                 AppVersionCard(sdkVersionString: viewModel.sdkVersionString)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 28)
-            .frame(maxWidth: 680)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 24)
+            .frame(maxWidth: 620)
             .frame(maxWidth: .infinity)
         }
         .background(SettingsMacBackground())
@@ -666,6 +722,21 @@ struct SettingsMacBackground: View {
         ZStack {
             Color.paperCream
             MacAppMeshBackdrop()
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.5),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 340, height: 340)
+                .blur(radius: 28)
+                .offset(x: 190, y: 120)
         }
         .ignoresSafeArea()
     }
@@ -687,26 +758,55 @@ struct SettingsHero: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                Text("Luego")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
+                SettingsHeroGlyph()
 
-                SettingsStatusBadge(state: state)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Luego")
+                        .font(.nunito(.subheadline, weight: .semibold))
+                        .foregroundStyle(Color.primary.opacity(0.58))
+
+                    HStack(alignment: .center, spacing: 10) {
+                        Text("Settings")
+                            .font(.lora(.title2, weight: .semibold))
+                            .foregroundStyle(.primary)
+
+                        SettingsStatusBadge(state: state)
+                    }
+
+                    Text(headline)
+                        .font(.lora(.title3, weight: .medium))
+                        .foregroundStyle(.primary)
+
+                    Text(subheadline)
+                        .font(.nunito(.body))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: 420, alignment: .leading)
+                }
             }
-
-            Text(headline)
-                .font(.largeTitle.weight(.semibold))
-                .foregroundStyle(.primary)
-
-            Text(subheadline)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: 420, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 6)
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.62),
+                            Color.regularOutline.opacity(0.95)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        }
+        .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 14)
     }
 }
 
@@ -717,32 +817,33 @@ struct SettingsCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 16) {
             content
         }
-        .padding(18)
+        .padding(22)
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(.ultraThinMaterial)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color(nsColor: .separatorColor).opacity(0.55),
-                            Color(nsColor: .separatorColor).opacity(0.18)
+                            Color.white.opacity(0.62),
+                            Color.regularOutline.opacity(0.9)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
-                    )
+                    ),
+                    lineWidth: 1
                 )
-        )
-        .shadow(color: Color.black.opacity(0.06), radius: 18, x: 0, y: 10)
+        }
+        .shadow(color: Color.black.opacity(0.07), radius: 22, x: 0, y: 14)
     }
 }
 
 struct SettingsCardDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color(nsColor: .separatorColor).opacity(0.35))
+            .fill(Color(nsColor: .separatorColor).opacity(0.22))
             .frame(height: 1)
     }
 }
@@ -778,17 +879,17 @@ struct SettingsStatusBadge: View {
 
     var body: some View {
         Label(badgeText, systemImage: badgeSymbol)
-            .font(.caption2.weight(.semibold))
+            .font(.nunito(.caption, weight: .semibold))
             .foregroundStyle(badgeColor)
             .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.vertical, 5)
             .background(
                 Capsule()
-                    .fill(badgeColor.opacity(0.16))
+                    .fill(badgeColor.opacity(0.12))
             )
             .overlay(
                 Capsule()
-                    .stroke(badgeColor.opacity(0.3))
+                    .stroke(badgeColor.opacity(0.24))
             )
     }
 }
@@ -800,20 +901,97 @@ struct SettingsCardActionButton<Label: View>: View {
 
     var body: some View {
         Button(action: action) {
-            label
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(nsColor: .separatorColor).opacity(0.4))
-                )
+            SettingsControlSurface {
+                label
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
+    }
+}
+
+struct SettingsControlSurface<Content: View>: View {
+    var isSelected = false
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content
+            .padding(.horizontal, 14)
+            .padding(.vertical, 13)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(backgroundStyle)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(borderColor, lineWidth: 1)
+            }
+    }
+
+    private var backgroundStyle: some ShapeStyle {
+        LinearGradient(
+            colors: isSelected
+                ? [Color.mascotPurple.opacity(0.28), Color.white.opacity(0.75)]
+                : [Color.white.opacity(0.82), Color.mascotPurple.opacity(0.12)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var borderColor: Color {
+        isSelected
+            ? Color.mascotPurpleInk.opacity(0.22)
+            : Color.regularOutline.opacity(0.65)
+    }
+}
+
+struct SettingsRowGlyph: View {
+    let symbolName: String
+    var isSelected = false
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: isSelected
+                            ? [Color.mascotPurple.opacity(0.92), Color.mascotPurpleInk.opacity(0.78)]
+                            : [Color.white.opacity(0.92), Color.mascotPurple.opacity(0.22)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Image(systemName: symbolName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(isSelected ? Color.white : Color.mascotPurpleInk)
+        }
+        .frame(width: 34, height: 34)
+    }
+}
+
+struct SettingsHeroGlyph: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.mascotPurple.opacity(0.92),
+                            Color.mascotPurpleInk.opacity(0.8)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.white)
+        }
+        .frame(width: 46, height: 46)
+        .shadow(color: Color.mascotPurpleInk.opacity(0.18), radius: 10, x: 0, y: 4)
     }
 }
 
@@ -822,7 +1000,7 @@ struct DiscoverySettingsCardContent: View {
     let onSourceChanged: (DiscoverySource) -> Void
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             ForEach(Array(DiscoverySource.allCases.enumerated()), id: \.element) { index, source in
                 DiscoverySourceRow(
                     source: source,
@@ -835,7 +1013,8 @@ struct DiscoverySettingsCardContent: View {
 
                 if index != DiscoverySource.allCases.count - 1 {
                     SettingsCardDivider()
-                        .opacity(0.7)
+                        .opacity(0.45)
+                        .padding(.horizontal, 6)
                 }
             }
         }
@@ -886,7 +1065,8 @@ struct SyncStatusCard: View {
                 statusText: statusText,
                 statusSymbolName: statusSymbolName,
                 statusColor: statusColor,
-                formattedTime: formattedTime
+                formattedTime: formattedTime,
+                emphasizesGlyph: state != .idle
             )
 
             ForceReSyncButton(
@@ -914,6 +1094,7 @@ struct AppVersionCard: View {
                 sdkVersionString: sdkVersionString
             )
         }
+        .opacity(0.88)
     }
 }
 
@@ -921,31 +1102,27 @@ struct StreamingLogsToggle: View {
     @AppStorage("streaming_logs_enabled") private var isEnabled = false
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Streaming Logs")
-                    .foregroundStyle(.primary)
+        SettingsControlSurface {
+            HStack(spacing: 14) {
+                SettingsRowGlyph(symbolName: "waveform", isSelected: isEnabled)
 
-                Text("Show real-time app logs in the main window.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Streaming Logs")
+                        .font(.nunito(.subheadline, weight: .semibold))
+                        .foregroundStyle(.primary)
+
+                    Text("Show real-time app logs in the main window.")
+                        .font(.nunito(.footnote))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Toggle("", isOn: $isEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
             }
-
-            Spacer()
-
-            Toggle("", isOn: $isEnabled)
-                .toggleStyle(.switch)
-                .labelsHidden()
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.4))
-        )
     }
 }
 #endif
@@ -960,38 +1137,35 @@ struct CopyDiagnosticsButton: View {
             Task { await copyDiagnostics() }
         }) {
             #if os(macOS)
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Copy Diagnostics")
-                        .foregroundStyle(.primary)
+            SettingsControlSurface {
+                HStack(spacing: 14) {
+                    SettingsRowGlyph(symbolName: "doc.on.doc", isSelected: showCopiedToast)
 
-                    Text("Export device info for troubleshooting sync issues.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Copy Diagnostics")
+                            .font(.nunito(.subheadline, weight: .semibold))
+                            .foregroundStyle(.primary)
 
-                Spacer()
+                        Text("Export device info for troubleshooting sync issues.")
+                            .font(.nunito(.footnote))
+                            .foregroundStyle(.secondary)
+                    }
 
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                } else if showCopiedToast {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                } else {
-                    Image(systemName: "doc.on.doc")
-                        .foregroundStyle(.secondary)
+                    Spacer()
+
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else if showCopiedToast {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(Color.mascotPurpleInk)
+                    } else {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(nsColor: .separatorColor).opacity(0.4))
-            )
             #else
             IOSSettingsRow(
                 title: "Copy Diagnostics",
@@ -1184,38 +1358,35 @@ struct ForceReSyncButton: View {
     var body: some View {
         Button(action: onSync) {
             #if os(macOS)
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(isSyncing ? "Syncing..." : "Force Re-sync")
-                        .foregroundStyle(.primary)
+            SettingsControlSurface {
+                HStack(spacing: 14) {
+                    SettingsRowGlyph(symbolName: "arrow.clockwise.icloud", isSelected: didSync || isSyncing)
 
-                    Text("Push local articles to iCloud")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(isSyncing ? "Syncing..." : "Force Re-sync")
+                            .font(.nunito(.subheadline, weight: .semibold))
+                            .foregroundStyle(.primary)
 
-                Spacer()
+                        Text("Push local articles to iCloud")
+                            .font(.nunito(.footnote))
+                            .foregroundStyle(.secondary)
+                    }
 
-                if isSyncing {
-                    ProgressView()
-                        .controlSize(.regular)
-                } else if didSync {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                } else {
-                    Image(systemName: "arrow.clockwise.icloud")
-                        .foregroundStyle(.secondary)
+                    Spacer()
+
+                    if isSyncing {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else if didSync {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(Color.mascotPurpleInk)
+                    } else {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(nsColor: .separatorColor).opacity(0.4))
-            )
             #else
             IOSSettingsRow(
                 title: isSyncing ? "Syncing..." : "Force Re-sync",

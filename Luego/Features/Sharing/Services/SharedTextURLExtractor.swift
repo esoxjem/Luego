@@ -1,0 +1,22 @@
+import Foundation
+
+enum SharedTextURLExtractor {
+    static func isSupportedWebURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else {
+            return false
+        }
+
+        return scheme == "http" || scheme == "https"
+    }
+
+    static func extractFirstSupportedWebURL(from text: String) -> URL? {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return nil
+        }
+
+        let range = NSRange(text.startIndex..., in: text)
+        return detector.matches(in: text, options: [], range: range)
+            .compactMap(\.url)
+            .first(where: isSupportedWebURL)
+    }
+}

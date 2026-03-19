@@ -1,0 +1,16 @@
+{
+  "scripts": [
+    {
+      "name": "default",
+      "command": "make default",
+      "mode": "command",
+      "category": "other"
+    },
+    {
+      "name": "main",
+      "command": "make main",
+      "mode": "command",
+      "category": "other"
+    }
+  ]
+}
