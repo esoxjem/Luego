@@ -16,7 +16,6 @@
 - `Luego/Core/`: shared infrastructure (`Configuration`, `DI`, `Models`, `DataSources`, UI helpers).
 - `Luego/Features/`: vertical feature slices (`ReadingList`, `Reader`, `Discovery`, `Sharing`, `Settings`).
 - `LuegoShareExtension/`: macOS/iOS share extension target.
-- `LuegoTests/`: mirrors app structure (`Core`, `Features`, `Integration`, `TestSupport/Mocks`).
 - `docs/prevention/`: known pitfalls and prevention playbooks.
 
 ## Architecture Rules
@@ -38,13 +37,9 @@
 3. `ContentDataSource` as coordinator.
 - Preserve offline-first behavior and avoid blocking the main thread during sync-sensitive flows.
 
-## Testing Rules
-- Framework: Swift Testing (`@Suite`, `@Test`, `#expect`).
-- Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI (via `scripts/xcodebuildmcp-luego` when working in this repo) for builds and tests.
-- Mirror production structure in tests.
-- Prefer deterministic unit tests over broad integration tests unless behavior spans layers.
-- Reuse or extend mocks in `LuegoTests/TestSupport/Mocks/`.
-- For new services/view models, add tests in the matching feature subtree.
+## Verification Rules
+- Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI (via `scripts/xcodebuildmcp-luego` when working in this repo) for simulator and macOS builds.
+- Do not add or reference the deleted automated test suite in repository automation or maintenance docs.
 
 ## Platform Rules
 - Implement and verify changes for iOS, iPadOS, and macOS together.
@@ -64,5 +59,4 @@
 
 ## Before Merging
 1. Build for simulator and macOS.
-2. Run relevant test suites (or full tests when changes are cross-cutting).
-3. Check `agent_docs/` and `docs/prevention/` for regressions in known risky areas.
+2. Check `agent_docs/` and `docs/prevention/` for regressions in known risky areas.
