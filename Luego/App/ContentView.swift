@@ -265,7 +265,7 @@ struct ContentView: View {
 
     private var iPhoneLayout: some View {
         TabView(selection: $selectedTab) {
-            Tab("", systemImage: "list.bullet", value: 0) {
+            Tab(ArticleFilter.readingList.compactNavigationTitle, systemImage: "list.bullet", value: 0) {
                 iPhoneTabBackground {
                     iPhoneTabNavigationStack {
                         ArticleListView(
@@ -277,7 +277,7 @@ struct ContentView: View {
                 }
             }
 
-            Tab("", systemImage: "heart", value: 1) {
+            Tab(ArticleFilter.favorites.compactNavigationTitle, systemImage: "heart", value: 1) {
                 iPhoneTabBackground {
                     iPhoneTabNavigationStack {
                         ArticleListView(filter: .favorites)
@@ -285,7 +285,7 @@ struct ContentView: View {
                 }
             }
 
-            Tab("", systemImage: "archivebox.fill", value: 2) {
+            Tab(ArticleFilter.archived.compactNavigationTitle, systemImage: "archivebox.fill", value: 2) {
                 iPhoneTabBackground {
                     iPhoneTabNavigationStack {
                         ArticleListView(filter: .archived)

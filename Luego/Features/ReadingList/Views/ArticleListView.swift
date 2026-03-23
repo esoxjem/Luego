@@ -14,6 +14,7 @@ import UIKit
 
 struct ArticleListView: View {
     @Environment(\.diContainer) private var diContainer
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
     @State private var viewModel: ArticleListViewModel?
@@ -49,11 +50,20 @@ struct ArticleListView: View {
             shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateEmptyStateOnFirstAppearance,
             onEmptyStateAnimationConsumed: onEmptyStateAnimationConsumed
         )
-        .navigationTitle(filter.title)
+        .navigationTitle(navigationTitle)
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .large)
         #endif
         .toolbar {
+            #if os(iOS)
+            if horizontalSizeClass == .compact {
+                ToolbarItem(placement: .principal) {
+                    Text(navigationTitle)
+                        .font(.lora(.headline))
+                        .foregroundStyle(.primary)
+                }
+            }
+            #endif
             ToolbarItemGroup(placement: .primaryAction) {
                 if filter == .readingList {
                     Button {
@@ -133,13 +143,27 @@ struct ArticleListView: View {
         await viewModel.syncSharedArticles()
     }
 
+    private var navigationTitle: String {
+        #if os(iOS)
+        if horizontalSizeClass == .compact {
+            return filter.compactNavigationTitle
+        }
+        #endif
+
+        return filter.title
+    }
+
     #if os(iOS)
     private func configureNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(red: 250 / 255, green: 248 / 255, blue: 241 / 255, alpha: 1)
         appearance.shadowColor = .clear
-        appearance.largeTitleTextAttributes = [.font: serifBoldLargeTitleFont]
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
+        appearance.largeTitleTextAttributes = [
+            .font: serifBoldLargeTitleFont,
+            .foregroundColor: UIColor.label
+        ]
 
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
