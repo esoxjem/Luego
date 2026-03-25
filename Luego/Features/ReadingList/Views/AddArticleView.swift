@@ -27,19 +27,19 @@ struct AddArticleView: View {
             Spacer(minLength: 0)
 
             AddArticleSurface {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 24) {
                     AddArticleHeader()
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Article URL")
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("URL")
                             .font(.nunito(.subheadline, weight: .semibold))
-                            .foregroundStyle(Color.primary.opacity(0.82))
+                            .foregroundStyle(Color.primary.opacity(0.72))
 
-                        HStack(spacing: 12) {
+                        HStack(spacing: 10) {
                             Image(systemName: "link")
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.mascotPurpleInk)
-                                .frame(width: 18)
+                                .foregroundStyle(Color.primary.opacity(0.48))
+                                .frame(width: 16)
 
                             TextField("https://example.com/article", text: $urlText)
                                 .accessibilityIdentifier("addArticle.urlField")
@@ -58,31 +58,26 @@ struct AddArticleView: View {
                                         await saveArticle()
                                     }
                                 }
-
-                            Button("Paste") {
-                                pasteFromClipboard()
-                            }
-                            .buttonStyle(.plain)
-                            .font(.nunito(.subheadline, weight: .semibold))
-                            .foregroundStyle(Color.mascotPurpleInk)
-                            .disabled(viewModel.isLoading)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(fieldBackground)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+                        .background {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(fieldBackground)
+                        }
                         .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(fieldBorderColor, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(fieldBorderColor, lineWidth: isURLFieldFocused ? 1.5 : 1)
                         }
 
-                        Text("Paste a link and Luego will fetch the title and preview for you.")
+                        Text("Paste a link to save it to your reading list.")
                             .font(.nunito(.footnote))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.primary.opacity(0.56))
 
                         if let errorMessage = viewModel.errorMessage {
                             AddArticleMessageRow(
-                                symbolName: "exclamationmark.triangle.fill",
-                                tint: Color.red.opacity(0.9),
+                                symbolName: "exclamationmark.circle.fill",
+                                tint: Color.red.opacity(0.85),
                                 message: errorMessage
                             )
                         } else if viewModel.isLoading {
@@ -90,15 +85,13 @@ struct AddArticleView: View {
                         }
                     }
 
-                    Divider()
-                        .opacity(0.45)
-
                     HStack(spacing: 12) {
                         Button("Cancel") {
                             dismiss()
                         }
                         .accessibilityIdentifier("addArticle.cancel")
                         .keyboardShortcut(.cancelAction)
+                        .buttonStyle(.bordered)
                         .disabled(viewModel.isLoading)
 
                         Spacer(minLength: 0)
@@ -121,19 +114,19 @@ struct AddArticleView: View {
                         .accessibilityIdentifier("addArticle.save")
                         .keyboardShortcut(.defaultAction)
                         .buttonStyle(.borderedProminent)
-                        .tint(Color.mascotPurple)
+                        .tint(Color.regularSelectionInk)
                         .disabled(!canSave)
                     }
                 }
             }
-            .frame(maxWidth: 540)
+            .frame(maxWidth: 500)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 24)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(dialogBackground)
+        .background(Color.regularPanelBackground)
         .accessibilityIdentifier("addArticle.sheet")
         .onAppear {
             initializePresentationIfNeeded()
@@ -145,65 +138,28 @@ struct AddArticleView: View {
         }
     }
 
-    private var fieldBackground: some ShapeStyle {
-        LinearGradient(
-            colors: [
-                Color.white.opacity(0.92),
-                Color.mascotPurple.opacity(0.16)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    private var fieldBackground: Color {
+        if viewModel.errorMessage != nil {
+            return Color.red.opacity(0.04)
+        }
+
+        if isURLFieldFocused {
+            return Color.white.opacity(0.96)
+        }
+
+        return Color.white.opacity(0.82)
     }
 
     private var fieldBorderColor: Color {
         if viewModel.errorMessage != nil {
-            return Color.red.opacity(0.45)
+            return Color.red.opacity(0.3)
         }
 
         if isURLFieldFocused {
-            return Color.mascotPurpleInk.opacity(0.38)
+            return Color.regularSelectionInk.opacity(0.32)
         }
 
-        return Color.regularOutline.opacity(0.85)
-    }
-
-    @ViewBuilder
-    private var dialogBackground: some View {
-        ZStack {
-            Color.regularPanelBackground
-
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.mascotPurple.opacity(0.18),
-                            Color.clear
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 280, height: 280)
-                .blur(radius: 18)
-                .offset(x: -120, y: -100)
-
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.5),
-                            Color.clear
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 320, height: 320)
-                .blur(radius: 30)
-                .offset(x: 150, y: 120)
-        }
-        .ignoresSafeArea()
+        return Color.regularOutline.opacity(0.9)
     }
 
     private func saveArticle() async {
@@ -231,17 +187,6 @@ struct AddArticleView: View {
         }
 
         urlText = clipboardURLText
-    }
-
-    private func pasteFromClipboard() {
-        guard let clipboardURLText = validatedClipboardURLText() else {
-            return
-        }
-
-        urlText = clipboardURLText
-        viewModel.clearError()
-
-        isURLFieldFocused = true
     }
 
     private func trimmedClipboardText() -> String? {
@@ -282,34 +227,13 @@ struct AddArticleView: View {
 
 private struct AddArticleHeader: View {
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.mascotPurple.opacity(0.9),
-                                Color.mascotPurpleInk.opacity(0.78)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Add Article")
+                .font(.lora(.title3, weight: .semibold))
 
-                Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 42, height: 42)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Add Article")
-                    .font(.lora(.title3, weight: .semibold))
-
-                Text("Paste a link to save it to your reading list.")
-                    .font(.nunito(.body))
-                    .foregroundStyle(.secondary)
-            }
+            Text("Save a link to your reading list.")
+                .font(.nunito(.body))
+                .foregroundStyle(Color.primary.opacity(0.62))
         }
     }
 }
@@ -321,15 +245,10 @@ private struct AddArticleLoadingRow: View {
                 .controlSize(.small)
 
             Text("Fetching article details…")
-                .font(.nunito(.footnote, weight: .semibold))
-                .foregroundStyle(Color.primary.opacity(0.72))
+                .font(.nunito(.footnote))
+                .foregroundStyle(Color.primary.opacity(0.62))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.45))
-        )
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -341,24 +260,21 @@ private struct AddArticleMessageRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: symbolName)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(tint)
 
             Text(message)
-                .font(.nunito(.footnote, weight: .semibold))
-                .foregroundStyle(Color.primary.opacity(0.76))
+                .font(.nunito(.footnote))
+                .foregroundStyle(Color.primary.opacity(0.72))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(tint.opacity(0.08))
         )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(tint.opacity(0.2), lineWidth: 1)
-        }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -366,28 +282,16 @@ private struct AddArticleSurface<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            content
-        }
+        content
         .padding(24)
         .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.white.opacity(0.72))
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.6),
-                            Color.regularOutline.opacity(0.9)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.regularOutline.opacity(0.85), lineWidth: 1)
         }
-        .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 14)
+        .shadow(color: Color.black.opacity(0.05), radius: 18, x: 0, y: 8)
     }
 }
