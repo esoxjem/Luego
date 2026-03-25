@@ -64,7 +64,7 @@
 - SwiftUI organization: root view first, supporting subviews next, extensions last.
 - Prefer Deep Modules and Deep Classes
 
-## Before Merging
+## Verification
 
 1. Build for simulator and macOS.
 2. Check `agent_docs/` and `docs/prevention/` for regressions in known risky areas.
