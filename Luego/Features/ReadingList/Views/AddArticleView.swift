@@ -41,8 +41,9 @@ struct AddArticleView: View {
                                 .foregroundStyle(Color.primary.opacity(0.48))
                                 .frame(width: 16)
 
-                            TextField("https://example.com/article", text: $urlText)
+                            TextField("", text: $urlText)
                                 .accessibilityIdentifier("addArticle.urlField")
+                                .accessibilityLabel("URL")
                                 .textFieldStyle(.plain)
                                 .font(.nunito(.body))
                                 .textContentType(.URL)
@@ -223,14 +224,8 @@ struct AddArticleView: View {
 
 private struct AddArticleHeader: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Add Article")
-                .font(.lora(.title3, weight: .semibold))
-
-            Text("Save a link to your reading list.")
-                .font(.nunito(.body))
-                .foregroundStyle(Color.primary.opacity(0.62))
-        }
+        Text("Add Article")
+            .font(.lora(.title3, weight: .semibold))
     }
 }
 
