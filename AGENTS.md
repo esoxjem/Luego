@@ -1,8 +1,4 @@
-## Operating Model
-
-- Keep the main agent focused on requirements, key decisions, and final outputs.
-- Use specialized sub-agents in parallel for exploration, analysis, implementation and testing.
-- Return concise sub-agent summaries instead of raw intermediate logs.
+# AGENTS.md
 
 ## Project Snapshot
 
@@ -72,3 +68,4 @@
 
 1. Build for simulator and macOS.
 2. Check `agent_docs/` and `docs/prevention/` for regressions in known risky areas.
+3. Run the app via xodebuildmcp cli and verify with logs or screenshots.

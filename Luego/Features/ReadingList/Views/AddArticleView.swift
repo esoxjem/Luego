@@ -9,6 +9,7 @@ import AppKit
 struct AddArticleView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var urlText = ""
+    @State private var hasInitializedPresentation = false
     @FocusState private var isURLFieldFocused: Bool
     @Bindable var viewModel: ArticleListViewModel
     let existingArticles: [Article]
@@ -134,8 +135,8 @@ struct AddArticleView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(dialogBackground)
         .accessibilityIdentifier("addArticle.sheet")
-        .task {
-            isURLFieldFocused = true
+        .onAppear {
+            initializePresentationIfNeeded()
         }
         .onChange(of: urlText) { _, _ in
             if viewModel.errorMessage != nil {
@@ -215,22 +216,67 @@ struct AddArticleView: View {
         }
     }
 
-    private func pasteFromClipboard() {
-        #if os(macOS)
-        if let clipboardText = NSPasteboard.general.string(forType: .string) {
-            urlText = clipboardText.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        #elseif os(iOS)
-        if let clipboardText = UIPasteboard.general.string {
-            urlText = clipboardText.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        #endif
+    private func initializePresentationIfNeeded() {
+        guard !hasInitializedPresentation else { return }
 
-        if viewModel.errorMessage != nil {
-            viewModel.clearError()
+        hasInitializedPresentation = true
+        autoPrefillURLFromClipboardIfNeeded()
+        isURLFieldFocused = true
+    }
+
+    private func autoPrefillURLFromClipboardIfNeeded() {
+        guard urlText.isEmpty,
+              let clipboardURLText = validatedClipboardURLText() else {
+            return
         }
+
+        urlText = clipboardURLText
+    }
+
+    private func pasteFromClipboard() {
+        guard let clipboardURLText = validatedClipboardURLText() else {
+            return
+        }
+
+        urlText = clipboardURLText
+        viewModel.clearError()
 
         isURLFieldFocused = true
+    }
+
+    private func trimmedClipboardText() -> String? {
+        #if os(macOS)
+        let clipboardText = NSPasteboard.general.string(forType: .string)
+        #elseif os(iOS)
+        let clipboardText = UIPasteboard.general.string
+        #endif
+
+        guard let clipboardText else { return nil }
+
+        let trimmedClipboardText = clipboardText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedClipboardText.isEmpty ? nil : trimmedClipboardText
+    }
+
+    private func validatedClipboardURLText() -> String? {
+        guard let clipboardText = trimmedClipboardText() else {
+            return nil
+        }
+
+        let urlStringWithScheme: String
+        if clipboardText.hasPrefix("http://") || clipboardText.hasPrefix("https://") {
+            urlStringWithScheme = clipboardText
+        } else {
+            urlStringWithScheme = "https://" + clipboardText
+        }
+
+        guard let url = URL(string: urlStringWithScheme),
+              let scheme = url.scheme?.lowercased(),
+              (scheme == "http" || scheme == "https"),
+              url.host() != nil else {
+            return nil
+        }
+
+        return clipboardText
     }
 }
 
