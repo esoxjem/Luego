@@ -41,60 +41,66 @@ struct ArticleListView: View {
     }
 
     var body: some View {
-        ArticleListContent(
-            articles: filteredArticles,
-            viewModel: viewModel,
-            diContainer: diContainer,
-            filter: filter,
-            onDiscover: { showingDiscovery = true },
-            shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateEmptyStateOnFirstAppearance,
-            onEmptyStateAnimationConsumed: onEmptyStateAnimationConsumed
-        )
-        .navigationTitle(navigationTitle)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .large)
-        #endif
-        .toolbar {
+        presentingAddArticle(
+            ArticleListContent(
+                articles: filteredArticles,
+                viewModel: viewModel,
+                diContainer: diContainer,
+                filter: filter,
+                onDiscover: { showingDiscovery = true },
+                shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateEmptyStateOnFirstAppearance,
+                onEmptyStateAnimationConsumed: onEmptyStateAnimationConsumed
+            )
+            .navigationTitle(navigationTitle)
             #if os(iOS)
-            if horizontalSizeClass == .compact {
-                ToolbarItem(placement: .principal) {
-                    Text(navigationTitle)
-                        .font(.lora(.headline))
-                        .foregroundStyle(.primary)
+            .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .large)
+            #endif
+            .toolbar {
+                #if os(iOS)
+                if horizontalSizeClass == .compact {
+                    ToolbarItem(placement: .principal) {
+                        Text(navigationTitle)
+                            .font(.lora(.headline))
+                            .foregroundStyle(.primary)
+                    }
                 }
+                #endif
+                ToolbarItemGroup(placement: .primaryAction) {
+                    if filter == .readingList {
+                        Button {
+                            showingDiscovery = true
+                        } label: {
+                            Image(systemName: "die.face.5")
+                        }
+                        .accessibilityLabel("Inspire Me")
+                    }
+                    Button {
+                        presentAddArticle()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    #if os(iOS)
+                    .popover(
+                        isPresented: compactAddArticlePopoverBinding,
+                        attachmentAnchor: .rect(.bounds),
+                        arrowEdge: .top
+                    ) {
+                        compactAddArticleDestination
+                    }
+                    #endif
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
+            #if os(iOS)
+            .onAppear {
+                configureNavigationBarAppearance()
             }
             #endif
-            ToolbarItemGroup(placement: .primaryAction) {
-                if filter == .readingList {
-                    Button {
-                        showingDiscovery = true
-                    } label: {
-                        Image(systemName: "die.face.5")
-                    }
-                    .accessibilityLabel("Inspire Me")
-                }
-                Button {
-                    showingAddArticle = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                Button {
-                    showingSettings = true
-                } label: {
-                    Image(systemName: "gearshape")
-                }
-            }
-        }
-        #if os(iOS)
-        .onAppear {
-            configureNavigationBarAppearance()
-        }
-        #endif
-        .sheet(isPresented: $showingAddArticle) {
-            if let viewModel {
-                AddArticleView(viewModel: viewModel, existingArticles: allArticles)
-            }
-        }
+        )
         .sheet(isPresented: $showingSettings) {
             if let container = diContainer {
                 NavigationStack {
@@ -137,6 +143,55 @@ struct ArticleListView: View {
         guard viewModel == nil, let container = diContainer else { return }
         viewModel = container.makeArticleListViewModel()
     }
+
+    private func presentAddArticle() {
+        showingAddArticle = true
+    }
+
+    @ViewBuilder
+    private func presentingAddArticle<Content: View>(_ content: Content) -> some View {
+        #if os(iOS)
+        if horizontalSizeClass == .compact {
+            content
+        } else {
+            content
+                .sheet(isPresented: $showingAddArticle) {
+                    addArticleDestination
+                }
+        }
+        #else
+        content
+            .sheet(isPresented: $showingAddArticle) {
+                addArticleDestination
+            }
+        #endif
+    }
+
+    @ViewBuilder
+    private var addArticleDestination: some View {
+        if let viewModel {
+            AddArticleView(viewModel: viewModel, existingArticles: allArticles)
+        }
+    }
+
+    #if os(iOS)
+    private var compactAddArticlePopoverBinding: Binding<Bool> {
+        Binding(
+            get: {
+                horizontalSizeClass == .compact && showingAddArticle
+            },
+            set: { newValue in
+                showingAddArticle = newValue
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var compactAddArticleDestination: some View {
+        addArticleDestination
+            .presentationCompactAdaptation(.popover)
+    }
+    #endif
 
     private func handleScenePhaseChange(_ phase: ScenePhase) async {
         guard phase == .active, let viewModel else { return }

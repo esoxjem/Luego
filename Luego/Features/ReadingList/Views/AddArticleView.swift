@@ -70,10 +70,6 @@ struct AddArticleView: View {
                                 .stroke(fieldBorderColor, lineWidth: isURLFieldFocused ? 1.5 : 1)
                         }
 
-                        Text("Paste a link to save it to your reading list.")
-                            .font(.nunito(.footnote))
-                            .foregroundStyle(Color.primary.opacity(0.56))
-
                         if let errorMessage = viewModel.errorMessage {
                             AddArticleMessageRow(
                                 symbolName: "exclamationmark.circle.fill",
