@@ -1,4 +1,4 @@
-# AGENTS.md
+# [AGENTS.md](http://AGENTS.md)
 
 ## Project Snapshot
 
@@ -41,11 +41,6 @@
 
 - Preserve offline-first behavior and avoid blocking the main thread during sync-sensitive flows.
 
-## Verification Rules
-
-- Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI (via `scripts/xcodebuildmcp-luego` when working in this repo) for simulator and macOS builds.
-- Do not add or reference the deleted automated test suite in repository automation or maintenance docs.
-
 ## Platform Rules
 
 - Implement and verify changes for iOS, iPadOS, and macOS together.
@@ -66,6 +61,6 @@
 
 ## Verification
 
-1. Build for simulator and macOS.
-2. Check `agent_docs/` and `docs/prevention/` for regressions in known risky areas.
-3. Run the app via xodebuildmcp cli and verify with logs or screenshots.
+1. Build for iOS simulator and macOS.
+2. Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI (via `scripts/xcodebuildmcp-luego` when working in this repo) for simulator and macOS builds.
+3. Run the app via xodebuildmcp cli and verify with logs or screenshots for both iOS and macOS.
