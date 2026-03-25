@@ -31,10 +31,6 @@ struct AddArticleView: View {
                     AddArticleHeader()
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("URL")
-                            .font(.nunito(.subheadline, weight: .semibold))
-                            .foregroundStyle(Color.primary.opacity(0.72))
-
                         HStack(spacing: 10) {
                             Image(systemName: "link")
                                 .font(.system(size: 15, weight: .semibold))
