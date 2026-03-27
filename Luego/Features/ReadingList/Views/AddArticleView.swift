@@ -2,8 +2,7 @@ import SwiftUI
 
 #if os(iOS)
 import UIKit
-#elseif os(macOS)
-import AppKit
+import UniformTypeIdentifiers
 #endif
 
 struct AddArticleView: View {
@@ -31,18 +30,21 @@ struct AddArticleView: View {
                     AddArticleHeader()
 
                     VStack(alignment: .leading, spacing: 10) {
-                        HStack(spacing: 10) {
+                        HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "link")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(Color.primary.opacity(0.48))
                                 .frame(width: 16)
+                                .padding(.top, 3)
 
-                            TextField("", text: $urlText)
+                            TextField("", text: $urlText, axis: .vertical)
                                 .accessibilityIdentifier("addArticle.urlField")
                                 .accessibilityLabel("URL")
                                 .textFieldStyle(.plain)
                                 .font(.nunito(.body))
                                 .textContentType(.URL)
+                                .lineLimit(1...4)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .focused($isURLFieldFocused)
                                 #if os(iOS)
                                 .keyboardType(.URL)
@@ -55,6 +57,9 @@ struct AddArticleView: View {
                                         await saveArticle()
                                     }
                                 }
+
+                            addArticlePasteControl
+                                .padding(.top, 1)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 13)
@@ -155,6 +160,24 @@ struct AddArticleView: View {
         return Color.regularOutline.opacity(0.9)
     }
 
+    @ViewBuilder
+    private var addArticlePasteControl: some View {
+        #if os(iOS)
+        AddArticlePasteControl(onPaste: pasteClipboardText)
+            .frame(width: 28, height: 28)
+        #else
+        PasteButton(payloadType: String.self) { strings in
+            pasteClipboardText(strings)
+        }
+        .accessibilityIdentifier("addArticle.paste")
+        .accessibilityLabel("Paste from Clipboard")
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .foregroundStyle(Color.regularSelectionInk)
+        #endif
+    }
+
     private func saveArticle() async {
         guard canSave else { return }
 
@@ -169,52 +192,18 @@ struct AddArticleView: View {
         guard !hasInitializedPresentation else { return }
 
         hasInitializedPresentation = true
-        autoPrefillURLFromClipboardIfNeeded()
         isURLFieldFocused = true
     }
 
-    private func autoPrefillURLFromClipboardIfNeeded() {
-        guard urlText.isEmpty,
-              let clipboardURLText = validatedClipboardURLText() else {
+    private func pasteClipboardText(_ strings: [String]) {
+        guard let clipboardText = strings
+            .map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+            .first(where: { !$0.isEmpty }) else {
             return
         }
 
-        urlText = clipboardURLText
-    }
-
-    private func trimmedClipboardText() -> String? {
-        #if os(macOS)
-        let clipboardText = NSPasteboard.general.string(forType: .string)
-        #elseif os(iOS)
-        let clipboardText = UIPasteboard.general.string
-        #endif
-
-        guard let clipboardText else { return nil }
-
-        let trimmedClipboardText = clipboardText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedClipboardText.isEmpty ? nil : trimmedClipboardText
-    }
-
-    private func validatedClipboardURLText() -> String? {
-        guard let clipboardText = trimmedClipboardText() else {
-            return nil
-        }
-
-        let urlStringWithScheme: String
-        if clipboardText.hasPrefix("http://") || clipboardText.hasPrefix("https://") {
-            urlStringWithScheme = clipboardText
-        } else {
-            urlStringWithScheme = "https://" + clipboardText
-        }
-
-        guard let url = URL(string: urlStringWithScheme),
-              let scheme = url.scheme?.lowercased(),
-              (scheme == "http" || scheme == "https"),
-              url.host() != nil else {
-            return nil
-        }
-
-        return clipboardText
+        urlText = clipboardText
+        isURLFieldFocused = true
     }
 }
 
@@ -282,3 +271,95 @@ private struct AddArticleSurface<Content: View>: View {
         .shadow(color: Color.black.opacity(0.05), radius: 18, x: 0, y: 8)
     }
 }
+
+#if os(iOS)
+private struct AddArticlePasteControl: UIViewRepresentable {
+    let onPaste: ([String]) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPaste: onPaste)
+    }
+
+    func makeUIView(context: Context) -> UIPasteControl {
+        let configuration = UIPasteControl.Configuration()
+        configuration.displayMode = .iconOnly
+        configuration.cornerStyle = .fixed
+        configuration.cornerRadius = 10
+        configuration.baseForegroundColor = UIColor(Color.regularSelectionInk)
+        configuration.baseBackgroundColor = .clear
+
+        let pasteControl = UIPasteControl(configuration: configuration)
+        pasteControl.target = context.coordinator
+        pasteControl.accessibilityIdentifier = "addArticle.paste"
+        pasteControl.accessibilityLabel = "Paste from Clipboard"
+        pasteControl.backgroundColor = .clear
+
+        return pasteControl
+    }
+
+    func updateUIView(_ uiView: UIPasteControl, context: Context) {
+        context.coordinator.onPaste = onPaste
+        uiView.target = context.coordinator
+    }
+
+    final class Coordinator: NSObject, UIPasteConfigurationSupporting {
+        var onPaste: ([String]) -> Void
+        var pasteConfiguration: UIPasteConfiguration?
+
+        init(onPaste: @escaping ([String]) -> Void) {
+            self.onPaste = onPaste
+            self.pasteConfiguration = UIPasteConfiguration(
+                acceptableTypeIdentifiers: [
+                    UTType.url.identifier,
+                    UTType.plainText.identifier
+                ]
+            )
+        }
+
+        func canPaste(_ itemProviders: [NSItemProvider]) -> Bool {
+            itemProviders.contains { provider in
+                provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) ||
+                provider.canLoadObject(ofClass: NSString.self)
+            }
+        }
+
+        func paste(itemProviders: [NSItemProvider]) {
+            loadFirstText(from: itemProviders)
+        }
+
+        private func loadFirstText(from itemProviders: [NSItemProvider]) {
+            guard let itemProvider = itemProviders.first(where: { provider in
+                provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) ||
+                provider.canLoadObject(ofClass: NSString.self)
+            }) else {
+                return
+            }
+
+            if itemProvider.canLoadObject(ofClass: NSString.self) {
+                itemProvider.loadObject(ofClass: NSString.self) { string, _ in
+                    guard let clipboardText = string as? NSString else { return }
+                    let pastedText = clipboardText as String
+
+                    Task { @MainActor in
+                        self.onPaste([pastedText])
+                    }
+                }
+                return
+            }
+
+            itemProvider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
+                let clipboardText = (item as? URL)?.absoluteString ?? (item as? Data).flatMap {
+                    String(data: $0, encoding: .utf8)
+                }
+
+                guard let clipboardText else { return }
+                let pastedText = clipboardText
+
+                Task { @MainActor in
+                    self.onPaste([pastedText])
+                }
+            }
+        }
+    }
+}
+#endif
