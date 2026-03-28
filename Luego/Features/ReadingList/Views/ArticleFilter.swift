@@ -7,7 +7,7 @@ enum ArticleFilter: CaseIterable, Hashable {
     case archived
     case discovery
 
-    var compactNavigationTitle: String {
+    var navigationTitle: String {
         switch self {
         case .readingList: "Reading List"
         case .favorites: "Favorites"

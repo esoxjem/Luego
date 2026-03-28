@@ -53,18 +53,9 @@ struct ArticleListView: View {
             )
             .navigationTitle(navigationTitle)
             #if os(iOS)
-            .navigationBarTitleDisplayMode(horizontalSizeClass == .compact ? .inline : .large)
+            .navigationBarTitleDisplayMode(.large)
             #endif
             .toolbar {
-                #if os(iOS)
-                if horizontalSizeClass == .compact {
-                    ToolbarItem(placement: .principal) {
-                        Text(navigationTitle)
-                            .font(.lora(.headline))
-                            .foregroundStyle(.primary)
-                    }
-                }
-                #endif
                 ToolbarItemGroup(placement: .primaryAction) {
                     if filter == .readingList {
                         Button {
@@ -201,7 +192,7 @@ struct ArticleListView: View {
     private var navigationTitle: String {
         #if os(iOS)
         if horizontalSizeClass == .compact {
-            return filter.compactNavigationTitle
+            return filter.navigationTitle
         }
         #endif
 
@@ -211,8 +202,13 @@ struct ArticleListView: View {
     #if os(iOS)
     private func configureNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(red: 250 / 255, green: 248 / 255, blue: 241 / 255, alpha: 1)
+        if horizontalSizeClass == .compact {
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundColor = .clear
+        } else {
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor(red: 250 / 255, green: 248 / 255, blue: 241 / 255, alpha: 1)
+        }
         appearance.shadowColor = .clear
         appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
         appearance.largeTitleTextAttributes = [
