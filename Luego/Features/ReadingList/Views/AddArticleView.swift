@@ -30,12 +30,11 @@ struct AddArticleView: View {
                     AddArticleHeader()
 
                     VStack(alignment: .leading, spacing: 10) {
-                        HStack(alignment: .top, spacing: 10) {
+                        HStack(spacing: 10) {
                             Image(systemName: "link")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(Color.primary.opacity(0.48))
                                 .frame(width: 16)
-                                .padding(.top, 3)
 
                             TextField("", text: $urlText, axis: .horizontal)
                                 .accessibilityIdentifier("addArticle.urlField")
@@ -59,7 +58,6 @@ struct AddArticleView: View {
                                 }
 
                             addArticlePasteControl
-                                .padding(.top, 1)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 13)
