@@ -37,13 +37,13 @@ struct AddArticleView: View {
                                 .frame(width: 16)
                                 .padding(.top, 3)
 
-                            TextField("", text: $urlText, axis: .vertical)
+                            TextField("", text: $urlText, axis: .horizontal)
                                 .accessibilityIdentifier("addArticle.urlField")
                                 .accessibilityLabel("URL")
                                 .textFieldStyle(.plain)
                                 .font(.nunito(.body))
                                 .textContentType(.URL)
-                                .lineLimit(1...4)
+                                .lineLimit(1)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .focused($isURLFieldFocused)
                                 #if os(iOS)
@@ -263,7 +263,7 @@ private struct AddArticleInlinePasteAffordance<Control: View>: View {
 
     var body: some View {
         ZStack {
-            Image(systemName: "clipboard")
+            Image(systemName: "list.clipboard")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color.regularSelectionInk)
                 .frame(width: 28, height: 28)
