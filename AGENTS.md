@@ -62,5 +62,12 @@
 ## Verification
 
 1. Build for iOS simulator and macOS.
-2. Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI (via `scripts/xcodebuildmcp-luego` when working in this repo) for simulator and macOS builds.
-3. Run the app via xodebuildmcp cli and verify with logs or screenshots for both iOS and macOS.
+2. Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI for simulator and macOS builds.
+3. Prefer direct `xcodebuildmcp` commands for local verification:
+   - `xcodebuildmcp simulator build --use-latest-os`
+   - `xcodebuildmcp simulator build-and-run --use-latest-os`
+   - `xcodebuildmcp simulator list`
+   - `xcodebuildmcp simulator screenshot --simulator-id <uuid>`
+   - `xcodebuildmcp simulator snapshot-ui --simulator-id <uuid>`
+   - `xcodebuildmcp macos build`
+4. Run the app via `xcodebuildmcp` and verify with logs or screenshots for iOS or macOS as required by the task.

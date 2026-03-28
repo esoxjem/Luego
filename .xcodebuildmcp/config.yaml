@@ -9,3 +9,4 @@ sessionDefaults:
   projectPath: Luego.xcodeproj
   scheme: Luego
   configuration: Debug
+  simulatorName: iPhone 17

@@ -54,3 +54,18 @@ Before building, you need to configure code signing:
 5. Repeat for the **LuegoShareExtension** target if needed
 
 The bundle identifier can be changed to your own if desired.
+
+## Developer CLI
+
+Use `xcodebuildmcp` instead of calling `xcodebuild` directly. This repo configures the project path, scheme, Debug configuration, and default iPhone simulator in `.xcodebuildmcp/config.yaml`.
+
+```bash
+xcodebuildmcp simulator build --use-latest-os
+xcodebuildmcp simulator build-and-run --use-latest-os
+xcodebuildmcp simulator test --use-latest-os
+xcodebuildmcp simulator list
+xcodebuildmcp simulator screenshot --simulator-id <uuid>
+xcodebuildmcp simulator snapshot-ui --simulator-id <uuid>
+xcodebuildmcp macos build
+xcodebuildmcp macos build-and-run
+```
