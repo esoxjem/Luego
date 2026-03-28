@@ -1,12 +1,13 @@
 import OSLog
 
 final class Logger: Sendable {
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.esoxjem.Luego"
     private let osLogger: os.Logger
     private let category: String
 
     init(category: String) {
         self.category = category
-        self.osLogger = os.Logger(subsystem: "com.esoxjem.Luego", category: category)
+        self.osLogger = os.Logger(subsystem: Self.subsystem, category: category)
     }
 
     func debug(_ message: String) {

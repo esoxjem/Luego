@@ -1,5 +1,9 @@
 import Foundation
-import SwiftData
+import CloudKit
+
+#if os(iOS)
+import UIKit
+#endif
 
 @Observable
 @MainActor
@@ -108,4 +112,134 @@ final class SettingsViewModel {
             }
         }
     }
+
+    func gatherDiagnostics(syncStatusObserver: SyncStatusObserver?) async -> String {
+        var lines: [String] = []
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+
+        lines.append("=== Luego Diagnostics ===")
+        lines.append("Generated: \(dateFormatter.string(from: Date()))")
+        lines.append("")
+
+        let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        lines.append("App Bundle ID: \(bundleID)")
+        lines.append("OSLog Subsystem: \(bundleID)")
+        lines.append("App Version: \(version)")
+        lines.append("Build Number: \(build)")
+        #if os(iOS)
+        lines.append("Platform: iOS \(UIDevice.current.systemVersion)")
+        #elseif os(macOS)
+        lines.append("Platform: macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        #endif
+        lines.append("")
+
+        let container = CKContainer(identifier: AppConfiguration.cloudKitContainerIdentifier)
+        async let cloudKitDiagnosticsTask = CloudKitRuntimeDiagnostics.collect(
+            container: container,
+            containerIdentifier: AppConfiguration.cloudKitContainerIdentifier
+        )
+        async let subscriptionsTask = fetchSubscriptions(for: container)
+        async let articlesTask = articleService.getAllArticles()
+
+        let cloudKitDiagnostics = await cloudKitDiagnosticsTask
+        let subscriptions = await subscriptionsTask
+        let articles = (try? await articlesTask) ?? []
+
+        lines.append(contentsOf: cloudKitDiagnostics.detailLines)
+        lines.append("Local Article Count: \(articles.count)")
+        lines.append("")
+
+        if let syncStatusObserver {
+            lines.append("Sync Engine State: \(syncStateDescription(syncStatusObserver.state))")
+            lines.append("Last Successful Sync: \(formattedDate(syncStatusObserver.lastSyncTime, dateFormatter: dateFormatter))")
+            lines.append("Sync Account Status: \(syncStatusObserver.accountStatusDescription ?? "unknown")")
+            if let diagnosticSummary = syncStatusObserver.cloudKitDiagnosticSummary {
+                lines.append("Sync CloudKit Summary: \(diagnosticSummary)")
+            }
+            if let diagnosticHint = syncStatusObserver.cloudKitDiagnosticHint {
+                lines.append("Sync CloudKit Hint: \(diagnosticHint)")
+            }
+            if syncStatusObserver.recentErrors.isEmpty {
+                lines.append("Recent Sync Errors: none")
+            } else {
+                lines.append("Recent Sync Errors:")
+                for error in syncStatusObserver.recentErrors.prefix(5) {
+                    lines.append("  - \(error)")
+                }
+            }
+            if syncStatusObserver.recentFailedRecordDetails.isEmpty {
+                lines.append("Recent Failed Record Saves: none")
+            } else {
+                lines.append("Recent Failed Record Saves:")
+                for detail in syncStatusObserver.recentFailedRecordDetails.prefix(5) {
+                    lines.append("  - \(detail)")
+                }
+            }
+            lines.append("")
+        }
+
+        lines.append("Active CloudKit Subscriptions: \(subscriptions.subscriptions.count)")
+        for sub in subscriptions.subscriptions {
+            lines.append("  - \(sub.subscriptionID) (type: \(sub.subscriptionType.rawValue))")
+        }
+        if let fetchError = subscriptions.errorMessage {
+            lines.append("Subscription Fetch Error: \(fetchError)")
+        }
+        lines.append("")
+
+        lines.append("--- Recent Logs (last 500 entries) ---")
+        let logDateFormatter = DateFormatter()
+        logDateFormatter.dateFormat = "HH:mm:ss"
+        let recentLogs = LogStream.shared.entries.suffix(500)
+        if recentLogs.isEmpty {
+            lines.append("No logs captured yet.")
+        } else {
+            for entry in recentLogs {
+                let time = logDateFormatter.string(from: entry.timestamp)
+                lines.append("[\(time)] [\(entry.category)] [\(entry.level.rawValue)] \(entry.message)")
+            }
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
+    private func fetchSubscriptions(for container: CKContainer) async -> CloudKitSubscriptionSnapshot {
+        do {
+            return CloudKitSubscriptionSnapshot(
+                subscriptions: try await container.privateCloudDatabase.allSubscriptions(),
+                errorMessage: nil
+            )
+        } catch {
+            return CloudKitSubscriptionSnapshot(
+                subscriptions: [],
+                errorMessage: error.localizedDescription
+            )
+        }
+    }
+
+    private func syncStateDescription(_ state: SyncState) -> String {
+        switch state {
+        case .idle:
+            return "idle"
+        case .syncing:
+            return "syncing"
+        case .success:
+            return "success"
+        case .error(let message, let needsSignIn):
+            return needsSignIn ? "error: \(message) (sign in required)" : "error: \(message)"
+        }
+    }
+
+    private func formattedDate(_ date: Date?, dateFormatter: DateFormatter) -> String {
+        guard let date else { return "never" }
+        return dateFormatter.string(from: date)
+    }
+}
+
+private struct CloudKitSubscriptionSnapshot {
+    let subscriptions: [CKSubscription]
+    let errorMessage: String?
 }
