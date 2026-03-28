@@ -41,16 +41,12 @@ struct ArticleListPane: View {
         }
         #if os(iOS)
         .background(Color.regularPanelBackground)
-        .appNavigationChrome()
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .appNavigationStyle(.contentLargeTitle)
         #endif
         #if os(macOS)
         .background(MacAppBackground())
         #endif
         .navigationTitle(filter.navigationTitle)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
         #if !os(macOS)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {

@@ -52,13 +52,13 @@ struct ContentView: View {
 
         #if os(macOS)
         root
-            .font(.nunito(.body))
+            .font(.app(.body))
             .sheet(item: $addArticleSheet) { addArticleSheet in
                 MacAddArticleSheet(viewModel: addArticleSheet.viewModel)
             }
         #else
         root
-            .font(.nunito(.body))
+            .font(.app(.body))
         #endif
     }
 

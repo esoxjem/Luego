@@ -8,10 +8,6 @@
 import SwiftUI
 import SwiftData
 
-#if os(iOS)
-import UIKit
-#endif
-
 struct ArticleListView: View {
     @Environment(\.diContainer) private var diContainer
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -52,9 +48,7 @@ struct ArticleListView: View {
                 onEmptyStateAnimationConsumed: onEmptyStateAnimationConsumed
             )
             .navigationTitle(navigationTitle)
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
-            #endif
+            .appNavigationStyle(horizontalSizeClass == .compact ? .largeTransparent : .largePanel)
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     if filter == .readingList {
@@ -86,11 +80,6 @@ struct ArticleListView: View {
                     }
                 }
             }
-            #if os(iOS)
-            .onAppear {
-                configureNavigationBarAppearance()
-            }
-            #endif
         )
         .sheet(isPresented: $showingSettings) {
             if let container = diContainer {
@@ -198,33 +187,6 @@ struct ArticleListView: View {
 
         return filter.title
     }
-
-    #if os(iOS)
-    private func configureNavigationBarAppearance() {
-        let appearance = UINavigationBarAppearance()
-        if horizontalSizeClass == .compact {
-            appearance.configureWithTransparentBackground()
-            appearance.backgroundColor = .clear
-        } else {
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor(red: 250 / 255, green: 248 / 255, blue: 241 / 255, alpha: 1)
-        }
-        appearance.shadowColor = .clear
-        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
-        appearance.largeTitleTextAttributes = [
-            .font: serifBoldLargeTitleFont,
-            .foregroundColor: UIColor.label
-        ]
-
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
-    }
-
-    private var serifBoldLargeTitleFont: UIFont {
-        .lora(forTextStyle: .largeTitle)
-    }
-    #endif
 }
 
 struct ArticleListContent: View {
@@ -365,7 +327,7 @@ struct ArticleListEmptyState: View {
                     Button("Inspire Me") {
                         onDiscover()
                     }
-                    .font(.nunito(.subheadline, weight: .semibold))
+                    .font(.app(.actionLabel))
                     .foregroundStyle(.primary)
                     #if os(iOS)
                     .buttonStyle(.glassProminent)
@@ -406,7 +368,7 @@ struct AnimatedEmptyStateTitle: View {
 
     var body: some View {
         Text(text)
-            .font(.lora(.title2))
+            .font(.app(.emptyStateTitle))
             .opacity(animateOnAppear ? (isTitleVisible ? 1 : 0) : 1)
             .offset(y: animateOnAppear ? (isTitleVisible ? 0 : 8) : 0)
             .animation(animateOnAppear ? .easeOut(duration: 0.7) : nil, value: isTitleVisible)
@@ -432,7 +394,7 @@ struct AnimatedNarrativeText: View {
         VStack(spacing: 6) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 Text(line)
-                    .font(.nunito(.callout))
+                    .font(.app(.emptyStateBody))
                     .opacity(animateOnAppear ? (visibleLineIndices.contains(index) ? 1 : 0) : 1)
                     .offset(y: animateOnAppear ? (visibleLineIndices.contains(index) ? 0 : 8) : 0)
                     .animation(

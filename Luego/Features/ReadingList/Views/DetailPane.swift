@@ -58,10 +58,10 @@ struct EmptyDetailView: View {
 
             VStack(spacing: 8) {
                 Text("No Article Selected")
-                    .font(.lora(.title2))
+                    .font(.app(.emptyStateTitle))
 
                 Text("Select an article to start reading")
-                    .font(.nunito(.body))
+                    .font(.app(.emptyStateBody))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

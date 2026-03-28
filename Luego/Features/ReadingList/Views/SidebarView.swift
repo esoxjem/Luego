@@ -86,7 +86,7 @@ struct SidebarView: View {
         .scrollContentBackground(.hidden)
         .background(Color.regularPanelBackground)
         .navigationTitle("Luego")
-        .appNavigationChrome()
+        .appNavigationStyle(.sidebarPanel)
         .safeAreaInset(edge: .bottom) {
             SidebarSyncFooter(
                 state: syncStatusObserver?.state ?? .idle,
@@ -109,7 +109,7 @@ struct SidebarView: View {
 
                 Spacer(minLength: 0)
             }
-            .font(.nunito(.body, weight: isSelected ? .semibold : .regular))
+            .font(.app(.sidebarItem, emphasized: isSelected))
             .foregroundStyle(isSelected ? Color.regularSelectionInk : Color.primary.opacity(0.82))
             .padding(.horizontal, 12)
             .padding(.vertical, 12)
@@ -140,11 +140,11 @@ struct SyncStatusRow: View {
     var body: some View {
         HStack(spacing: 6) {
             SyncStatusIndicator(state: state, onErrorTap: nil)
-                .font(.caption)
+                .font(.app(.auxiliaryStatus))
 
             if let timeText = formattedTime {
                 Text("Synced at \(timeText)")
-                    .font(.caption)
+                    .font(.app(.auxiliaryStatus))
                     .foregroundStyle(.tertiary)
             }
 

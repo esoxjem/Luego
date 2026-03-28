@@ -32,7 +32,7 @@ struct ArticleRowView: View {
 
                 if !article.excerpt.isEmpty {
                     Text(article.excerpt)
-                        .font(Font(NSFont.nunito(size: 12.5)))
+                        .font(.app(.listExcerpt))
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                         .padding(.top, 1)
@@ -58,7 +58,7 @@ struct ArticleRowView: View {
 
                 if !article.excerpt.isEmpty {
                     Text(article.excerpt)
-                        .font(.nunito(.subheadline))
+                        .font(.app(.listExcerpt))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -98,24 +98,10 @@ struct ArticleTitleRow: View {
     let isFavorite: Bool
     var isSelected: Bool = false
 
-    #if os(macOS)
-    private var macTitleFont: Font {
-        Font(NSFont.lora(size: 14, weight: .medium))
-    }
-    #endif
-
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
-                .font(
-                    {
-                        #if os(macOS)
-                        macTitleFont
-                        #else
-                        .lora(.headline)
-                        #endif
-                    }()
-                )
+                .font(.app(.listTitle))
                 .foregroundStyle(isSelected ? Color.regularSelectionInk : Color.primary)
                 .lineLimit(2)
                 .lineSpacing(1)
@@ -124,7 +110,7 @@ struct ArticleTitleRow: View {
 
             if isFavorite {
                 Image(systemName: "heart.fill")
-                    .font(.caption2)
+                    .font(.app(.listMetadata))
                     .foregroundStyle(.pink)
             }
         }
@@ -138,12 +124,6 @@ struct ArticleMetadataRow: View {
     let formattedDate: String
     var estimatedReadingTime: String? = nil
     var showReadingTime: Bool = false
-
-    #if os(macOS)
-    private var macMetadataFont: Font {
-        Font(NSFont.nunito(size: 11.5, weight: .regular))
-    }
-    #endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -178,15 +158,7 @@ struct ArticleMetadataRow: View {
                 Spacer()
             }
         }
-        .font(
-            {
-                #if os(macOS)
-                macMetadataFont
-                #else
-                .caption
-                #endif
-            }()
-        )
+        .font(.app(.listMetadata))
         .foregroundStyle(.tertiary)
     }
 }

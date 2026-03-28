@@ -40,7 +40,7 @@ struct AddArticleView: View {
                                 .accessibilityIdentifier("addArticle.urlField")
                                 .accessibilityLabel("URL")
                                 .textFieldStyle(.plain)
-                                .font(.nunito(.body))
+                                .font(.app(.body))
                                 .textContentType(.URL)
                                 .lineLimit(1)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -212,7 +212,7 @@ struct AddArticleView: View {
 private struct AddArticleHeader: View {
     var body: some View {
         Text("Add Article")
-            .font(.lora(.title3, weight: .semibold))
+            .font(.app(.sheetTitle))
     }
 }
 
@@ -223,7 +223,7 @@ private struct AddArticleLoadingRow: View {
                 .controlSize(.small)
 
             Text("Fetching article details…")
-                .font(.nunito(.footnote))
+                .font(.app(.auxiliaryStatus))
                 .foregroundStyle(Color.primary.opacity(0.62))
         }
         .accessibilityElement(children: .combine)
@@ -242,7 +242,7 @@ private struct AddArticleMessageRow: View {
                 .foregroundStyle(tint)
 
             Text(message)
-                .font(.nunito(.footnote))
+                .font(.app(.auxiliaryStatus))
                 .foregroundStyle(Color.primary.opacity(0.72))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

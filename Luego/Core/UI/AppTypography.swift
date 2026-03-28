@@ -7,6 +7,126 @@ import UIKit
 import AppKit
 #endif
 
+enum AppFontFamily {
+    case lora
+    case nunito
+    case system
+}
+
+enum AppTextRole {
+    case body
+    case navigationLargeTitle
+    case navigationInlineTitle
+    case sidebarTitle
+    case sidebarItem
+    case listTitle
+    case listExcerpt
+    case listMetadata
+    case emptyStateTitle
+    case emptyStateBody
+    case actionLabel
+    case auxiliaryStatus
+    case sheetTitle
+
+    fileprivate var family: AppFontFamily {
+        switch self {
+        case .navigationLargeTitle, .sidebarTitle, .listTitle, .emptyStateTitle, .sheetTitle:
+            .lora
+        case .navigationInlineTitle, .listMetadata, .auxiliaryStatus:
+            .system
+        case .body, .sidebarItem, .listExcerpt, .emptyStateBody, .actionLabel:
+            .nunito
+        }
+    }
+
+    fileprivate var weight: Font.Weight {
+        switch self {
+        case .navigationLargeTitle, .sidebarTitle:
+            .regular
+        case .navigationInlineTitle:
+            .regular
+        case .sidebarItem:
+            .regular
+        case .actionLabel, .sheetTitle:
+            .semibold
+        default:
+            .regular
+        }
+    }
+
+    fileprivate var textStyle: Font.TextStyle {
+        switch self {
+        case .body:
+            .body
+        case .navigationLargeTitle, .sidebarTitle:
+            .largeTitle
+        case .navigationInlineTitle, .listTitle:
+            .headline
+        case .sidebarItem:
+            .body
+        case .listExcerpt, .actionLabel:
+            .subheadline
+        case .listMetadata, .auxiliaryStatus:
+            .caption
+        case .emptyStateTitle:
+            .title2
+        case .emptyStateBody:
+            .callout
+        case .sheetTitle:
+            .title3
+        }
+    }
+
+    fileprivate var basePointSize: CGFloat {
+        switch self {
+        case .body:
+            17
+        case .navigationLargeTitle, .sidebarTitle:
+            34
+        case .navigationInlineTitle, .sidebarItem, .listTitle:
+            17
+        case .listExcerpt, .actionLabel:
+            15
+        case .listMetadata, .auxiliaryStatus:
+            12
+        case .emptyStateTitle:
+            22
+        case .emptyStateBody:
+            16
+        case .sheetTitle:
+            20
+        }
+    }
+
+    fileprivate var macOSPointSize: CGFloat {
+        switch self {
+        case .body:
+            16
+        case .sidebarItem:
+            16
+        case .listTitle:
+            16
+        case .listExcerpt:
+            13.5
+        case .listMetadata:
+            11.5
+        case .emptyStateBody:
+            15
+        default:
+            basePointSize
+        }
+    }
+
+    fileprivate var selectedWeight: Font.Weight {
+        switch self {
+        case .sidebarItem:
+            .semibold
+        default:
+            weight
+        }
+    }
+}
+
 enum AppTypography {
     static let loraPostScriptName = "Lora-Regular"
     static let nunitoPostScriptName = "NunitoSans-12ptRegular"
@@ -106,9 +226,62 @@ enum AppTypography {
             return
         }
     }
+
+    static func font(for role: AppTextRole, isEmphasized: Bool = false) -> Font {
+        #if os(iOS)
+        Font(uiFont(for: role, isEmphasized: isEmphasized))
+        #elseif os(macOS)
+        Font(nsFont(for: role, isEmphasized: isEmphasized))
+        #else
+        switch role.family {
+        case .lora, .nunito:
+            .custom(
+                postScriptName(for: role.family),
+                size: role.basePointSize,
+                relativeTo: role.textStyle
+            )
+        case .system:
+            .system(role.textStyle, design: .default)
+        }
+        #endif
+    }
+
+    private static func postScriptName(for family: AppFontFamily) -> String {
+        switch family {
+        case .lora:
+            loraPostScriptName
+        case .nunito:
+            nunitoPostScriptName
+        case .system:
+            ""
+        }
+    }
+
+    private static func axisIdentifier(for family: AppFontFamily) -> Int {
+        switch family {
+        case .lora:
+            loraWeightAxisIdentifier
+        case .nunito:
+            nunitoWeightAxisIdentifier
+        case .system:
+            0
+        }
+    }
+
+    private static func resolvedWeight(for role: AppTextRole, isEmphasized: Bool) -> Font.Weight {
+        if isEmphasized {
+            return role.selectedWeight
+        }
+
+        return role.weight
+    }
 }
 
 extension Font {
+    static func app(_ role: AppTextRole, emphasized: Bool = false) -> Font {
+        AppTypography.font(for: role, isEmphasized: emphasized)
+    }
+
     static func lora(_ textStyle: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
         #if os(iOS)
         Font(UIFont.lora(forTextStyle: textStyle.uiTextStyle, weight: weight))
@@ -140,6 +313,10 @@ extension Font {
 
 #if os(iOS)
 extension UIFont {
+    static func app(_ role: AppTextRole, emphasized: Bool = false) -> UIFont {
+        AppTypography.uiFont(for: role, isEmphasized: emphasized)
+    }
+
     static func lora(forTextStyle textStyle: UIFont.TextStyle, weight: Font.Weight = .regular) -> UIFont {
         let pointSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle).pointSize
         let axisValue = AppTypography.variableFontAxisValue(for: weight)
@@ -162,6 +339,20 @@ extension UIFont {
         ])
         let font = UIFont(descriptor: descriptor, size: pointSize)
         return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
+    }
+}
+
+extension AppTypography {
+    static func uiFont(for role: AppTextRole, isEmphasized: Bool = false) -> UIFont {
+        let weight = resolvedWeight(for: role, isEmphasized: isEmphasized)
+        switch role.family {
+        case .lora:
+            return UIFont.lora(forTextStyle: role.textStyle.uiTextStyle, weight: weight)
+        case .nunito:
+            return UIFont.nunito(forTextStyle: role.textStyle.uiTextStyle, weight: weight)
+        case .system:
+            return UIFont.preferredFont(forTextStyle: role.textStyle.uiTextStyle)
+        }
     }
 }
 
@@ -197,6 +388,10 @@ private extension Font.TextStyle {
 }
 #elseif os(macOS)
 extension NSFont {
+    static func app(_ role: AppTextRole, emphasized: Bool = false) -> NSFont {
+        AppTypography.nsFont(for: role, isEmphasized: emphasized)
+    }
+
     static func lora(size: CGFloat, weight: Font.Weight = .regular) -> NSFont {
         let axisValue = AppTypography.variableFontAxisValue(for: weight)
         let variationAttributeName = NSFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
@@ -221,6 +416,51 @@ extension NSFont {
         return NSFont(descriptor: descriptor, size: size)
             ?? NSFont(name: AppTypography.nunitoPostScriptName, size: size)
             ?? .systemFont(ofSize: size)
+    }
+}
+
+extension AppTypography {
+    static func nsFont(for role: AppTextRole, isEmphasized: Bool = false) -> NSFont {
+        let weight = resolvedWeight(for: role, isEmphasized: isEmphasized)
+        let size = role.macOSPointSize
+        if role.family == .system {
+            return NSFont.systemFont(ofSize: size, weight: nsFontWeight(for: weight))
+        }
+        let variationAttributeName = NSFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
+        let descriptor = NSFontDescriptor(fontAttributes: [
+            .name: postScriptName(for: role.family),
+            .size: size,
+            variationAttributeName: [axisIdentifier(for: role.family): variableFontAxisValue(for: weight)]
+        ])
+
+        return NSFont(descriptor: descriptor, size: size)
+            ?? NSFont(name: postScriptName(for: role.family), size: size)
+            ?? .systemFont(ofSize: size)
+    }
+
+    private static func nsFontWeight(for weight: Font.Weight) -> NSFont.Weight {
+        switch weight {
+        case .ultraLight:
+            .ultraLight
+        case .thin:
+            .thin
+        case .light:
+            .light
+        case .regular:
+            .regular
+        case .medium:
+            .medium
+        case .semibold:
+            .semibold
+        case .bold:
+            .bold
+        case .heavy:
+            .heavy
+        case .black:
+            .black
+        default:
+            .regular
+        }
     }
 }
 #endif
