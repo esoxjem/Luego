@@ -1,18 +1,9 @@
-//
-//  ArticleListView.swift
-//  Luego
-//
-//  Created by Claude Code on 11/12/25.
-//
-
 import SwiftUI
-import SwiftData
 
 struct ArticleListView: View {
     @Environment(\.diContainer) private var diContainer
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
-    @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
     @State private var viewModel: ArticleListViewModel?
     @State private var discoveryViewModel: DiscoveryViewModel?
     @State private var showingAddArticle = false
@@ -23,7 +14,7 @@ struct ArticleListView: View {
     let onEmptyStateAnimationConsumed: () -> Void
 
     private var filteredArticles: [Article] {
-        filter.filtered(allArticles)
+        filter.filtered(viewModel?.articles ?? [])
     }
 
     init(
@@ -120,8 +111,10 @@ struct ArticleListView: View {
     }
 
     private func initializeViewModelIfNeeded() {
-        guard viewModel == nil, let container = diContainer else { return }
-        viewModel = container.makeArticleListViewModel()
+        if viewModel == nil, let container = diContainer {
+            viewModel = container.makeArticleListViewModel()
+        }
+        viewModel?.startObservingArticles()
     }
 
     private func presentAddArticle() {
@@ -150,7 +143,7 @@ struct ArticleListView: View {
     @ViewBuilder
     private var addArticleDestination: some View {
         if let viewModel {
-            AddArticleView(viewModel: viewModel, existingArticles: allArticles)
+            AddArticleView(viewModel: viewModel)
         }
     }
 

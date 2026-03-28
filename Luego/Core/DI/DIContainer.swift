@@ -1,13 +1,11 @@
+import CloudKit
 import Foundation
-import SwiftData
 
 @MainActor
 final class DIContainer {
-    private let modelContext: ModelContext
-
-    init(modelContext: ModelContext) {
-        self.modelContext = modelContext
-    }
+    let database: AppDatabase
+    let articleStore: ArticleStoreProtocol
+    let syncEngineManager: SyncEngineManager
 
     private lazy var userDefaultsDataSource: UserDefaultsDataSourceProtocol = {
         UserDefaultsDataSource(sharedStorage: SharedStorage.shared)
@@ -58,14 +56,6 @@ final class DIContainer {
         )
     }()
 
-    var sdkManager: LuegoSDKManagerProtocol { luegoSDKManager }
-
-    private lazy var _syncStatusObserver: SyncStatusObserver = {
-        SyncStatusObserver(modelContext: modelContext)
-    }()
-
-    var syncObserver: SyncStatusObserver { _syncStatusObserver }
-
     private lazy var opmlDataSource: OPMLDataSource = {
         OPMLDataSource()
     }()
@@ -95,14 +85,14 @@ final class DIContainer {
 
     private lazy var articleService: ArticleServiceProtocol = {
         ArticleService(
-            modelContext: modelContext,
+            articleStore: articleStore,
             metadataDataSource: metadataDataSource
         )
     }()
 
     private lazy var readerService: ReaderServiceProtocol = {
         ReaderService(
-            modelContext: modelContext,
+            articleStore: articleStore,
             metadataDataSource: metadataDataSource
         )
     }()
@@ -117,11 +107,34 @@ final class DIContainer {
 
     private lazy var sharingService: SharingServiceProtocol = {
         SharingService(
-            modelContext: modelContext,
+            articleStore: articleStore,
             metadataDataSource: metadataDataSource,
             userDefaultsDataSource: userDefaultsDataSource
         )
     }()
+
+    private lazy var _syncObserver: SyncStatusObserver = {
+        SyncStatusObserver()
+    }()
+
+    var syncObserver: SyncStatusObserver { _syncObserver }
+
+    init(database: AppDatabase) {
+        self.database = database
+
+        let coreArticleStore = GRDBArticleStore(database: database)
+        self.articleStore = coreArticleStore
+
+        let syncEngineManager = SyncEngineManager(
+            database: database,
+            store: coreArticleStore,
+            container: CKContainer(identifier: AppConfiguration.cloudKitContainerIdentifier)
+        )
+        self.syncEngineManager = syncEngineManager
+        coreArticleStore.syncEngineManager = syncEngineManager
+    }
+
+    var sdkManager: LuegoSDKManagerProtocol { luegoSDKManager }
 
     func makeArticleListViewModel() -> ArticleListViewModel {
         ArticleListViewModel(

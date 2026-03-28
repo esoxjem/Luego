@@ -1,6 +1,4 @@
 import SwiftUI
-import CloudKit
-import SwiftData
 
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
@@ -18,13 +16,15 @@ struct SettingsView: View {
             SettingsMacLayout(
                 viewModel: viewModel,
                 state: resolvedObserver?.state ?? .idle,
-                lastSyncTime: resolvedObserver?.lastSyncTime
+                lastSyncTime: resolvedObserver?.lastSyncTime,
+                syncStatusObserver: resolvedObserver
             )
             #else
             Form {
                 SyncStatusSection(
                     state: resolvedObserver?.state ?? .idle,
                     lastSyncTime: resolvedObserver?.lastSyncTime,
+                    syncStatusObserver: resolvedObserver,
                     isSyncing: viewModel.isForceSyncing,
                     didSync: viewModel.didForceSync,
                     onSync: { Task { await viewModel.forceReSync() } }
@@ -46,7 +46,10 @@ struct SettingsView: View {
                 )
 
                 Section {
-                    CopyDiagnosticsButton()
+                    CopyDiagnosticsButton(
+                        viewModel: viewModel,
+                        syncStatusObserver: resolvedObserver
+                    )
                 } header: {
                     Text("Developer")
                 } footer: {
@@ -364,6 +367,7 @@ struct SDKUpdateSection: View {
 struct SyncStatusSection: View {
     let state: SyncState
     let lastSyncTime: Date?
+    let syncStatusObserver: SyncStatusObserver?
     let isSyncing: Bool
     let didSync: Bool
     let onSync: () -> Void
@@ -421,6 +425,20 @@ struct SyncStatusSection: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("iCloud Sync")
             .accessibilityValue(accessibilityStatusValue)
+            if syncStatusObserver?.cloudKitNeedsAttention == true,
+               let diagnosticSummary = syncStatusObserver?.cloudKitDiagnosticSummary {
+                Text(diagnosticSummary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if syncStatusObserver?.cloudKitNeedsAttention == true,
+               let diagnosticHint = syncStatusObserver?.cloudKitDiagnosticHint {
+                Text(diagnosticHint)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             ForceReSyncButton(
                 isSyncing: isSyncing,
                 didSync: didSync,
@@ -623,6 +641,7 @@ struct SettingsMacLayout: View {
     @Bindable var viewModel: SettingsViewModel
     let state: SyncState
     let lastSyncTime: Date?
+    let syncStatusObserver: SyncStatusObserver?
 
     var body: some View {
         ScrollView {
@@ -638,6 +657,7 @@ struct SettingsMacLayout: View {
                     SyncStatusCard(
                         state: state,
                         lastSyncTime: lastSyncTime,
+                        syncStatusObserver: syncStatusObserver,
                         isSyncing: viewModel.isForceSyncing,
                         didSync: viewModel.didForceSync,
                         onSync: { Task { await viewModel.forceReSync() } }
@@ -692,7 +712,10 @@ struct SettingsMacLayout: View {
                     SettingsCardDivider()
                     VStack(spacing: 10) {
                         StreamingLogsToggle()
-                        CopyDiagnosticsButton()
+                        CopyDiagnosticsButton(
+                            viewModel: viewModel,
+                            syncStatusObserver: syncStatusObserver
+                        )
                     }
                 }
 
@@ -1024,6 +1047,7 @@ struct DiscoverySettingsCardContent: View {
 struct SyncStatusCard: View {
     let state: SyncState
     let lastSyncTime: Date?
+    let syncStatusObserver: SyncStatusObserver?
     let isSyncing: Bool
     let didSync: Bool
     let onSync: () -> Void
@@ -1068,6 +1092,23 @@ struct SyncStatusCard: View {
                 formattedTime: formattedTime,
                 emphasizesGlyph: state != .idle
             )
+
+            if syncStatusObserver?.cloudKitNeedsAttention == true,
+               let diagnosticSummary = syncStatusObserver?.cloudKitDiagnosticSummary {
+                Text(diagnosticSummary)
+                    .font(.nunito(.footnote))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if syncStatusObserver?.cloudKitNeedsAttention == true,
+               let diagnosticHint = syncStatusObserver?.cloudKitDiagnosticHint {
+                Text(diagnosticHint)
+                    .font(.nunito(.footnote))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             ForceReSyncButton(
                 isSyncing: isSyncing,
@@ -1128,7 +1169,8 @@ struct StreamingLogsToggle: View {
 #endif
 
 struct CopyDiagnosticsButton: View {
-    @Environment(\.modelContext) private var modelContext
+    let viewModel: SettingsViewModel
+    let syncStatusObserver: SyncStatusObserver?
     @State private var showCopiedToast = false
     @State private var isLoading = false
 
@@ -1194,7 +1236,7 @@ struct CopyDiagnosticsButton: View {
         isLoading = true
         defer { isLoading = false }
 
-        let diagnostics = await gatherDiagnostics()
+        let diagnostics = await viewModel.gatherDiagnostics(syncStatusObserver: syncStatusObserver)
 
         await MainActor.run {
             #if os(macOS)
@@ -1212,141 +1254,6 @@ struct CopyDiagnosticsButton: View {
         await MainActor.run {
             showCopiedToast = false
         }
-    }
-
-    private func gatherDiagnostics() async -> String {
-        var lines: [String] = []
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-
-        lines.append("=== Luego Diagnostics ===")
-        lines.append("Generated: \(dateFormatter.string(from: Date()))")
-        lines.append("")
-
-        // App Info
-        let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
-        lines.append("App Bundle ID: \(bundleID)")
-        lines.append("App Version: \(version)")
-        lines.append("Build Number: \(build)")
-        #if os(iOS)
-        lines.append("Platform: iOS \(UIDevice.current.systemVersion)")
-        #elseif os(macOS)
-        lines.append("Platform: macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
-        #endif
-        lines.append("")
-
-        // CloudKit Info
-        lines.append("CloudKit Container: \(AppConfiguration.cloudKitContainerIdentifier)")
-
-        // Fetch CloudKit info in parallel
-        let container = CKContainer(identifier: AppConfiguration.cloudKitContainerIdentifier)
-
-        async let accountStatusTask = fetchAccountStatus(for: container)
-        async let subscriptionsTask = fetchSubscriptions(for: container)
-
-        let (accountStatus, subscriptions) = await (accountStatusTask, subscriptionsTask)
-
-        lines.append("iCloud Account Status: \(accountStatus)")
-        lines.append("Active CloudKit Subscriptions: \(subscriptions.count)")
-        for sub in subscriptions {
-            lines.append("  - \(sub.subscriptionID) (type: \(sub.subscriptionType.rawValue))")
-        }
-        lines.append("")
-
-        let articleIdentityLines = await MainActor.run {
-            ArticleIdentitySnapshotFormatter.lines {
-                try modelContext.fetch(FetchDescriptor<Article>())
-            }
-        }
-        lines.append(contentsOf: articleIdentityLines)
-        lines.append("")
-
-        // Recent Logs
-        let logDateFormatter = DateFormatter()
-        logDateFormatter.dateFormat = "HH:mm:ss"
-
-        lines.append("--- Recent Logs (last 500 entries) ---")
-        let recentLogs = LogStream.shared.entries.suffix(500)
-        if recentLogs.isEmpty {
-            lines.append("No logs captured yet.")
-        } else {
-            for entry in recentLogs {
-                let time = logDateFormatter.string(from: entry.timestamp)
-                lines.append("[\(time)] [\(entry.category)] [\(entry.level.rawValue)] \(entry.message)")
-            }
-        }
-
-        return lines.joined(separator: "\n")
-    }
-
-    private func fetchAccountStatus(for container: CKContainer) async -> String {
-        do {
-            let status = try await container.accountStatus()
-            switch status {
-            case .available: return "available"
-            case .noAccount: return "noAccount"
-            case .restricted: return "restricted"
-            case .couldNotDetermine: return "couldNotDetermine"
-            case .temporarilyUnavailable: return "temporarilyUnavailable"
-            @unknown default: return "unknown(\(status.rawValue))"
-            }
-        } catch {
-            return "error: \(error.localizedDescription)"
-        }
-    }
-
-    private func fetchSubscriptions(for container: CKContainer) async -> [CKSubscription] {
-        do {
-            return try await container.privateCloudDatabase.allSubscriptions()
-        } catch {
-            return []
-        }
-    }
-}
-
-enum ArticleIdentitySnapshotFormatter {
-    static func lines(for articles: [Article]) -> [String] {
-        let sortedArticles = articles.sorted {
-            let lhsURL = $0.url.absoluteString
-            let rhsURL = $1.url.absoluteString
-
-            if lhsURL == rhsURL {
-                return $0.id.uuidString < $1.id.uuidString
-            }
-
-            return lhsURL < rhsURL
-        }
-
-        return articleIdentitySnapshotLines(sortedArticles)
-    }
-
-    static func lines(fetcher: () throws -> [Article]) -> [String] {
-        do {
-            return lines(for: try fetcher())
-        } catch {
-            return [
-                "--- Article Identity Snapshot (id | url) ---",
-                "Failed to fetch local articles: \(error.localizedDescription)"
-            ]
-        }
-    }
-
-    private static func articleIdentitySnapshotLines(_ sortedArticles: [Article]) -> [String] {
-        var lines = ["--- Article Identity Snapshot (id | url) ---"]
-        lines.append("Article Identity Count: \(sortedArticles.count)")
-
-        if sortedArticles.isEmpty {
-            lines.append("No local articles.")
-            return lines
-        }
-
-        for article in sortedArticles {
-            lines.append("\(article.id.uuidString) | \(article.url.absoluteString)")
-        }
-
-        return lines
     }
 }
 

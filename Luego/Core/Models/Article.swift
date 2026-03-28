@@ -6,20 +6,18 @@
 //
 
 import Foundation
-import SwiftData
 
-@Model
 final class Article {
-    var id: UUID = UUID()
-    var url: URL = URL(string: "luego://placeholder")!
-    var title: String = ""
+    var id: UUID
+    var url: URL
+    var title: String
     var content: String?
-    var savedDate: Date = Date()
+    var savedDate: Date
     var thumbnailURL: URL?
     var publishedDate: Date?
-    var readPosition: Double = 0.0
-    var isFavorite: Bool = false
-    var isArchived: Bool = false
+    var readPosition: Double
+    var isFavorite: Bool
+    var isArchived: Bool
     var author: String?
     var wordCount: Int?
 
@@ -63,9 +61,13 @@ final class Article {
     }
 }
 
-extension Article: Equatable {
+extension Article: Identifiable, Equatable, Hashable {
     static func == (lhs: Article, rhs: Article) -> Bool {
         lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 

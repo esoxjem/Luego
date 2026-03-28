@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 @MainActor
 protocol SharingServiceProtocol: Sendable {
@@ -8,16 +7,16 @@ protocol SharingServiceProtocol: Sendable {
 
 @MainActor
 final class SharingService: SharingServiceProtocol {
-    private let modelContext: ModelContext
+    private let articleStore: ArticleStoreProtocol
     private let metadataDataSource: MetadataDataSourceProtocol
     private let userDefaultsDataSource: UserDefaultsDataSourceProtocol
 
     init(
-        modelContext: ModelContext,
+        articleStore: ArticleStoreProtocol,
         metadataDataSource: MetadataDataSourceProtocol,
         userDefaultsDataSource: UserDefaultsDataSourceProtocol
     ) {
-        self.modelContext = modelContext
+        self.articleStore = articleStore
         self.metadataDataSource = metadataDataSource
         self.userDefaultsDataSource = userDefaultsDataSource
     }
@@ -37,7 +36,7 @@ final class SharingService: SharingServiceProtocol {
             do {
                 let validatedURL = try await metadataDataSource.validateURL(sharedURL.url)
 
-                if articleExists(for: validatedURL) {
+                if (try articleStore.fetchArticle(url: validatedURL)) != nil {
                     Logger.sharing.debug("Skipping duplicate URL: \(validatedURL.absoluteString)")
                     latestProcessedTimestamp = max(latestProcessedTimestamp, sharedURL.timestamp)
                     continue
@@ -57,15 +56,14 @@ final class SharingService: SharingServiceProtocol {
                 )
 
                 do {
-                    modelContext.insert(article)
-                    try modelContext.save()
-                    newArticles.append(article)
+                    let savedArticle = try articleStore.saveArticle(article)
+                    newArticles.append(savedArticle)
                     latestProcessedTimestamp = max(latestProcessedTimestamp, sharedURL.timestamp)
                 } catch {
-                    modelContext.rollback()
-                    if fetchExistingArticle(for: validatedURL) != nil {
+                    if let existingArticle = try articleStore.fetchArticle(url: validatedURL) {
                         Logger.sharing.debug("Duplicate detected via constraint: \(validatedURL.absoluteString)")
                         latestProcessedTimestamp = max(latestProcessedTimestamp, sharedURL.timestamp)
+                        newArticles.append(existingArticle)
                     } else {
                         Logger.sharing.error("Failed to save article and no existing article found: \(error.localizedDescription)")
                     }
@@ -81,17 +79,5 @@ final class SharingService: SharingServiceProtocol {
         }
 
         return newArticles
-    }
-
-    private func articleExists(for url: URL) -> Bool {
-        let predicate = #Predicate<Article> { $0.url == url }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-        return (try? modelContext.fetch(descriptor).first) != nil
-    }
-
-    private func fetchExistingArticle(for url: URL) -> Article? {
-        let predicate = #Predicate<Article> { $0.url == url }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-        return try? modelContext.fetch(descriptor).first
     }
 }

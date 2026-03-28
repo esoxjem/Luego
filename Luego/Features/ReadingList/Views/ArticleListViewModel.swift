@@ -4,11 +4,14 @@ import Observation
 @Observable
 @MainActor
 final class ArticleListViewModel {
+    var articles: [Article] = []
     var isLoading = false
     var errorMessage: String?
 
     private let articleService: ArticleServiceProtocol
     private let sharingService: SharingServiceProtocol
+    @ObservationIgnored
+    private var observationTask: Task<Void, Never>?
 
     init(
         articleService: ArticleServiceProtocol,
@@ -16,9 +19,34 @@ final class ArticleListViewModel {
     ) {
         self.articleService = articleService
         self.sharingService = sharingService
+        self.articles = []
     }
 
-    func addArticle(from urlString: String, existingArticles: [Article]) async {
+    deinit {
+        observationTask?.cancel()
+    }
+
+    func startObservingArticles() {
+        guard observationTask == nil else { return }
+
+        observationTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                observationTask = nil
+            }
+
+            do {
+                for try await articles in articleService.observeArticles() {
+                    self.articles = articles
+                }
+            } catch is CancellationError {
+            } catch {
+                self.errorMessage = "Failed to observe articles: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func addArticle(from urlString: String) async {
         errorMessage = nil
 
         guard let url = URL(string: urlString.trimmingCharacters(in: .whitespaces)) else {
@@ -26,7 +54,9 @@ final class ArticleListViewModel {
             return
         }
 
-        if existingArticles.contains(where: { $0.url == url }) {
+        let currentArticles = articles.isEmpty ? (try? await articleService.getAllArticles()) ?? [] : articles
+
+        if currentArticles.contains(where: { $0.url == url }) {
             errorMessage = "This article has already been saved"
             return
         }

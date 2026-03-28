@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -422,10 +421,9 @@ private struct MacAddArticleSheetState: Identifiable {
 
 private struct MacAddArticleSheet: View {
     let viewModel: ArticleListViewModel
-    @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
 
     var body: some View {
-        AddArticleView(viewModel: viewModel, existingArticles: allArticles)
+        AddArticleView(viewModel: viewModel)
             .accessibilityIdentifier("addArticle.container")
             .frame(minWidth: 460, idealWidth: 520, minHeight: 300, idealHeight: 340)
     }

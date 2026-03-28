@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 
 struct ArticleListPane: View {
     let filter: ArticleFilter
@@ -8,13 +7,12 @@ struct ArticleListPane: View {
     let shouldAnimateEmptyStateOnFirstAppearance: Bool
     let onEmptyStateAnimationConsumed: () -> Void
     @Environment(\.diContainer) private var diContainer
-    @Query(sort: \Article.savedDate, order: .reverse) private var allArticles: [Article]
     @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
     @State private var showingSettings = false
 
     private var filteredArticles: [Article] {
-        filter.filtered(allArticles)
+        filter.filtered(viewModel?.articles ?? [])
     }
 
     var body: some View {
@@ -74,7 +72,7 @@ struct ArticleListPane: View {
         #if !os(macOS)
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
-                AddArticleView(viewModel: viewModel, existingArticles: allArticles)
+                AddArticleView(viewModel: viewModel)
             }
         }
         #endif
@@ -89,6 +87,7 @@ struct ArticleListPane: View {
             if viewModel == nil, let container = diContainer {
                 viewModel = container.makeArticleListViewModel()
             }
+            viewModel?.startObservingArticles()
         }
     }
 }

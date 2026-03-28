@@ -1,9 +1,9 @@
 import Foundation
-import SwiftData
 
 @MainActor
 protocol ArticleServiceProtocol: Sendable {
     func getAllArticles() async throws -> [Article]
+    func observeArticles() -> AsyncThrowingStream<[Article], Error>
     func addArticle(url: URL) async throws -> Article
     func deleteArticle(id: UUID) async throws
     func updateArticle(_ article: Article) async throws
@@ -15,25 +15,29 @@ protocol ArticleServiceProtocol: Sendable {
 
 @MainActor
 final class ArticleService: ArticleServiceProtocol {
-    private let modelContext: ModelContext
+    private let articleStore: ArticleStoreProtocol
     private let metadataDataSource: MetadataDataSourceProtocol
 
-    init(modelContext: ModelContext, metadataDataSource: MetadataDataSourceProtocol) {
-        self.modelContext = modelContext
+    init(
+        articleStore: ArticleStoreProtocol,
+        metadataDataSource: MetadataDataSourceProtocol
+    ) {
+        self.articleStore = articleStore
         self.metadataDataSource = metadataDataSource
     }
 
     func getAllArticles() async throws -> [Article] {
-        let descriptor = FetchDescriptor<Article>(
-            sortBy: [SortDescriptor(\.savedDate, order: .reverse)]
-        )
-        return try modelContext.fetch(descriptor)
+        try articleStore.fetchAllArticles()
+    }
+
+    func observeArticles() -> AsyncThrowingStream<[Article], Error> {
+        articleStore.observeArticles()
     }
 
     func addArticle(url: URL) async throws -> Article {
         let validatedURL = try await metadataDataSource.validateURL(url)
 
-        if let existingArticle = findExistingArticle(for: validatedURL) {
+        if let existingArticle = try articleStore.fetchArticle(url: validatedURL) {
             Logger.article.debug("Duplicate detected: \(validatedURL.absoluteString)")
             return existingArticle
         }
@@ -55,12 +59,9 @@ final class ArticleService: ArticleServiceProtocol {
         Logger.article.debug("[ThumbnailDebug] Article Storage - thumbnailURL: \(metadata.thumbnailURL?.absoluteString ?? "nil")")
 
         do {
-            modelContext.insert(article)
-            try modelContext.save()
-            return article
+            return try articleStore.saveArticle(article)
         } catch {
-            modelContext.rollback()
-            if let existingArticle = findExistingArticle(for: validatedURL) {
+            if let existingArticle = try articleStore.fetchArticle(url: validatedURL) {
                 Logger.article.debug("Duplicate detected after error: \(validatedURL.absoluteString)")
                 return existingArticle
             }
@@ -69,44 +70,41 @@ final class ArticleService: ArticleServiceProtocol {
     }
 
     func deleteArticle(id: UUID) async throws {
-        guard let article = try fetchArticle(by: id) else { return }
-
-        modelContext.delete(article)
-        try modelContext.save()
+        try articleStore.deleteArticle(id: id)
     }
 
     func updateArticle(_ article: Article) async throws {
-        try modelContext.save()
+        _ = try articleStore.saveArticle(article)
     }
 
     func toggleFavorite(id: UUID) async throws {
-        guard let article = try fetchArticle(by: id) else { return }
+        guard let article = try articleStore.fetchArticle(id: id) else {
+            return
+        }
 
         article.isFavorite.toggle()
         if article.isFavorite {
             article.isArchived = false
         }
-        try modelContext.save()
+
+        _ = try articleStore.saveArticle(article)
     }
 
     func toggleArchive(id: UUID) async throws {
-        guard let article = try fetchArticle(by: id) else { return }
+        guard let article = try articleStore.fetchArticle(id: id) else {
+            return
+        }
 
         article.isArchived.toggle()
         if article.isArchived {
             article.isFavorite = false
         }
-        try modelContext.save()
-    }
 
-    private func fetchArticle(by id: UUID) throws -> Article? {
-        let predicate = #Predicate<Article> { $0.id == id }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-        return try modelContext.fetch(descriptor).first
+        _ = try articleStore.saveArticle(article)
     }
 
     func saveEphemeralArticle(_ ephemeralArticle: EphemeralArticle) async throws -> Article {
-        if let existingArticle = findExistingArticle(for: ephemeralArticle.url) {
+        if let existingArticle = try articleStore.fetchArticle(url: ephemeralArticle.url) {
             return existingArticle
         }
 
@@ -119,12 +117,9 @@ final class ArticleService: ArticleServiceProtocol {
         )
 
         do {
-            modelContext.insert(article)
-            try modelContext.save()
-            return article
+            return try articleStore.saveArticle(article)
         } catch {
-            modelContext.rollback()
-            if let existingArticle = findExistingArticle(for: ephemeralArticle.url) {
+            if let existingArticle = try articleStore.fetchArticle(url: ephemeralArticle.url) {
                 Logger.article.debug("Duplicate detected via constraint: \(ephemeralArticle.url.absoluteString)")
                 return existingArticle
             }
@@ -132,21 +127,14 @@ final class ArticleService: ArticleServiceProtocol {
         }
     }
 
-    private func findExistingArticle(for url: URL) -> Article? {
-        let predicate = #Predicate<Article> { $0.url == url }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-        return try? modelContext.fetch(descriptor).first
-    }
-
     func forceReSyncAllArticles() async throws -> Int {
-        let descriptor = FetchDescriptor<Article>()
-        let articles = try modelContext.fetch(descriptor)
+        let articles = try articleStore.fetchAllArticles()
 
         for article in articles {
             article.savedDate = article.savedDate.addingTimeInterval(0.001)
+            _ = try articleStore.saveArticle(article)
         }
 
-        try modelContext.save()
         return articles.count
     }
 }

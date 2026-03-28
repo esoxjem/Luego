@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 enum ReaderServiceError: Error, LocalizedError {
     case articleNotFound
@@ -20,11 +19,14 @@ protocol ReaderServiceProtocol: Sendable {
 
 @MainActor
 final class ReaderService: ReaderServiceProtocol {
-    private let modelContext: ModelContext
+    private let articleStore: ArticleStoreProtocol
     private let metadataDataSource: MetadataDataSourceProtocol
 
-    init(modelContext: ModelContext, metadataDataSource: MetadataDataSourceProtocol) {
-        self.modelContext = modelContext
+    init(
+        articleStore: ArticleStoreProtocol,
+        metadataDataSource: MetadataDataSourceProtocol
+    ) {
+        self.articleStore = articleStore
         self.metadataDataSource = metadataDataSource
     }
 
@@ -41,10 +43,7 @@ final class ReaderService: ReaderServiceProtocol {
         Logger.reader.debug("Fetching content from metadata source")
         let content = try await metadataDataSource.fetchContent(for: article.url, timeout: nil, forceRefresh: forceRefresh)
 
-        let predicate = #Predicate<Article> { $0.id == articleId }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-
-        guard let freshArticle = try modelContext.fetch(descriptor).first else {
+        guard let freshArticle = try articleStore.fetchArticle(id: articleId) else {
             Logger.reader.error("Article \(articleId) not found after fetch")
             throw ReaderServiceError.articleNotFound
         }
@@ -63,20 +62,12 @@ final class ReaderService: ReaderServiceProtocol {
             freshArticle.thumbnailURL = thumbnailURL
         }
 
-        try modelContext.save()
+        _ = try articleStore.saveArticle(freshArticle)
         Logger.reader.debug("Content saved for article \(articleId)")
         return freshArticle
     }
 
     func updateReadPosition(articleId: UUID, position: Double) async throws {
-        let predicate = #Predicate<Article> { $0.id == articleId }
-        let descriptor = FetchDescriptor<Article>(predicate: predicate)
-
-        guard let article = try modelContext.fetch(descriptor).first else {
-            return
-        }
-
-        article.readPosition = position
-        try modelContext.save()
+        try articleStore.updateReadPosition(id: articleId, position: position)
     }
 }

@@ -11,7 +11,6 @@ struct AddArticleView: View {
     @State private var hasInitializedPresentation = false
     @FocusState private var isURLFieldFocused: Bool
     @Bindable var viewModel: ArticleListViewModel
-    let existingArticles: [Article]
 
     private var trimmedURLText: String {
         urlText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -183,7 +182,7 @@ struct AddArticleView: View {
     private func saveArticle() async {
         guard canSave else { return }
 
-        await viewModel.addArticle(from: trimmedURLText, existingArticles: existingArticles)
+        await viewModel.addArticle(from: trimmedURLText)
 
         if viewModel.errorMessage == nil {
             dismiss()
