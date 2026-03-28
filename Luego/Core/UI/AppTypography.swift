@@ -30,9 +30,9 @@ enum AppTextRole {
 
     fileprivate var family: AppFontFamily {
         switch self {
-        case .navigationLargeTitle, .sidebarTitle, .listTitle, .emptyStateTitle, .sheetTitle:
+        case .navigationLargeTitle, .navigationInlineTitle, .sidebarTitle, .listTitle, .emptyStateTitle, .sheetTitle:
             .lora
-        case .navigationInlineTitle, .listMetadata, .auxiliaryStatus:
+        case .listMetadata, .auxiliaryStatus:
             .system
         case .body, .sidebarItem, .listExcerpt, .emptyStateBody, .actionLabel:
             .nunito
