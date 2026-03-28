@@ -54,8 +54,12 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     func fetchRecord(id: UUID) throws -> ArticleRecord? {
+        try fetchRecord(recordName: id.uuidString)
+    }
+
+    func fetchRecord(recordName: String) throws -> ArticleRecord? {
         try database.reader.read { db in
-            try ArticleRecord.fetchOne(db, key: id.uuidString)
+            try ArticleRecord.fetchOne(db, key: recordName)
         }
     }
 
@@ -78,9 +82,6 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         var record = ArticleRecord(article)
         if let existingRecord = try fetchRecord(id: article.id) {
             record.cloudKitSystemFields = existingRecord.cloudKitSystemFields
-        } else if let existingRecord = try fetchRecord(url: article.url),
-                  existingRecord.id != record.id {
-            record.cloudKitSystemFields = existingRecord.cloudKitSystemFields
         }
 
         try saveRecord(record)
@@ -99,11 +100,14 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     func deleteArticle(id: UUID) throws {
-        try database.writer.write { db in
-            _ = try ArticleRecord.deleteOne(db, key: id.uuidString)
-        }
-
+        try deleteRecord(recordName: id.uuidString)
         syncEngineManager?.enqueueDelete(for: ArticleRecord.makeRecordID(for: id.uuidString))
+    }
+
+    func deleteRecord(recordName: String) throws {
+        try database.writer.write { db in
+            _ = try ArticleRecord.deleteOne(db, key: recordName)
+        }
     }
 
     func toggleFavorite(id: UUID) throws {

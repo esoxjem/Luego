@@ -176,9 +176,14 @@ extension SyncEngineManager: CKSyncEngineDelegate {
             .filter { context.options.scope.contains($0) }
 
         let recordsByID = Dictionary(uniqueKeysWithValues: pendingChanges.compactMap { change -> (CKRecord.ID, ArticleRecord)? in
-            guard case .saveRecord(let recordID) = change,
-                  let articleID = UUID(uuidString: recordID.recordName),
-                  let record = try? store.fetchRecord(id: articleID) else {
+            guard case .saveRecord(let recordID) = change else {
+                return nil
+            }
+
+            guard let record = try? store.fetchRecord(recordName: recordID.recordName) else {
+                syncEngine.state.remove(
+                    pendingRecordZoneChanges: [.saveRecord(recordID)]
+                )
                 return nil
             }
 
@@ -234,8 +239,10 @@ private extension SyncEngineManager {
     }
 
     func processIncomingDeletion(_ recordID: CKRecord.ID) async throws {
-        guard let articleID = UUID(uuidString: recordID.recordName) else { return }
-        try store.deleteArticle(id: articleID)
+        try store.deleteRecord(recordName: recordID.recordName)
+        syncEngine?.state.remove(
+            pendingRecordZoneChanges: [.saveRecord(recordID), .deleteRecord(recordID)]
+        )
     }
 
     func processSentRecordZoneChanges(
@@ -283,7 +290,11 @@ private extension SyncEngineManager {
     ) async -> Bool {
         let ckError = failedSave.error
         let recordID = failedSave.record.recordID
-        let recordContext = await recordDiagnosticsContext(for: failedSave.record)
+        let storedRecord = try? store.fetchRecord(recordName: recordID.recordName)
+        let recordContext = recordDiagnosticsContext(
+            for: failedSave.record,
+            storedRecord: storedRecord ?? nil
+        )
 
         if ckError.code == .serverRecordChanged,
            let serverRecord = ckError.serverRecord {
@@ -299,6 +310,36 @@ private extension SyncEngineManager {
                 )
                 appendRecentFailedSaveDetail(
                     "Conflict resolution failed for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
+                )
+                return true
+            }
+        }
+
+        if shouldTreatMissingServerRecordAsRemoteDeletion(
+            error: ckError,
+            storedRecord: storedRecord
+        ) {
+            let detail = [
+                "Remote deletion detected for local record \(recordID.recordName)",
+                "zone=\(recordZoneDescription(for: recordID))",
+                "action=deletedLocalCopy",
+                recordContext
+            ].joined(separator: " | ")
+            Logger.cloudKit.warning(detail)
+            appendRecentFailedSaveDetail(detail)
+
+            do {
+                try store.deleteRecord(recordName: recordID.recordName)
+                syncEngine.state.remove(
+                    pendingRecordZoneChanges: [.saveRecord(recordID), .deleteRecord(recordID)]
+                )
+                return false
+            } catch {
+                Logger.cloudKit.error(
+                    "Failed to delete local record after remote deletion detection for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
+                )
+                appendRecentFailedSaveDetail(
+                    "Remote deletion recovery failed for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
                 )
                 return true
             }
@@ -547,19 +588,25 @@ private extension SyncEngineManager {
         return "domain=\(nsError.domain) code=\(nsError.code) description=\(nsError.localizedDescription)"
     }
 
-    func recordDiagnosticsContext(for record: CKRecord) async -> String {
+    func shouldTreatMissingServerRecordAsRemoteDeletion(
+        error: CKError,
+        storedRecord: ArticleRecord?
+    ) -> Bool {
+        error.code == .unknownItem && storedRecord?.cloudKitSystemFields != nil
+    }
+
+    func recordDiagnosticsContext(
+        for record: CKRecord,
+        storedRecord: ArticleRecord?
+    ) -> String {
         guard let articleID = UUID(uuidString: record.recordID.recordName) else {
             return "storedRecord=unavailable"
         }
 
-        do {
-            guard let storedRecord = try store.fetchRecord(id: articleID) else {
-                return "storedRecord=missing"
-            }
-
-            return "storedRecord=present | \(recordPayloadSummary(record: record, storedRecord: storedRecord))"
-        } catch {
-            return "storedRecordLookupError=\(describe(error: error))"
+        guard let storedRecord else {
+            return "storedRecord=missing id=\(articleID.uuidString)"
         }
+
+        return "storedRecord=present | \(recordPayloadSummary(record: record, storedRecord: storedRecord))"
     }
 }
