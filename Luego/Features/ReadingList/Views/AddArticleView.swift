@@ -163,18 +163,22 @@ struct AddArticleView: View {
     @ViewBuilder
     private var addArticlePasteControl: some View {
         #if os(iOS)
-        AddArticlePasteControl(onPaste: pasteClipboardText)
-            .frame(width: 28, height: 28)
-        #else
-        PasteButton(payloadType: String.self) { strings in
-            pasteClipboardText(strings)
+        AddArticleInlinePasteAffordance {
+            AddArticlePasteControl(onPaste: pasteClipboardText)
         }
-        .accessibilityIdentifier("addArticle.paste")
-        .accessibilityLabel("Paste from Clipboard")
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .foregroundStyle(Color.regularSelectionInk)
+        #else
+        AddArticleInlinePasteAffordance {
+            PasteButton(payloadType: String.self) { strings in
+                pasteClipboardText(strings)
+            }
+            .accessibilityIdentifier("addArticle.paste")
+            .accessibilityLabel("Paste from Clipboard")
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+            .frame(width: 28, height: 28)
+            .opacity(0.015)
+        }
         #endif
     }
 
@@ -254,6 +258,22 @@ private struct AddArticleMessageRow: View {
     }
 }
 
+private struct AddArticleInlinePasteAffordance<Control: View>: View {
+    @ViewBuilder let control: Control
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "clipboard")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.regularSelectionInk)
+                .frame(width: 28, height: 28)
+
+            control
+        }
+        .frame(width: 28, height: 28)
+    }
+}
+
 private struct AddArticleSurface<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -293,6 +313,7 @@ private struct AddArticlePasteControl: UIViewRepresentable {
         pasteControl.accessibilityIdentifier = "addArticle.paste"
         pasteControl.accessibilityLabel = "Paste from Clipboard"
         pasteControl.backgroundColor = .clear
+        pasteControl.alpha = 0.015
 
         return pasteControl
     }
@@ -300,6 +321,7 @@ private struct AddArticlePasteControl: UIViewRepresentable {
     func updateUIView(_ uiView: UIPasteControl, context: Context) {
         context.coordinator.onPaste = onPaste
         uiView.target = context.coordinator
+        uiView.alpha = 0.015
     }
 
     final class Coordinator: NSObject, UIPasteConfigurationSupporting {
