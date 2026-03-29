@@ -83,9 +83,13 @@ enum AppTextRole {
             17
         case .navigationLargeTitle, .sidebarTitle:
             34
-        case .navigationInlineTitle, .sidebarItem, .listTitle:
+        case .navigationInlineTitle, .sidebarItem:
             17
-        case .listExcerpt, .actionLabel:
+        case .listTitle:
+            15
+        case .listExcerpt:
+            13
+        case .actionLabel:
             15
         case .listMetadata, .auxiliaryStatus:
             12
@@ -105,9 +109,9 @@ enum AppTextRole {
         case .sidebarItem:
             16
         case .listTitle:
-            16
+            15
         case .listExcerpt:
-            13.5
+            13
         case .listMetadata:
             11.5
         case .emptyStateBody:
@@ -317,8 +321,8 @@ extension UIFont {
         AppTypography.uiFont(for: role, isEmphasized: emphasized)
     }
 
-    static func lora(forTextStyle textStyle: UIFont.TextStyle, weight: Font.Weight = .regular) -> UIFont {
-        let pointSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle).pointSize
+    static func lora(forTextStyle textStyle: UIFont.TextStyle, pointSize: CGFloat? = nil, weight: Font.Weight = .regular) -> UIFont {
+        let pointSize = pointSize ?? UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle).pointSize
         let axisValue = AppTypography.variableFontAxisValue(for: weight)
         let variationAttributeName = UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
         let descriptor = UIFontDescriptor(fontAttributes: [
@@ -329,8 +333,8 @@ extension UIFont {
         return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
     }
 
-    static func nunito(forTextStyle textStyle: UIFont.TextStyle, weight: Font.Weight = .regular) -> UIFont {
-        let pointSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle).pointSize
+    static func nunito(forTextStyle textStyle: UIFont.TextStyle, pointSize: CGFloat? = nil, weight: Font.Weight = .regular) -> UIFont {
+        let pointSize = pointSize ?? UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle).pointSize
         let axisValue = AppTypography.variableFontAxisValue(for: weight)
         let variationAttributeName = UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
         let descriptor = UIFontDescriptor(fontAttributes: [
@@ -347,9 +351,9 @@ extension AppTypography {
         let weight = resolvedWeight(for: role, isEmphasized: isEmphasized)
         switch role.family {
         case .lora:
-            return UIFont.lora(forTextStyle: role.textStyle.uiTextStyle, weight: weight)
+            return UIFont.lora(forTextStyle: role.textStyle.uiTextStyle, pointSize: role.basePointSize, weight: weight)
         case .nunito:
-            return UIFont.nunito(forTextStyle: role.textStyle.uiTextStyle, weight: weight)
+            return UIFont.nunito(forTextStyle: role.textStyle.uiTextStyle, pointSize: role.basePointSize, weight: weight)
         case .system:
             return UIFont.preferredFont(forTextStyle: role.textStyle.uiTextStyle)
         }

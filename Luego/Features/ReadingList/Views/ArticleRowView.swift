@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct ArticleRowView: View {
     @ObservedObject var article: Article
@@ -20,6 +25,7 @@ struct ArticleRowView: View {
             VStack(alignment: .leading, spacing: 3) {
                 ArticleTitleRow(
                     title: article.title,
+                    excerpt: article.excerpt,
                     isFavorite: article.isFavorite
                 )
 
@@ -29,14 +35,6 @@ struct ArticleRowView: View {
                     readPercentage: Int(article.readPosition * 100),
                     formattedDate: formatDisplayDate(article)
                 )
-
-                if !article.excerpt.isEmpty {
-                    Text(article.excerpt)
-                        .font(.app(.listExcerpt))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                        .padding(.top, 1)
-                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -52,16 +50,10 @@ struct ArticleRowView: View {
             VStack(alignment: .leading, spacing: 4) {
                 ArticleTitleRow(
                     title: article.title,
+                    excerpt: article.excerpt,
                     isFavorite: article.isFavorite,
                     isSelected: isSelected
                 )
-
-                if !article.excerpt.isEmpty {
-                    Text(article.excerpt)
-                        .font(.app(.listExcerpt))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
 
                 ArticleMetadataRow(
                     domain: article.domain,
@@ -95,16 +87,57 @@ struct ArticleRowView: View {
 
 struct ArticleTitleRow: View {
     let title: String
+    let excerpt: String
     let isFavorite: Bool
     var isSelected: Bool = false
+    @State private var measuredTitleHeight: CGFloat = 0
+
+    private var titleLineHeight: CGFloat {
+        #if os(iOS)
+        return UIFont.app(.listTitle).lineHeight
+        #else
+        let font = NSFont.app(.listTitle)
+        return font.ascender - font.descender + font.leading
+        #endif
+    }
+
+    private var reservedTitleHeight: CGFloat {
+        (titleLineHeight * 2) + 1
+    }
+
+    private var excerptSlotHeight: CGFloat {
+        max(reservedTitleHeight - measuredTitleHeight, 0)
+    }
+
+    private var shouldShowExcerpt: Bool {
+        measuredTitleHeight > 0 && measuredTitleHeight <= (titleLineHeight + 0.5) && !excerpt.isEmpty
+    }
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title)
-                .font(.app(.listTitle))
-                .foregroundStyle(isSelected ? Color.regularSelectionInk : Color.primary)
-                .lineLimit(2)
-                .lineSpacing(1)
+        HStack(alignment: .top, spacing: 6) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title)
+                    .font(.app(.listTitle))
+                    .foregroundStyle(isSelected ? Color.regularSelectionInk : Color.primary)
+                    .lineLimit(2)
+                    .lineSpacing(1)
+                    .background {
+                        GeometryReader { geometry in
+                            Color.clear
+                                .preference(key: ArticleTitleHeightPreferenceKey.self, value: geometry.size.height)
+                        }
+                    }
+
+                if shouldShowExcerpt {
+                    Text(excerpt)
+                        .font(.app(.listExcerpt))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .frame(height: excerptSlotHeight, alignment: .bottomLeading)
+                }
+            }
+            .frame(height: reservedTitleHeight, alignment: .topLeading)
+            .onPreferenceChange(ArticleTitleHeightPreferenceKey.self) { measuredTitleHeight = $0 }
 
             Spacer(minLength: 4)
 
@@ -114,6 +147,14 @@ struct ArticleTitleRow: View {
                     .foregroundStyle(.pink)
             }
         }
+    }
+}
+
+private struct ArticleTitleHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
