@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ArticleListPane: View {
+    let viewModel: ArticleListViewModel
     let filter: ArticleFilter
     @Binding var selectedArticle: Article?
     let onDiscover: () -> Void
@@ -8,12 +9,15 @@ struct ArticleListPane: View {
     let onEmptyStateAnimationConsumed: () -> Void
     @Environment(\.diContainer) private var diContainer
     @Environment(SyncStatusObserver.self) private var syncStatusObserver: SyncStatusObserver?
-    @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
     @State private var showingSettings = false
 
     private var filteredArticles: [Article] {
-        filter.filtered(viewModel?.articles ?? [])
+        viewModel.filteredArticles(for: filter)
+    }
+
+    private var filteredArticleIDs: [UUID] {
+        filteredArticles.map(\.id)
     }
 
     private var restoreStatusText: String? {
@@ -23,20 +27,16 @@ struct ArticleListPane: View {
 
     var body: some View {
         Group {
-            if let viewModel {
-                if filteredArticles.isEmpty {
-                    emptyState(for: viewModel)
-                } else {
-                    SelectableArticleList(
-                        articles: filteredArticles,
-                        viewModel: viewModel,
-                        selection: $selectedArticle,
-                        filter: filter,
-                        onRefresh: { await viewModel.refreshArticles() }
-                    )
-                }
+            if filteredArticles.isEmpty {
+                emptyState(for: viewModel)
             } else {
-                ProgressView()
+                SelectableArticleList(
+                    articles: filteredArticles,
+                    viewModel: viewModel,
+                    selection: $selectedArticle,
+                    filter: filter,
+                    onRefresh: { await viewModel.refreshArticles() }
+                )
             }
         }
         .background(Color.regularPanelBackground)
@@ -65,9 +65,7 @@ struct ArticleListPane: View {
             }
         }
         .sheet(isPresented: $showingAddArticle) {
-            if let viewModel {
-                AddArticleView(viewModel: viewModel)
-            }
+            AddArticleView(viewModel: viewModel)
         }
         .sheet(isPresented: $showingSettings) {
             if let container = diContainer {
@@ -76,11 +74,11 @@ struct ArticleListPane: View {
                 }
             }
         }
-        .task {
-            if viewModel == nil, let container = diContainer {
-                viewModel = container.makeArticleListViewModel()
+        .onChange(of: filteredArticleIDs) { _, newIDs in
+            guard let selectedArticle else { return }
+            if !newIDs.contains(selectedArticle.id) {
+                self.selectedArticle = nil
             }
-            viewModel?.startObservingArticles()
         }
     }
 
@@ -139,6 +137,7 @@ struct SelectableArticleList: View {
                 }
             }
         }
+        .id(filter)
         .scrollContentBackground(.hidden)
         .background(Color.regularPanelBackground)
         .refreshable {

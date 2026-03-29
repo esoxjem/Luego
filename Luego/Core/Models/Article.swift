@@ -73,6 +73,23 @@ extension Article: Identifiable, Equatable, Hashable {
 }
 
 extension Article {
+    var listMembership: ArticleListMembership {
+        ArticleListMembership(isFavorite: isFavorite, isArchived: isArchived)
+    }
+
+    func applyListMembership(_ membership: ArticleListMembership) {
+        if isFavorite != membership.isFavorite {
+            isFavorite = membership.isFavorite
+        }
+        if isArchived != membership.isArchived {
+            isArchived = membership.isArchived
+        }
+    }
+
+    func normalizeListMembership() {
+        applyListMembership(listMembership)
+    }
+
     var excerpt: String {
         guard let content = content, !content.isEmpty else { return "" }
 

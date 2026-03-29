@@ -60,6 +60,7 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
 
     @MainActor
     init(_ article: Article, cloudKitSystemFields: Data? = nil) {
+        let membership = article.listMembership
         self.init(
             id: article.id.uuidString,
             url: article.url,
@@ -69,8 +70,8 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
             thumbnailURL: article.thumbnailURL,
             publishedDate: article.publishedDate,
             readPosition: article.readPosition,
-            isFavorite: article.isFavorite,
-            isArchived: article.isArchived,
+            isFavorite: membership.isFavorite,
+            isArchived: membership.isArchived,
             author: article.author,
             wordCount: article.wordCount,
             cloudKitSystemFields: cloudKitSystemFields,
@@ -103,11 +104,13 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
             cloudKitSystemFields: Self.encodeSystemFields(record),
             deletedAt: record["deletedAt"] as? Date
         )
+        normalizeListMembership()
     }
 
     @MainActor
     func toArticle() -> Article {
-        Article(
+        let membership = listMembership
+        return Article(
             id: UUID(uuidString: id) ?? UUID(),
             url: url,
             title: title,
@@ -116,14 +119,15 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
             thumbnailURL: thumbnailURL,
             publishedDate: publishedDate,
             readPosition: readPosition,
-            isFavorite: isFavorite,
-            isArchived: isArchived,
+            isFavorite: membership.isFavorite,
+            isArchived: membership.isArchived,
             author: author,
             wordCount: wordCount
         )
     }
 
     func makeCKRecord(recordID: CKRecord.ID) -> CKRecord {
+        let membership = listMembership
         let record: CKRecord
         if let cloudKitSystemFields,
            let coder = try? NSKeyedUnarchiver(forReadingFrom: cloudKitSystemFields),
@@ -141,8 +145,8 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
         record["thumbnailURL"] = thumbnailURL?.absoluteString
         record["publishedDate"] = publishedDate
         record["readPosition"] = readPosition
-        record["isFavorite"] = isFavorite
-        record["isArchived"] = isArchived
+        record["isFavorite"] = membership.isFavorite
+        record["isArchived"] = membership.isArchived
         record["author"] = author
         record["wordCount"] = wordCount
         record["deletedAt"] = deletedAt
@@ -158,5 +162,15 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
         record.encodeSystemFields(with: archiver)
         archiver.finishEncoding()
         return archiver.encodedData
+    }
+
+    var listMembership: ArticleListMembership {
+        ArticleListMembership(isFavorite: isFavorite, isArchived: isArchived)
+    }
+
+    mutating func normalizeListMembership() {
+        let membership = listMembership
+        isFavorite = membership.isFavorite
+        isArchived = membership.isArchived
     }
 }

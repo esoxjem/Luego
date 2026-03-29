@@ -5,13 +5,17 @@ import Observation
 @MainActor
 final class ArticleListViewModel {
     var articles: [Article] = []
+    var membershipRevision = 0
     var isLoading = false
     var errorMessage: String?
+    var pendingMemberships: [UUID: ArticleListMembership] = [:]
 
     private let articleService: ArticleServiceProtocol
     private let sharingService: SharingServiceProtocol
     @ObservationIgnored
     private var observationTask: Task<Void, Never>?
+    @ObservationIgnored
+    private var observationRetryTask: Task<Void, Never>?
 
     init(
         articleService: ArticleServiceProtocol,
@@ -24,11 +28,14 @@ final class ArticleListViewModel {
 
     deinit {
         observationTask?.cancel()
+        observationRetryTask?.cancel()
     }
 
     func startObservingArticles() {
         guard observationTask == nil else { return }
 
+        observationRetryTask?.cancel()
+        observationRetryTask = nil
         observationTask = Task { @MainActor [weak self] in
             guard let self else { return }
             defer {
@@ -36,12 +43,16 @@ final class ArticleListViewModel {
             }
 
             do {
+                self.errorMessage = nil
                 for try await articles in articleService.observeArticles() {
                     self.articles = articles
+                    discardResolvedPendingMemberships(using: articles)
+                    membershipRevision += 1
                 }
             } catch is CancellationError {
             } catch {
                 self.errorMessage = "Failed to observe articles: \(error.localizedDescription)"
+                scheduleObservationRestart()
             }
         }
     }
@@ -102,18 +113,95 @@ final class ArticleListViewModel {
     }
 
     func toggleFavorite(_ article: Article) async {
+        let originalMembership = membership(for: article)
+        let nextMembership = originalMembership.togglingFavorite()
+
+        applyPendingMembership(nextMembership, for: article.id)
         do {
             try await articleService.toggleFavorite(id: article.id)
+            reconcileArticleState(id: article.id, membership: nextMembership)
         } catch {
+            revertArticleState(id: article.id, membership: originalMembership)
             errorMessage = "Failed to toggle favorite: \(error.localizedDescription)"
         }
     }
 
     func toggleArchive(_ article: Article) async {
+        let originalMembership = membership(for: article)
+        let nextMembership = originalMembership.togglingArchive()
+
+        applyPendingMembership(nextMembership, for: article.id)
         do {
             try await articleService.toggleArchive(id: article.id)
+            reconcileArticleState(id: article.id, membership: nextMembership)
         } catch {
+            revertArticleState(id: article.id, membership: originalMembership)
             errorMessage = "Failed to toggle archive: \(error.localizedDescription)"
+        }
+    }
+
+    func membership(for article: Article) -> ArticleListMembership {
+        pendingMemberships[article.id] ?? article.listMembership
+    }
+
+    func filteredArticles(for filter: ArticleFilter) -> [Article] {
+        _ = membershipRevision
+        return filter.filtered(articles, membership: membership(for:))
+    }
+
+    private func applyPendingMembership(_ membership: ArticleListMembership, for id: UUID) {
+        pendingMemberships[id] = membership
+        membershipRevision += 1
+    }
+
+    private func reconcileArticleState(id: UUID, membership: ArticleListMembership) {
+        pendingMemberships.removeValue(forKey: id)
+        guard let index = articles.firstIndex(where: { $0.id == id }) else {
+            membershipRevision += 1
+            return
+        }
+        articles[index].applyListMembership(membership)
+        articles = Array(articles)
+        membershipRevision += 1
+    }
+
+    private func revertArticleState(id: UUID, membership: ArticleListMembership) {
+        pendingMemberships.removeValue(forKey: id)
+        guard let index = articles.firstIndex(where: { $0.id == id }) else {
+            membershipRevision += 1
+            return
+        }
+        articles[index].applyListMembership(membership)
+        articles = Array(articles)
+        membershipRevision += 1
+    }
+
+    private func discardResolvedPendingMemberships(using articles: [Article]) {
+        guard !pendingMemberships.isEmpty else { return }
+
+        pendingMemberships = pendingMemberships.filter { id, pendingMembership in
+            guard let article = articles.first(where: { $0.id == id }) else {
+                return false
+            }
+            return article.listMembership != pendingMembership
+        }
+    }
+
+    private func scheduleObservationRestart() {
+        guard observationRetryTask == nil else { return }
+
+        observationRetryTask = Task { @MainActor [weak self] in
+            defer {
+                self?.observationRetryTask = nil
+            }
+
+            do {
+                try await Task.sleep(nanoseconds: 3_000_000_000)
+            } catch {
+                return
+            }
+
+            self?.startObservingArticles()
         }
     }
 }

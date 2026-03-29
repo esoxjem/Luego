@@ -8,13 +8,16 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.diContainer) private var diContainer
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var selectedFilter: ArticleFilter = .readingList
     @State private var selectedArticle: Article?
     @State private var selectedTab = 0
     @State private var shouldAnimateHomeEmptyStateOnLaunch = true
     @State private var iPhoneTabBarVisibilityController = IPhoneTabBarVisibilityController()
+    @State private var articleListViewModel: ArticleListViewModel?
 
     var body: some View {
         ZStack {
@@ -22,18 +25,30 @@ struct ContentView: View {
                 .ignoresSafeArea()
 
             Group {
-                if horizontalSizeClass == .regular {
-                    iPadLayout
+                if let articleListViewModel {
+                    if horizontalSizeClass == .regular {
+                        iPadLayout(viewModel: articleListViewModel)
+                    } else {
+                        iPhoneLayout(viewModel: articleListViewModel)
+                    }
                 } else {
-                    iPhoneLayout
+                    ProgressView()
                 }
             }
         }
         .font(.app(.body))
+        .task {
+            initializeArticleListViewModelIfNeeded()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            Task {
+                await handleScenePhaseChange(newPhase)
+            }
+        }
     }
 
     @ViewBuilder
-    private var iPadLayout: some View {
+    private func iPadLayout(viewModel: ArticleListViewModel) -> some View {
         if selectedFilter == .discovery {
             NavigationSplitView {
                 SidebarView(selection: $selectedFilter)
@@ -49,6 +64,7 @@ struct ContentView: View {
                     .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
             } content: {
                 ArticleListPane(
+                    viewModel: viewModel,
                     filter: selectedFilter,
                     selectedArticle: $selectedArticle,
                     onDiscover: { selectedFilter = .discovery },
@@ -65,12 +81,13 @@ struct ContentView: View {
         }
     }
 
-    private var iPhoneLayout: some View {
+    private func iPhoneLayout(viewModel: ArticleListViewModel) -> some View {
         TabView(selection: $selectedTab) {
             Tab(ArticleFilter.readingList.navigationTitle, systemImage: "list.bullet", value: 0) {
                 iPhoneTabBackground {
-                    iPhoneTabNavigationStack {
+                    iPhoneTabNavigationStack(for: .readingList) {
                         ArticleListView(
+                            viewModel: viewModel,
                             filter: .readingList,
                             shouldAnimateEmptyStateOnFirstAppearance: shouldAnimateHomeEmptyStateOnLaunch,
                             onEmptyStateAnimationConsumed: { shouldAnimateHomeEmptyStateOnLaunch = false }
@@ -81,16 +98,16 @@ struct ContentView: View {
 
             Tab(ArticleFilter.favorites.navigationTitle, systemImage: "heart", value: 1) {
                 iPhoneTabBackground {
-                    iPhoneTabNavigationStack {
-                        ArticleListView(filter: .favorites)
+                    iPhoneTabNavigationStack(for: .favorites) {
+                        ArticleListView(viewModel: viewModel, filter: .favorites)
                     }
                 }
             }
 
             Tab(ArticleFilter.archived.navigationTitle, systemImage: "archivebox.fill", value: 2) {
                 iPhoneTabBackground {
-                    iPhoneTabNavigationStack {
-                        ArticleListView(filter: .archived)
+                    iPhoneTabNavigationStack(for: .archived) {
+                        ArticleListView(viewModel: viewModel, filter: .archived)
                     }
                 }
             }
@@ -112,10 +129,14 @@ struct ContentView: View {
         }
     }
 
-    private func iPhoneTabNavigationStack<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    private func iPhoneTabNavigationStack<Content: View>(
+        for filter: ArticleFilter,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         NavigationStack {
             content()
         }
+        .id(filter)
         .toolbar(.hidden, for: .tabBar)
     }
 
@@ -174,5 +195,20 @@ struct ContentView: View {
             .accessibilityLabel(label)
             .accessibilityRemoveTraits(.isSelected)
         }
+    }
+
+    private func initializeArticleListViewModelIfNeeded() {
+        if articleListViewModel == nil, let diContainer {
+            articleListViewModel = diContainer.makeArticleListViewModel()
+        }
+
+        articleListViewModel?.startObservingArticles()
+    }
+
+    private func handleScenePhaseChange(_ phase: ScenePhase) async {
+        guard phase == .active, articleListViewModel != nil else { return }
+        initializeArticleListViewModelIfNeeded()
+        guard let articleListViewModel else { return }
+        await articleListViewModel.syncSharedArticles()
     }
 }

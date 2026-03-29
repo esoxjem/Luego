@@ -3,25 +3,26 @@ import SwiftUI
 struct ArticleListView: View {
     @Environment(\.diContainer) private var diContainer
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var viewModel: ArticleListViewModel?
     @State private var discoveryViewModel: DiscoveryViewModel?
     @State private var showingAddArticle = false
     @State private var showingDiscovery = false
     @State private var showingSettings = false
+    let viewModel: ArticleListViewModel
     let filter: ArticleFilter
     let shouldAnimateEmptyStateOnFirstAppearance: Bool
     let onEmptyStateAnimationConsumed: () -> Void
 
     private var filteredArticles: [Article] {
-        filter.filtered(viewModel?.articles ?? [])
+        viewModel.filteredArticles(for: filter)
     }
 
     init(
+        viewModel: ArticleListViewModel,
         filter: ArticleFilter,
         shouldAnimateEmptyStateOnFirstAppearance: Bool = false,
         onEmptyStateAnimationConsumed: @escaping () -> Void = {}
     ) {
+        self.viewModel = viewModel
         self.filter = filter
         self.shouldAnimateEmptyStateOnFirstAppearance = shouldAnimateEmptyStateOnFirstAppearance
         self.onEmptyStateAnimationConsumed = onEmptyStateAnimationConsumed
@@ -91,21 +92,6 @@ struct ArticleListView: View {
                 discoveryViewModel = nil
             }
         }
-        .task {
-            initializeViewModelIfNeeded()
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            Task {
-                await handleScenePhaseChange(newPhase)
-            }
-        }
-    }
-
-    private func initializeViewModelIfNeeded() {
-        if viewModel == nil, let container = diContainer {
-            viewModel = container.makeArticleListViewModel()
-        }
-        viewModel?.startObservingArticles()
     }
 
     private func presentAddArticle() {
@@ -126,9 +112,7 @@ struct ArticleListView: View {
 
     @ViewBuilder
     private var addArticleDestination: some View {
-        if let viewModel {
-            AddArticleView(viewModel: viewModel)
-        }
+        AddArticleView(viewModel: viewModel)
     }
 
     private var compactAddArticlePopoverBinding: Binding<Bool> {
@@ -148,11 +132,6 @@ struct ArticleListView: View {
             .presentationCompactAdaptation(.popover)
     }
 
-    private func handleScenePhaseChange(_ phase: ScenePhase) async {
-        guard phase == .active, let viewModel else { return }
-        await viewModel.syncSharedArticles()
-    }
-
     private var navigationTitle: String {
         if horizontalSizeClass == .compact {
             return filter.navigationTitle
@@ -164,7 +143,7 @@ struct ArticleListView: View {
 
 struct ArticleListContent: View {
     let articles: [Article]
-    let viewModel: ArticleListViewModel?
+    let viewModel: ArticleListViewModel
     let diContainer: DIContainer?
     let filter: ArticleFilter
     let onDiscover: () -> Void
@@ -179,20 +158,16 @@ struct ArticleListContent: View {
 
     var body: some View {
         Group {
-            if let viewModel {
-                if articles.isEmpty {
-                    emptyState(for: viewModel)
-                } else {
-                    ArticleList(
-                        articles: articles,
-                        viewModel: viewModel,
-                        diContainer: diContainer,
-                        filter: filter,
-                        onRefresh: { await viewModel.refreshArticles() }
-                    )
-                }
+            if articles.isEmpty {
+                emptyState(for: viewModel)
             } else {
-                ProgressView()
+                ArticleList(
+                    articles: articles,
+                    viewModel: viewModel,
+                    diContainer: diContainer,
+                    filter: filter,
+                    onRefresh: { await viewModel.refreshArticles() }
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -243,6 +218,7 @@ struct ArticleList: View {
                 }
             }
         }
+        .id(filter)
         .scrollContentBackground(.hidden)
         #if os(iOS)
         .refreshable {

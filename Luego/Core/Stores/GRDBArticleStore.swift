@@ -34,6 +34,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
                 sql: "SELECT * FROM articles ORDER BY savedDate DESC"
             )
         }
+        .map(normalizedRecord(from:))
     }
 
     func observeArticles() -> AsyncThrowingStream<[Article], Error> {
@@ -84,6 +85,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         try database.reader.read { db in
             try ArticleRecord.fetchOne(db, key: recordName)
         }
+        .map(normalizedRecord(from:))
     }
 
     func fetchRecord(url: URL) throws -> ArticleRecord? {
@@ -94,6 +96,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
                 arguments: [url.absoluteString]
             )
         }
+        .map(normalizedRecord(from:))
     }
 
     func saveArticle(_ article: Article) throws -> Article {
@@ -129,8 +132,10 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     func saveRecord(_ record: ArticleRecord) throws {
+        var normalizedRecord = record
+        normalizedRecord.normalizeListMembership()
         try database.writer.write { db in
-            try record.save(db)
+            try normalizedRecord.save(db)
         }
     }
 
@@ -262,6 +267,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     private func materializeObservedArticle(from record: ArticleRecord) -> Article {
+        let record = normalizedRecord(from: record)
         let articleID = UUID(uuidString: record.id) ?? UUID()
 
         if let article = articleCache[articleID] {
@@ -289,7 +295,8 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     private func makeDetachedArticle(from record: ArticleRecord) -> Article {
-        Article(
+        let record = normalizedRecord(from: record)
+        return Article(
             id: UUID(uuidString: record.id) ?? UUID(),
             url: record.url,
             title: record.title,
@@ -306,6 +313,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     private func apply(_ record: ArticleRecord, to article: Article, articleID: UUID) {
+        let record = normalizedRecord(from: record)
         if article.id != articleID {
             article.id = articleID
         }
@@ -342,5 +350,12 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         if article.wordCount != record.wordCount {
             article.wordCount = record.wordCount
         }
+        article.normalizeListMembership()
+    }
+
+    private func normalizedRecord(from record: ArticleRecord) -> ArticleRecord {
+        var normalizedRecord = record
+        normalizedRecord.normalizeListMembership()
+        return normalizedRecord
     }
 }

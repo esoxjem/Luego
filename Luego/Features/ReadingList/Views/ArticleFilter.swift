@@ -78,12 +78,23 @@ enum ArticleFilter: CaseIterable, Hashable {
         }
     }
 
-    func filtered(_ articles: [Article]) -> [Article] {
+    func matches(_ membership: ArticleListMembership) -> Bool {
         switch self {
-        case .readingList: articles.filter { !$0.isFavorite && !$0.isArchived }
-        case .favorites: articles.filter { $0.isFavorite }
-        case .archived: articles.filter { $0.isArchived }
-        case .discovery: []
+        case .readingList: !membership.isFavorite && !membership.isArchived
+        case .favorites: membership.isFavorite
+        case .archived: membership.isArchived
+        case .discovery: false
         }
+    }
+
+    func filtered(_ articles: [Article]) -> [Article] {
+        articles.filter { matches($0.listMembership) }
+    }
+
+    func filtered(
+        _ articles: [Article],
+        membership: (Article) -> ArticleListMembership
+    ) -> [Article] {
+        articles.filter { matches(membership($0)) }
     }
 }
