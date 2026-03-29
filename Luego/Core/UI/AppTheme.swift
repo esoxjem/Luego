@@ -6,7 +6,7 @@ import UIKit
 #endif
 
 extension Color {
-    static let paperCream = Color(red: 250 / 255, green: 248 / 255, blue: 241 / 255)
+    static let paperCream = Color(red: 252 / 255, green: 252 / 255, blue: 253 / 255)
     static let mascotPurple = Color(red: 223 / 255, green: 210 / 255, blue: 224 / 255)
     static let mascotPurpleInk = Color(red: 120 / 255, green: 98 / 255, blue: 125 / 255)
     static let regularPanelBackground = paperCream
@@ -15,18 +15,18 @@ extension Color {
     static let regularOutline = Color.primary.opacity(0.18)
     static let regularGlassTint = mascotPurple.opacity(0.8)
 
-    static let gitHubBackground: Color = {
+    static let readerBackground: Color = {
         #if os(macOS)
         Color(nsColor: NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.darkAqua, .vibrantDark]) != nil
                 ? NSColor(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0, alpha: 1)
-                : NSColor(red: 0xfd / 255.0, green: 0xfc / 255.0, blue: 0xf5 / 255.0, alpha: 1)
+                : NSColor(regularPanelBackground)
         })
         #else
         Color(uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark
                 ? UIColor(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0, alpha: 1)
-                : UIColor(red: 0xfd / 255.0, green: 0xfc / 255.0, blue: 0xf5 / 255.0, alpha: 1)
+                : UIColor(regularPanelBackground)
         })
         #endif
     }()
@@ -74,12 +74,7 @@ enum AppNavigationAppearance {
         #if os(iOS)
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(
-            red: 250 / 255,
-            green: 248 / 255,
-            blue: 241 / 255,
-            alpha: 1
-        )
+        appearance.backgroundColor = UIColor(Color.regularPanelBackground)
         appearance.shadowColor = .clear
         appearance.titleTextAttributes = [
             .font: UIFont.app(.navigationInlineTitle),
@@ -148,6 +143,12 @@ enum ReaderLayout {
         let paddingForMaxWidth = max(24, (containerWidth - maxContentWidth) / 2)
         return max(proportional, paddingForMaxWidth)
         #else
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let maxContentWidth: CGFloat = 700
+            let paddingForMaxWidth = max(56, (containerWidth - maxContentWidth) / 2)
+            return paddingForMaxWidth
+        }
+
         return 40
         #endif
     }

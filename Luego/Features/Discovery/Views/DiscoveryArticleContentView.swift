@@ -25,7 +25,7 @@ struct DiscoveryArticleContentView: View {
                 .padding(.horizontal, ReaderLayout.horizontalPadding(for: geo.size.width))
                 .frame(maxWidth: .infinity)
             }
-            .background(Color.gitHubBackground)
+            .background(Color.readerBackground)
         }
     }
 

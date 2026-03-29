@@ -100,7 +100,7 @@ struct ArticleReaderModeView: View {
                     )
                 }
                 .coordinateSpace(name: "scrollView")
-                .background(Color.gitHubBackground)
+                .background(Color.readerBackground)
                 .onDisappear(perform: onDisappear)
             }
         }
