@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CloudKit
+import Observation
 
 @main
 struct LuegoApp: App {
@@ -133,9 +134,33 @@ private struct DIContainerKey: EnvironmentKey {
     static let defaultValue: DIContainer? = nil
 }
 
+@MainActor
+@Observable
+final class IPhoneTabBarVisibilityController {
+    var isVisible = true
+
+    func show() {
+        isVisible = true
+    }
+
+    func hide() {
+        isVisible = false
+    }
+}
+
+private struct IPhoneTabBarVisibilityControllerKey: EnvironmentKey {
+    @MainActor
+    static let defaultValue: IPhoneTabBarVisibilityController? = nil
+}
+
 extension EnvironmentValues {
     var diContainer: DIContainer? {
         get { self[DIContainerKey.self] }
         set { self[DIContainerKey.self] = newValue }
+    }
+
+    var iPhoneTabBarVisibilityController: IPhoneTabBarVisibilityController? {
+        get { self[IPhoneTabBarVisibilityControllerKey.self] }
+        set { self[IPhoneTabBarVisibilityControllerKey.self] = newValue }
     }
 }

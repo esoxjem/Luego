@@ -4,6 +4,7 @@ import Textual
 struct ReaderView: View {
     @Bindable var viewModel: ReaderViewModel
     @Environment(\.openURL) private var openURL
+    @Environment(\.iPhoneTabBarVisibilityController) private var iPhoneTabBarVisibilityController
     @State private var scrollPosition: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
     @State private var viewHeight: CGFloat = 0
@@ -52,6 +53,12 @@ struct ReaderView: View {
         #endif
         .task(id: viewModel.article.id) {
             await viewModel.loadContent()
+        }
+        .onAppear {
+            iPhoneTabBarVisibilityController?.hide()
+        }
+        .onDisappear {
+            iPhoneTabBarVisibilityController?.show()
         }
     }
 }

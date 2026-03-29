@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var selectedArticle: Article?
     @State private var selectedTab = 0
     @State private var shouldAnimateHomeEmptyStateOnLaunch = true
+    @State private var iPhoneTabBarVisibilityController = IPhoneTabBarVisibilityController()
 
     var body: some View {
         ZStack {
@@ -94,8 +95,11 @@ struct ContentView: View {
                 }
             }
         }
+        .environment(\.iPhoneTabBarVisibilityController, iPhoneTabBarVisibilityController)
         .safeAreaInset(edge: .bottom) {
-            iPhoneTabBar
+            if iPhoneTabBarVisibilityController.isVisible {
+                iPhoneTabBar
+            }
         }
     }
 
