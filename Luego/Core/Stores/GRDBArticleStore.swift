@@ -17,12 +17,13 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     func fetchAllArticles() throws -> [Article] {
-        try database.reader.read { db in
+        let records = try database.reader.read { db in
             try ArticleRecord.fetchAll(
                 db,
                 sql: self.visibleArticlesSQL
-            ).map { $0.toArticle() }
+            )
         }
+        return records.map { $0.toArticle() }
     }
 
     func fetchAllRecords() throws -> [ArticleRecord] {
@@ -39,14 +40,14 @@ final class GRDBArticleStore: ArticleStoreProtocol {
             try ArticleRecord.fetchAll(
                 db,
                 sql: self.visibleArticlesSQL
-            ).map { $0.toArticle() }
+            )
         }
 
         return AsyncThrowingStream { continuation in
-            let task = Task {
+            let task = Task { @MainActor in
                 do {
-                    for try await articles in observation.values(in: database.reader) {
-                        continuation.yield(articles)
+                    for try await records in observation.values(in: database.reader) {
+                        continuation.yield(records.map { $0.toArticle() })
                     }
                     continuation.finish()
                 } catch {

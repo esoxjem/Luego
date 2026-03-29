@@ -58,6 +58,7 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
         self.deletedAt = deletedAt
     }
 
+    @MainActor
     init(_ article: Article, cloudKitSystemFields: Data? = nil) {
         self.init(
             id: article.id.uuidString,
@@ -104,6 +105,7 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
         )
     }
 
+    @MainActor
     func toArticle() -> Article {
         Article(
             id: UUID(uuidString: id) ?? UUID(),

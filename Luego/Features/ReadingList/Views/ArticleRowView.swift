@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ArticleRowView: View {
-    let article: Article
+    @ObservedObject var article: Article
     var isSelected: Bool = false
 
     var body: some View {

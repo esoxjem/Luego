@@ -5,21 +5,22 @@
 //  Created by Claude on 2025-11-10.
 //
 
+import Combine
 import Foundation
 
-final class Article {
+final class Article: ObservableObject {
     var id: UUID
     var url: URL
-    var title: String
-    var content: String?
-    var savedDate: Date
-    var thumbnailURL: URL?
-    var publishedDate: Date?
-    var readPosition: Double
-    var isFavorite: Bool
-    var isArchived: Bool
-    var author: String?
-    var wordCount: Int?
+    @Published var title: String
+    @Published var content: String?
+    @Published var savedDate: Date
+    @Published var thumbnailURL: URL?
+    @Published var publishedDate: Date?
+    @Published var readPosition: Double
+    @Published var isFavorite: Bool
+    @Published var isArchived: Bool
+    @Published var author: String?
+    @Published var wordCount: Int?
 
     var domain: String {
         url.host() ?? url.absoluteString
