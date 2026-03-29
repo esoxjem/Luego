@@ -46,11 +46,12 @@ enum AppNavigationStyle {
     case contentLargeTitle
     case largeTransparent
     case inlinePanel
+    case inlineTransparent
     case sidebarPanel
 
     fileprivate var chrome: AppNavigationChromeStyle {
         switch self {
-        case .contentLargeTitle, .largeTransparent:
+        case .contentLargeTitle, .largeTransparent, .inlineTransparent:
             .transparent
         case .largePanel, .inlinePanel, .sidebarPanel:
             .panel
@@ -60,7 +61,7 @@ enum AppNavigationStyle {
     #if os(iOS)
     fileprivate var titleDisplayMode: NavigationBarItem.TitleDisplayMode {
         switch self {
-        case .inlinePanel:
+        case .inlinePanel, .inlineTransparent:
             .inline
         case .largePanel, .contentLargeTitle, .largeTransparent, .sidebarPanel:
             .large

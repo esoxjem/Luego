@@ -38,7 +38,7 @@ struct DiscoveryReaderView: View {
             }
             .navigationTitle("Discover")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .appNavigationStyle(.inlineTransparent)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -62,7 +62,9 @@ struct DiscoveryReaderView: View {
             }
         }
         .tint(Color.regularSelectionInk)
+        #if os(macOS)
         .appNavigationChrome()
+        #endif
     }
 
     private func openInBrowser() {

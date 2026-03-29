@@ -15,7 +15,7 @@ struct DiscoveryPane: View {
         }
         #if os(iOS)
         .background(Color.regularPanelBackground)
-        .appNavigationChrome()
+        .appNavigationStyle(.contentLargeTitle)
         #endif
         #if os(macOS)
         .background(MacAppBackground())

@@ -47,6 +47,9 @@ struct ReaderView: View {
                 )
             }
         }
+        #if os(iOS)
+        .appNavigationChrome(.transparent)
+        #endif
         .task(id: viewModel.article.id) {
             await viewModel.loadContent()
         }

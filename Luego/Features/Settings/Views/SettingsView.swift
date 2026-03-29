@@ -64,7 +64,7 @@ struct SettingsView: View {
             .background(Color.regularPanelBackground)
             .navigationTitle("Settings")
             .tint(Color.regularSelectionInk)
-            .appNavigationChrome()
+            .appNavigationStyle(.contentLargeTitle)
             #if os(iOS)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
