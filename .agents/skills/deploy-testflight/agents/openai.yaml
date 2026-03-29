@@ -1,4 +1,4 @@
 interface:
   display_name: "Deploy TestFlight"
-  short_description: "Ship Luego iOS builds to TestFlight"
-  default_prompt: "Use $deploy-testflight to bump Luego to todays date, increment the build number, archive with automatic signing, and upload to TestFlight."
+  short_description: "Upload Luego iOS builds to TestFlight"
+  default_prompt: "Use $deploy-testflight to verify Luego on a simulator, update the version/build if needed, archive with automatic signing, and upload to TestFlight."
