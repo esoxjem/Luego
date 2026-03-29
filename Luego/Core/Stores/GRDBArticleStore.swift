@@ -5,6 +5,7 @@ import GRDB
 final class GRDBArticleStore: ArticleStoreProtocol {
     private let database: AppDatabase
     weak var syncEngineManager: SyncEngineManagerProtocol?
+    private var articleCache: [UUID: Article] = [:]
 
     private let visibleArticlesSQL = """
         SELECT * FROM articles
@@ -23,7 +24,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
                 sql: self.visibleArticlesSQL
             )
         }
-        return records.map { $0.toArticle() }
+        return records.map(makeDetachedArticle(from:))
     }
 
     func fetchAllRecords() throws -> [ArticleRecord] {
@@ -47,7 +48,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
             let task = Task { @MainActor in
                 do {
                     for try await records in observation.values(in: database.reader) {
-                        continuation.yield(records.map { $0.toArticle() })
+                        continuation.yield(materializeObservedVisibleArticles(from: records))
                     }
                     continuation.finish()
                 } catch {
@@ -65,14 +66,14 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         guard let record = try fetchRecord(id: id), record.deletedAt == nil else {
             return nil
         }
-        return record.toArticle()
+        return makeDetachedArticle(from: record)
     }
 
     func fetchArticle(url: URL) throws -> Article? {
         guard let record = try fetchRecord(url: url), record.deletedAt == nil else {
             return nil
         }
-        return record.toArticle()
+        return makeDetachedArticle(from: record)
     }
 
     func fetchRecord(id: UUID) throws -> ArticleRecord? {
@@ -99,7 +100,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         if let existingRecord = try fetchRecord(url: article.url),
            existingRecord.id != article.id.uuidString {
             if existingRecord.deletedAt == nil {
-                return existingRecord.toArticle()
+                return makeDetachedArticle(from: existingRecord)
             }
 
             var revivedRecord = ArticleRecord(article)
@@ -108,7 +109,8 @@ final class GRDBArticleStore: ArticleStoreProtocol {
             revivedRecord.deletedAt = nil
             try saveRecord(revivedRecord)
             syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: revivedRecord.id))
-            return revivedRecord.toArticle()
+            articleCache.removeValue(forKey: article.id)
+            return makeDetachedArticle(from: revivedRecord)
         }
 
         var record = ArticleRecord(article)
@@ -119,7 +121,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
 
         try saveRecord(record)
         syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: record.id))
-        return record.toArticle()
+        return makeDetachedArticle(from: record)
     }
 
     func insertArticle(_ article: Article) throws {
@@ -145,6 +147,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
             didTombstone = true
         }
         if didTombstone {
+            articleCache.removeValue(forKey: id)
             syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: id.uuidString))
         }
     }
@@ -152,6 +155,9 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     func deleteRecord(recordName: String) throws {
         try database.writer.write { db in
             _ = try ArticleRecord.deleteOne(db, key: recordName)
+        }
+        if let articleID = UUID(uuidString: recordName) {
+            articleCache.removeValue(forKey: articleID)
         }
     }
 
@@ -238,6 +244,103 @@ final class GRDBArticleStore: ArticleStoreProtocol {
                 db,
                 sql: "SELECT COUNT(*) FROM articles WHERE deletedAt IS NULL"
             ) ?? 0
+        }
+    }
+
+    private func materializeObservedVisibleArticles(from records: [ArticleRecord]) -> [Article] {
+        let articles = records.compactMap { record -> Article? in
+            guard record.deletedAt == nil else {
+                return nil
+            }
+            return materializeObservedArticle(from: record)
+        }
+
+        let visibleIDs = Set(articles.map(\.id))
+        articleCache = articleCache.filter { visibleIDs.contains($0.key) }
+
+        return articles
+    }
+
+    private func materializeObservedArticle(from record: ArticleRecord) -> Article {
+        let articleID = UUID(uuidString: record.id) ?? UUID()
+
+        if let article = articleCache[articleID] {
+            apply(record, to: article, articleID: articleID)
+            return article
+        }
+
+        let article = Article(
+            id: articleID,
+            url: record.url,
+            title: record.title,
+            content: record.content,
+            savedDate: record.savedDate,
+            thumbnailURL: record.thumbnailURL,
+            publishedDate: record.publishedDate,
+            readPosition: record.readPosition,
+            isFavorite: record.isFavorite,
+            isArchived: record.isArchived,
+            author: record.author,
+            wordCount: record.wordCount
+        )
+
+        articleCache[articleID] = article
+        return article
+    }
+
+    private func makeDetachedArticle(from record: ArticleRecord) -> Article {
+        Article(
+            id: UUID(uuidString: record.id) ?? UUID(),
+            url: record.url,
+            title: record.title,
+            content: record.content,
+            savedDate: record.savedDate,
+            thumbnailURL: record.thumbnailURL,
+            publishedDate: record.publishedDate,
+            readPosition: record.readPosition,
+            isFavorite: record.isFavorite,
+            isArchived: record.isArchived,
+            author: record.author,
+            wordCount: record.wordCount
+        )
+    }
+
+    private func apply(_ record: ArticleRecord, to article: Article, articleID: UUID) {
+        if article.id != articleID {
+            article.id = articleID
+        }
+        if article.url != record.url {
+            article.url = record.url
+        }
+        if article.title != record.title {
+            article.title = record.title
+        }
+        if article.content != record.content {
+            article.content = record.content
+        }
+        if article.savedDate != record.savedDate {
+            article.savedDate = record.savedDate
+        }
+        if article.thumbnailURL != record.thumbnailURL {
+            article.thumbnailURL = record.thumbnailURL
+        }
+        if article.publishedDate != record.publishedDate {
+            article.publishedDate = record.publishedDate
+        }
+        if article.readPosition != record.readPosition {
+            article.readPosition = record.readPosition
+        }
+        if article.isFavorite != record.isFavorite {
+            article.isFavorite = record.isFavorite
+        }
+        if article.isArchived != record.isArchived {
+            article.isArchived = record.isArchived
+        }
+        if article.author != record.author {
+            article.author = record.author
+        }
+        if article.wordCount != record.wordCount {
+            article.wordCount = record.wordCount
         }
     }
 }
