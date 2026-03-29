@@ -4,6 +4,7 @@ import Foundation
 protocol ArticleServiceProtocol: Sendable {
     func getAllArticles() async throws -> [Article]
     func observeArticles() -> AsyncThrowingStream<[Article], Error>
+    func refreshArticles() async throws
     func addArticle(url: URL) async throws -> Article
     func deleteArticle(id: UUID) async throws
     func updateArticle(_ article: Article) async throws
@@ -35,6 +36,10 @@ final class ArticleService: ArticleServiceProtocol {
 
     func observeArticles() -> AsyncThrowingStream<[Article], Error> {
         articleStore.observeArticles()
+    }
+
+    func refreshArticles() async throws {
+        _ = try await syncEngineManager.refresh(mode: .smart)
     }
 
     func addArticle(url: URL) async throws -> Article {
@@ -131,25 +136,6 @@ final class ArticleService: ArticleServiceProtocol {
     }
 
     func forceReSyncAllArticles() async throws -> Int {
-        syncEngineManager.logWatchedRecordSummary(context: "repairSync:start")
-
-        do {
-            try await syncEngineManager.resetSyncStateForFullRefetch()
-            try await syncEngineManager.fetchChanges()
-            _ = try await syncEngineManager.backfillAllArticlesFromServer()
-            let records = try articleStore.fetchAllRecords()
-
-            for record in records {
-                syncEngineManager.enqueueSave(for: ArticleRecord.makeRecordID(for: record.id))
-            }
-
-            try await syncEngineManager.sendChanges()
-            try await syncEngineManager.fetchChanges()
-            syncEngineManager.logWatchedRecordSummary(context: "repairSync:complete")
-            return records.count
-        } catch {
-            syncEngineManager.logWatchedRecordSummary(context: "repairSync:failed")
-            throw error
-        }
+        try await syncEngineManager.refresh(mode: .fullRepair)
     }
 }

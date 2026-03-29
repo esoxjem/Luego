@@ -4,6 +4,7 @@ import Observation
 enum SyncState: Equatable {
     case idle
     case syncing
+    case restoring
     case success
     case error(message: String, needsSignIn: Bool)
 }

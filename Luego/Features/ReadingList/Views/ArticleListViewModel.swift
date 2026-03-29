@@ -89,6 +89,14 @@ final class ArticleListViewModel {
         }
     }
 
+    func refreshArticles() async {
+        do {
+            try await articleService.refreshArticles()
+        } catch {
+            errorMessage = "Failed to refresh articles: \(error.localizedDescription)"
+        }
+    }
+
     func clearError() {
         errorMessage = nil
     }

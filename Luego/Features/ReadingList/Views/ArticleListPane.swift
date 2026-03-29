@@ -7,6 +7,7 @@ struct ArticleListPane: View {
     let shouldAnimateEmptyStateOnFirstAppearance: Bool
     let onEmptyStateAnimationConsumed: () -> Void
     @Environment(\.diContainer) private var diContainer
+    @Environment(SyncStatusObserver.self) private var syncStatusObserver: SyncStatusObserver?
     @State private var viewModel: ArticleListViewModel?
     @State private var showingAddArticle = false
     @State private var showingSettings = false
@@ -15,22 +16,23 @@ struct ArticleListPane: View {
         filter.filtered(viewModel?.articles ?? [])
     }
 
+    private var restoreStatusText: String? {
+        guard filter == .readingList, syncStatusObserver?.state == .restoring else { return nil }
+        return "Restoring articles from iCloud."
+    }
+
     var body: some View {
         Group {
             if let viewModel {
                 if filteredArticles.isEmpty {
-                    ArticleListEmptyState(
-                        onDiscover: onDiscover,
-                        filter: filter,
-                        shouldAnimateCopyOnFirstAppearance: filter == .readingList && shouldAnimateEmptyStateOnFirstAppearance,
-                        onCopyAnimationConsumed: onEmptyStateAnimationConsumed
-                    )
+                    emptyState(for: viewModel)
                 } else {
                     SelectableArticleList(
                         articles: filteredArticles,
                         viewModel: viewModel,
                         selection: $selectedArticle,
-                        filter: filter
+                        filter: filter,
+                        onRefresh: { await viewModel.refreshArticles() }
                     )
                 }
             } else {
@@ -90,6 +92,25 @@ struct ArticleListPane: View {
             viewModel?.startObservingArticles()
         }
     }
+
+    @ViewBuilder
+    private func emptyState(for viewModel: ArticleListViewModel) -> some View {
+        let content = ArticleListEmptyState(
+            onDiscover: onDiscover,
+            filter: filter,
+            restoreStatusText: restoreStatusText,
+            shouldAnimateCopyOnFirstAppearance: filter == .readingList && shouldAnimateEmptyStateOnFirstAppearance,
+            onCopyAnimationConsumed: onEmptyStateAnimationConsumed
+        )
+
+        #if os(iOS)
+        RefreshableEmptyStateContainer(onRefresh: { await viewModel.refreshArticles() }) {
+            content
+        }
+        #else
+        content
+        #endif
+    }
 }
 
 struct SelectableArticleList: View {
@@ -97,6 +118,7 @@ struct SelectableArticleList: View {
     let viewModel: ArticleListViewModel
     @Binding var selection: Article?
     let filter: ArticleFilter
+    let onRefresh: () async -> Void
 
     private var swipeActions: ArticleSwipeActions {
         ArticleSwipeActions(
@@ -141,6 +163,11 @@ struct SelectableArticleList: View {
         #endif
         .scrollContentBackground(.hidden)
         .background(Color.regularPanelBackground)
+        #if os(iOS)
+        .refreshable {
+            await onRefresh()
+        }
+        #endif
     }
 
     private func selectionBackground(isSelected: Bool) -> some View {

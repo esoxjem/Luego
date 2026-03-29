@@ -132,9 +132,18 @@ struct SyncStatusRow: View {
     let lastSyncTime: Date?
     var verticalPadding: Edge.Set = .vertical
 
-    private var formattedTime: String? {
-        guard let time = lastSyncTime else { return nil }
-        return DateFormatters.time.string(from: time)
+    private var statusText: String? {
+        switch state {
+        case .idle, .success:
+            guard let lastSyncTime else { return nil }
+            return "Synced at \(DateFormatters.time.string(from: lastSyncTime))"
+        case .syncing:
+            return "Syncing with iCloud"
+        case .restoring:
+            return "Restoring from iCloud"
+        case .error:
+            return nil
+        }
     }
 
     var body: some View {
@@ -142,8 +151,8 @@ struct SyncStatusRow: View {
             SyncStatusIndicator(state: state, onErrorTap: nil)
                 .font(.app(.auxiliaryStatus))
 
-            if let timeText = formattedTime {
-                Text("Synced at \(timeText)")
+            if let statusText {
+                Text(statusText)
                     .font(.app(.auxiliaryStatus))
                     .foregroundStyle(.tertiary)
             }
@@ -367,6 +376,8 @@ struct SidebarSettingsButton: View {
             return "Sync idle"
         case .syncing:
             return "Syncing with iCloud"
+        case .restoring:
+            return "Restoring from iCloud"
         case .error(let message, _):
             return "Sync error: \(message)"
         }
@@ -376,7 +387,7 @@ struct SidebarSettingsButton: View {
         switch state {
         case .idle:
             return .clear
-        case .syncing:
+        case .syncing, .restoring:
             return Color.regularSelectionInk.opacity(0.9)
         case .success:
             return .green

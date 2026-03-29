@@ -190,19 +190,26 @@ struct ArticleListContent: View {
     let onDiscover: () -> Void
     let shouldAnimateEmptyStateOnFirstAppearance: Bool
     let onEmptyStateAnimationConsumed: () -> Void
+    @Environment(SyncStatusObserver.self) private var syncStatusObserver: SyncStatusObserver?
+
+    private var restoreStatusText: String? {
+        guard filter == .readingList, syncStatusObserver?.state == .restoring else { return nil }
+        return "Restoring articles from iCloud."
+    }
 
     var body: some View {
         Group {
             if let viewModel {
                 if articles.isEmpty {
-                    ArticleListEmptyState(
-                        onDiscover: onDiscover,
-                        filter: filter,
-                        shouldAnimateCopyOnFirstAppearance: filter == .readingList && shouldAnimateEmptyStateOnFirstAppearance,
-                        onCopyAnimationConsumed: onEmptyStateAnimationConsumed
-                    )
+                    emptyState(for: viewModel)
                 } else {
-                    ArticleList(articles: articles, viewModel: viewModel, diContainer: diContainer, filter: filter)
+                    ArticleList(
+                        articles: articles,
+                        viewModel: viewModel,
+                        diContainer: diContainer,
+                        filter: filter,
+                        onRefresh: { await viewModel.refreshArticles() }
+                    )
                 }
             } else {
                 ProgressView()
@@ -211,6 +218,25 @@ struct ArticleListContent: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.paperCream)
     }
+
+    @ViewBuilder
+    private func emptyState(for viewModel: ArticleListViewModel) -> some View {
+        let content = ArticleListEmptyState(
+            onDiscover: onDiscover,
+            filter: filter,
+            restoreStatusText: restoreStatusText,
+            shouldAnimateCopyOnFirstAppearance: filter == .readingList && shouldAnimateEmptyStateOnFirstAppearance,
+            onCopyAnimationConsumed: onEmptyStateAnimationConsumed
+        )
+
+        #if os(iOS)
+        RefreshableEmptyStateContainer(onRefresh: { await viewModel.refreshArticles() }) {
+            content
+        }
+        #else
+        content
+        #endif
+    }
 }
 
 struct ArticleList: View {
@@ -218,6 +244,7 @@ struct ArticleList: View {
     let viewModel: ArticleListViewModel
     let diContainer: DIContainer?
     let filter: ArticleFilter
+    let onRefresh: () async -> Void
 
     private var swipeActions: ArticleSwipeActions {
         ArticleSwipeActions(filter: filter, viewModel: viewModel)
@@ -241,6 +268,11 @@ struct ArticleList: View {
             }
         }
         .scrollContentBackground(.hidden)
+        #if os(iOS)
+        .refreshable {
+            await onRefresh()
+        }
+        #endif
     }
 }
 
@@ -259,6 +291,7 @@ struct ArticleReaderDestination: View {
 struct ArticleListEmptyState: View {
     let onDiscover: () -> Void
     let filter: ArticleFilter
+    let restoreStatusText: String?
     let onCopyAnimationConsumed: () -> Void
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -268,11 +301,13 @@ struct ArticleListEmptyState: View {
     init(
         onDiscover: @escaping () -> Void,
         filter: ArticleFilter,
+        restoreStatusText: String? = nil,
         shouldAnimateCopyOnFirstAppearance: Bool = false,
         onCopyAnimationConsumed: @escaping () -> Void = {}
     ) {
         self.onDiscover = onDiscover
         self.filter = filter
+        self.restoreStatusText = restoreStatusText
         self.onCopyAnimationConsumed = onCopyAnimationConsumed
         _shouldAnimateCopy = State(initialValue: shouldAnimateCopyOnFirstAppearance)
     }
@@ -302,6 +337,11 @@ struct ArticleListEmptyState: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
+                if let restoreStatusText {
+                    RestoreStatusBanner(text: restoreStatusText)
+                        .padding(.bottom, 18)
+                }
+
                 VStack(spacing: 8) {
                     artwork
                     AnimatedEmptyStateTitle(
@@ -349,6 +389,49 @@ struct ArticleListEmptyState: View {
         .background(Color.paperCream)
         .onDisappear {
             shouldAnimateCopy = false
+        }
+    }
+}
+
+struct RefreshableEmptyStateContainer<Content: View>: View {
+    let onRefresh: () async -> Void
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                content
+                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
+            }
+            .scrollIndicators(.hidden)
+            .refreshable {
+                await onRefresh()
+            }
+        }
+    }
+}
+
+struct RestoreStatusBanner: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+
+            Text(text)
+                .font(.app(.auxiliaryStatus))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            Capsule()
+                .fill(Color.white.opacity(0.72))
+        )
+        .overlay {
+            Capsule()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         }
     }
 }

@@ -1,6 +1,11 @@
 import CloudKit
 import Foundation
 
+enum SyncRefreshMode {
+    case smart
+    case fullRepair
+}
+
 @MainActor
 protocol SyncEngineManagerProtocol: AnyObject {
     var state: SyncState { get }
@@ -8,6 +13,7 @@ protocol SyncEngineManagerProtocol: AnyObject {
     func start() throws
     func enqueueSave(for recordID: CKRecord.ID)
     func enqueueDelete(for recordID: CKRecord.ID)
+    func refresh(mode: SyncRefreshMode) async throws -> Int
     func fetchChanges() async throws
     func sendChanges() async throws
     func resetSyncStateForFullRefetch() async throws

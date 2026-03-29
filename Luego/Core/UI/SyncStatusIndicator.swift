@@ -10,7 +10,9 @@ struct SyncStatusIndicator: View {
             case .idle:
                 EmptyView()
             case .syncing:
-                SyncingIndicator()
+                SyncActivityIndicator(systemName: "arrow.triangle.2.circlepath", label: "Syncing")
+            case .restoring:
+                SyncActivityIndicator(systemName: "arrow.down.circle", label: "Restoring from iCloud")
             case .success:
                 SyncSuccessIndicator()
             case .error:
@@ -21,12 +23,15 @@ struct SyncStatusIndicator: View {
     }
 }
 
-private struct SyncingIndicator: View {
+private struct SyncActivityIndicator: View {
+    let systemName: String
+    let label: String
+
     var body: some View {
-        Image(systemName: "arrow.triangle.2.circlepath")
+        Image(systemName: systemName)
             .symbolEffect(.rotate, isActive: true)
             .foregroundStyle(.secondary)
-            .accessibilityLabel("Syncing")
+            .accessibilityLabel(label)
     }
 }
 

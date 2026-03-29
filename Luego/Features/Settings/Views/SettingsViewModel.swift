@@ -231,6 +231,8 @@ final class SettingsViewModel {
             return "idle"
         case .syncing:
             return "syncing"
+        case .restoring:
+            return "restoring"
         case .success:
             return "success"
         case .error(let message, let needsSignIn):

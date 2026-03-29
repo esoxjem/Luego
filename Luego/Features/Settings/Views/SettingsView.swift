@@ -378,6 +378,7 @@ struct SyncStatusSection: View {
         switch state {
         case .idle: "Up to date"
         case .syncing: "Syncing..."
+        case .restoring: "Restoring..."
         case .success: "Just synced"
         case .error(let message, _): message
         }
@@ -386,7 +387,7 @@ struct SyncStatusSection: View {
     private var statusColor: Color {
         switch state {
         case .idle, .success: .secondary
-        case .syncing: .blue
+        case .syncing, .restoring: .blue
         case .error: .red
         }
     }
@@ -404,6 +405,9 @@ struct SyncStatusSection: View {
     }
 
     private var statusSubtitle: String {
+        if state == .restoring {
+            return "Downloading your reading list from iCloud."
+        }
         if let timeText = formattedTime {
             return "Last synced at \(timeText)"
         }
@@ -547,12 +551,12 @@ struct SyncStatusContent: View {
     let statusText: String
     let statusSymbolName: String
     let statusColor: Color
-    let formattedTime: String?
+    let statusDetailText: String?
     let emphasizesGlyph: Bool
 
     private var accessibilityStatusValue: String {
-        if let timeText = formattedTime {
-            return "\(statusText). Last synced at \(timeText)"
+        if let statusDetailText {
+            return "\(statusText). \(statusDetailText)"
         }
         return statusText
     }
@@ -567,8 +571,8 @@ struct SyncStatusContent: View {
                         .font(.nunito(.subheadline, weight: .semibold))
                         .foregroundStyle(.primary)
 
-                    if let timeText = formattedTime {
-                        Text("Last synced at \(timeText)")
+                    if let statusDetailText {
+                        Text(statusDetailText)
                             .font(.nunito(.footnote))
                             .foregroundStyle(.secondary)
                     }
@@ -781,6 +785,7 @@ struct SettingsHero: View {
         switch state {
         case .idle, .success: "Calmly in sync."
         case .syncing: "Syncing your reading list."
+        case .restoring: "Restoring your reading list."
         case .error: "Sync needs attention."
         }
     }
@@ -887,6 +892,7 @@ struct SettingsStatusBadge: View {
         switch state {
         case .idle: "Up to date"
         case .syncing: "Syncing"
+        case .restoring: "Restoring"
         case .success: "Just synced"
         case .error: "Needs attention"
         }
@@ -896,6 +902,7 @@ struct SettingsStatusBadge: View {
         switch state {
         case .idle: "checkmark"
         case .syncing: "arrow.triangle.2.circlepath"
+        case .restoring: "arrow.down.circle"
         case .success: "checkmark.circle"
         case .error: "exclamationmark.triangle"
         }
@@ -904,7 +911,7 @@ struct SettingsStatusBadge: View {
     private var badgeColor: Color {
         switch state {
         case .idle, .success: .green
-        case .syncing: .blue
+        case .syncing, .restoring: .blue
         case .error: .red
         }
     }
@@ -1066,6 +1073,7 @@ struct SyncStatusCard: View {
         switch state {
         case .idle: "Up to date"
         case .syncing: "Syncing..."
+        case .restoring: "Restoring..."
         case .success: "Just synced"
         case .error(let message, _): message
         }
@@ -1074,7 +1082,7 @@ struct SyncStatusCard: View {
     private var statusColor: Color {
         switch state {
         case .idle, .success: .secondary
-        case .syncing: .blue
+        case .syncing, .restoring: .blue
         case .error: .red
         }
     }
@@ -1083,6 +1091,7 @@ struct SyncStatusCard: View {
         switch state {
         case .idle: "checkmark"
         case .syncing: "arrow.triangle.2.circlepath"
+        case .restoring: "arrow.down.circle"
         case .success: "checkmark.circle"
         case .error: "exclamationmark.triangle"
         }
@@ -1093,13 +1102,25 @@ struct SyncStatusCard: View {
         return DateFormatters.time.string(from: time)
     }
 
+    private var statusDetailText: String? {
+        if state == .restoring {
+            return "Downloading your reading list from iCloud."
+        }
+
+        if let timeText = formattedTime {
+            return "Last synced at \(timeText)"
+        }
+
+        return nil
+    }
+
     var body: some View {
         VStack(spacing: 10) {
             SyncStatusContent(
                 statusText: statusText,
                 statusSymbolName: statusSymbolName,
                 statusColor: statusColor,
-                formattedTime: formattedTime,
+                statusDetailText: statusDetailText,
                 emphasizesGlyph: state != .idle
             )
 

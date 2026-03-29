@@ -30,11 +30,23 @@ private enum ArticleSyncLocation: String {
     case unknownItemRecovered
 }
 
+private enum SyncRefreshError: LocalizedError {
+    case refreshInProgress
+
+    var errorDescription: String? {
+        switch self {
+        case .refreshInProgress:
+            return "A sync is already in progress. Try again in a moment."
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class SyncEngineManager: SyncEngineManagerProtocol {
     private static let watchedArticleRecordName = "DF060EDE-2119-4958-A5C5-50BBC3E8146F"
     private static let watchedArticleURLString = "https://www.patrickrhone.net/17175-2/"
+    private static let bootstrapRestoreMarkerKey = "cloudkitBootstrapRestoreCompletedAt"
 
     private(set) var state: SyncState = .idle
     private(set) var lastSyncTime: Date?
@@ -63,6 +75,12 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
     @ObservationIgnored
     private var isRepairSyncRecoveryEnabled = false
 
+    @ObservationIgnored
+    private var isVisibleRestoreInProgress = false
+
+    @ObservationIgnored
+    private var isRefreshInProgress = false
+
     init(
         database: AppDatabase,
         store: ArticleStoreProtocol? = nil,
@@ -87,8 +105,6 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
         )
         syncEngine = CKSyncEngine(configuration)
         publishStatus(.idle, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
-        let currentState = state
-        let currentLastSyncTime = lastSyncTime
         let cloudKitContainer = container
         Task {
             let diagnostics = await CloudKitRuntimeDiagnostics.collect(
@@ -100,8 +116,8 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
                 Logger.cloudKit.info("Launch diagnostics — \(line)")
             }
             publishStatus(
-                currentState,
-                lastSyncTime: currentLastSyncTime,
+                state,
+                lastSyncTime: lastSyncTime,
                 errorMessage: nil,
                 needsSignIn: diagnostics.needsSignIn,
                 accountStatus: diagnostics.accountStatus,
@@ -110,6 +126,25 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
                 cloudKitIdentityTokenState: diagnostics.identityTokenState,
                 cloudKitUserRecordID: diagnostics.userRecordID
             )
+        }
+    }
+
+    func refresh(mode: SyncRefreshMode) async throws -> Int {
+        guard !isRefreshInProgress else {
+            throw SyncRefreshError.refreshInProgress
+        }
+
+        isRefreshInProgress = true
+        defer {
+            isRefreshInProgress = false
+            isVisibleRestoreInProgress = false
+        }
+
+        switch mode {
+        case .smart:
+            return try await performSmartRefresh()
+        case .fullRepair:
+            return try await performFullRepairRefresh()
         }
     }
 
@@ -143,7 +178,7 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
         guard let syncEngine else { return }
 
         logWatchedRecordSummary(context: "fetchChanges:willFetch")
-        publishStatus(.syncing, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
+        publishRefreshStartState(isRestoring: isVisibleRestoreInProgress)
 
         do {
             try await syncEngine.fetchChanges()
@@ -657,8 +692,15 @@ private extension SyncEngineManager {
 
     func markSyncSuccess() {
         lastSyncTime = Date()
-        publishStatus(.success, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
+        let successState: SyncState = isVisibleRestoreInProgress ? .restoring : .success
+        publishStatus(successState, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
         idleTask?.cancel()
+        guard !isVisibleRestoreInProgress else {
+            Task {
+                await persistCurrentSyncState()
+            }
+            return
+        }
         idleTask = Task {
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled else { return }
@@ -869,6 +911,78 @@ private extension SyncEngineManager {
         }
 
         isRepairSyncRecoveryEnabled = false
+    }
+
+    func performSmartRefresh() async throws -> Int {
+        let shouldRestore = try shouldAttemptBootstrapRestore()
+        var didCompleteFetchChanges = false
+        isVisibleRestoreInProgress = shouldRestore
+        publishRefreshStartState(isRestoring: shouldRestore)
+
+        do {
+            try await fetchChanges()
+            didCompleteFetchChanges = true
+
+            if shouldRestore, try store.countArticles() == 0 {
+                _ = try await backfillAllArticlesFromServer()
+            }
+
+            if shouldRestore {
+                try markBootstrapRestoreCompleted()
+                isVisibleRestoreInProgress = false
+            }
+
+            markSyncSuccess()
+            return 0
+        } catch {
+            if shouldRestore, didCompleteFetchChanges {
+                await publishSyncFailure(error, prefix: "Bootstrap restore")
+            }
+            isVisibleRestoreInProgress = false
+            throw error
+        }
+    }
+
+    func performFullRepairRefresh() async throws -> Int {
+        isVisibleRestoreInProgress = false
+        logWatchedRecordSummary(context: "repairSync:start")
+
+        do {
+            try await resetSyncStateForFullRefetch()
+            try await fetchChanges()
+            _ = try await backfillAllArticlesFromServer()
+            let records = try store.fetchAllRecords()
+
+            for record in records {
+                enqueueSave(for: ArticleRecord.makeRecordID(for: record.id))
+            }
+
+            try await sendChanges()
+            try await fetchChanges()
+            try markBootstrapRestoreCompleted()
+            logWatchedRecordSummary(context: "repairSync:complete")
+            return records.count
+        } catch {
+            logWatchedRecordSummary(context: "repairSync:failed")
+            throw error
+        }
+    }
+
+    func shouldAttemptBootstrapRestore() throws -> Bool {
+        try store.countArticles() == 0 &&
+        database.migrationValue(for: Self.bootstrapRestoreMarkerKey) == nil
+    }
+
+    func markBootstrapRestoreCompleted() throws {
+        try database.saveMigrationValue(
+            ISO8601DateFormatter().string(from: Date()),
+            for: Self.bootstrapRestoreMarkerKey
+        )
+    }
+
+    func publishRefreshStartState(isRestoring: Bool) {
+        let refreshState: SyncState = isRestoring ? .restoring : .syncing
+        publishStatus(refreshState, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
     }
 
     func publishSyncFailure(_ error: Error, prefix: String) async {
