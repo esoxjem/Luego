@@ -1,47 +1,13 @@
 import SwiftUI
-#if os(iOS)
 import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 
 struct ArticleRowView: View {
     @ObservedObject var article: Article
     var isSelected: Bool = false
 
     var body: some View {
-        #if os(macOS)
-        macOSRowLayout
-        #else
         iOSRowLayout
-        #endif
     }
-
-    #if os(macOS)
-    private var macOSRowLayout: some View {
-        HStack(alignment: .top, spacing: 12) {
-            ArticleThumbnailView(url: article.thumbnailURL)
-
-            VStack(alignment: .leading, spacing: 3) {
-                ArticleTitleRow(
-                    title: article.title,
-                    excerpt: article.excerpt,
-                    isFavorite: article.isFavorite
-                )
-
-                ArticleMetadataRow(
-                    domain: article.domain,
-                    author: article.author,
-                    readPercentage: Int(article.readPosition * 100),
-                    formattedDate: formatDisplayDate(article)
-                )
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .padding(.vertical, 4)
-    }
-    #endif
 
     private var iOSRowLayout: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -93,12 +59,7 @@ struct ArticleTitleRow: View {
     @State private var measuredTitleHeight: CGFloat = 0
 
     private var titleLineHeight: CGFloat {
-        #if os(iOS)
         return UIFont.app(.listTitle).lineHeight
-        #else
-        let font = NSFont.app(.listTitle)
-        return font.ascender - font.descender + font.leading
-        #endif
     }
 
     private var reservedTitleHeight: CGFloat {

@@ -4,7 +4,7 @@
 
 - Product: Luego, a minimal read-it-later app.
 - Stack: SwiftUI + Swift 5.0.
-- Platforms: iOS 26.0+, iPadOS 26.0+, macOS 15.0+.
+- Platforms: iOS 26.0+, iPadOS 26.0+.
 - Persistence: SwiftData + CloudKit private database.
 - CloudKit container: `iCloud.com.esoxjem.Luego`.
 - Extra target: `LuegoShareExtension/` for share-sheet ingestion.
@@ -14,7 +14,7 @@
 - `Luego/App/`: app entry and root navigation.
 - `Luego/Core/`: shared infrastructure (`Configuration`, `DI`, `Models`, `DataSources`, UI helpers).
 - `Luego/Features/`: vertical feature slices (`ReadingList`, `Reader`, `Discovery`, `Sharing`, `Settings`).
-- `LuegoShareExtension/`: macOS/iOS share extension target.
+- `LuegoShareExtension/`: iOS/iPadOS share extension target.
 - `docs/prevention/`: known pitfalls and prevention playbooks.
 
 ## Architecture Rules
@@ -43,11 +43,10 @@
 
 ## Platform Rules
 
-- Implement and verify changes for iOS, iPadOS, and macOS together.
-- Use platform guards (`#if os(iOS)`, `#if os(macOS)`) only where behavior truly differs.
+- Implement and verify changes for iOS and iPadOS together.
+- Use platform guards only where behavior truly differs.
 - Keep entitlements in sync with target capabilities:
   - `Luego/Luego.entitlements`
-  - `Luego/Luego-macOS.entitlements`
   - `LuegoShareExtension/LuegoShareExtension.entitlements`
 
 ## Coding Rules
@@ -61,13 +60,12 @@
 
 ## Verification
 
-1. Build for iOS simulator and macOS.
-2. Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI for simulator and macOS builds.
+1. Build for the iOS simulator.
+2. Never use raw `xcodebuild`; always use the `xcodebuildmcp` CLI for simulator builds.
 3. Prefer direct `xcodebuildmcp` commands for local verification:
    - `xcodebuildmcp simulator build --use-latest-os`
    - `xcodebuildmcp simulator build-and-run --use-latest-os`
    - `xcodebuildmcp simulator list`
    - `xcodebuildmcp simulator screenshot --simulator-id <uuid>`
    - `xcodebuildmcp simulator snapshot-ui --simulator-id <uuid>`
-   - `xcodebuildmcp macos build`
-4. Run the app via `xcodebuildmcp` and verify with logs or screenshots for iOS or macOS as required by the task.
+4. Run the app via `xcodebuildmcp` and verify with logs or screenshots for iOS or iPadOS as required by the task.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "macOS Deploy"
+  short_description: "Release and harden Luego macOS deploys"
+  default_prompt: "Use $macos-deploy to run Luego macOS release with Sparkle key alignment, notarization, appcast generation, and runtime validation."

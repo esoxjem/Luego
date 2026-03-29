@@ -37,9 +37,7 @@ struct DiscoveryReaderView: View {
                 }
             }
             .navigationTitle("Discover")
-            #if os(iOS)
             .appNavigationStyle(.inlineTransparent)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
@@ -62,9 +60,6 @@ struct DiscoveryReaderView: View {
             }
         }
         .tint(Color.regularSelectionInk)
-        #if os(macOS)
-        .appNavigationChrome()
-        #endif
     }
 
     private func openInBrowser() {
@@ -187,15 +182,7 @@ struct DiscoveryBottomBar: View {
             )
             .disabled(isSaved)
         }
-        #if os(iOS)
         .glassEffect(.regular.interactive().tint(Color.regularGlassTint))
-        #else
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay {
-            Capsule()
-                .stroke(Color.regularOutline)
-        }
-        #endif
     }
 }
 
@@ -207,11 +194,7 @@ struct DiscoveryBottomBarButton: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.title2)
-                #if os(macOS)
-                .foregroundStyle(Color.regularSelectionInk)
-                #else
                 .foregroundStyle(.white)
-                #endif
                 .frame(width: 44, height: 44, alignment: .center)
                 .contentShape(Rectangle())
         }

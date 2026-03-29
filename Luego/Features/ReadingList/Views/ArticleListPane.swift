@@ -39,15 +39,9 @@ struct ArticleListPane: View {
                 ProgressView()
             }
         }
-        #if os(iOS)
         .background(Color.regularPanelBackground)
         .appNavigationStyle(.contentLargeTitle)
-        #endif
-        #if os(macOS)
-        .background(MacAppBackground())
-        #endif
         .navigationTitle(filter.navigationTitle)
-        #if !os(macOS)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if filter == .readingList {
@@ -56,28 +50,25 @@ struct ArticleListPane: View {
                     }
                     .accessibilityLabel("Inspire Me")
                 }
+
                 Button {
                     showingAddArticle = true
                 } label: {
                     Image(systemName: "plus")
                 }
-#if !os(macOS)
+
                 Button {
                     showingSettings = true
                 } label: {
                     Image(systemName: "gearshape")
                 }
-                #endif
             }
         }
-        #endif
-        #if !os(macOS)
         .sheet(isPresented: $showingAddArticle) {
             if let viewModel {
                 AddArticleView(viewModel: viewModel)
             }
         }
-        #endif
         .sheet(isPresented: $showingSettings) {
             if let container = diContainer {
                 NavigationStack {
@@ -103,13 +94,9 @@ struct ArticleListPane: View {
             onCopyAnimationConsumed: onEmptyStateAnimationConsumed
         )
 
-        #if os(iOS)
         RefreshableEmptyStateContainer(onRefresh: { await viewModel.refreshArticles() }) {
             content
         }
-        #else
-        content
-        #endif
     }
 }
 
@@ -143,11 +130,6 @@ struct SelectableArticleList: View {
                 .buttonStyle(.plain)
                 .listRowSeparator(.hidden)
                 .listRowBackground(selectionBackground(isSelected: selection?.id == article.id))
-                #if os(macOS)
-                .contextMenu {
-                    contextMenuItems(for: article)
-                }
-                #else
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     swipeActions.favoriteButton(for: article)
                 }
@@ -155,19 +137,13 @@ struct SelectableArticleList: View {
                     swipeActions.archiveButton(for: article)
                     swipeActions.deleteButton(for: article)
                 }
-                #endif
             }
         }
-        #if os(macOS)
-        .listStyle(.plain)
-        #endif
         .scrollContentBackground(.hidden)
         .background(Color.regularPanelBackground)
-        #if os(iOS)
         .refreshable {
             await onRefresh()
         }
-        #endif
     }
 
     private func selectionBackground(isSelected: Bool) -> some View {
@@ -176,43 +152,4 @@ struct SelectableArticleList: View {
             .padding(.horizontal, 4)
             .padding(.vertical, 3)
     }
-
-    #if os(macOS)
-    @ViewBuilder
-    private func contextMenuItems(for article: Article) -> some View {
-        let isFavorited = article.isFavorite
-        let isArchived = filter == .archived
-
-        Button {
-            Task { await viewModel.toggleFavorite(article) }
-        } label: {
-            Label(
-                isFavorited ? "Remove from Favorites" : "Add to Favorites",
-                systemImage: isFavorited ? "star.slash" : "star"
-            )
-        }
-
-        Button {
-            Task { await viewModel.toggleArchive(article) }
-        } label: {
-            Label(
-                isArchived ? "Unarchive" : "Archive",
-                systemImage: isArchived ? "tray.and.arrow.up" : "archivebox"
-            )
-        }
-
-        Divider()
-
-        Button(role: .destructive) {
-            Task {
-                if selection?.id == article.id {
-                    selection = nil
-                }
-                await viewModel.deleteArticle(article)
-            }
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-    }
-    #endif
 }

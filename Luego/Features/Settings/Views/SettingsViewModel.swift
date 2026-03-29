@@ -1,9 +1,6 @@
 import Foundation
 import CloudKit
-
-#if os(iOS)
 import UIKit
-#endif
 
 @Observable
 @MainActor
@@ -133,11 +130,7 @@ final class SettingsViewModel {
         lines.append("OSLog Subsystem: \(bundleID)")
         lines.append("App Version: \(version)")
         lines.append("Build Number: \(build)")
-        #if os(iOS)
         lines.append("Platform: iOS \(UIDevice.current.systemVersion)")
-        #elseif os(macOS)
-        lines.append("Platform: macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
-        #endif
         lines.append("")
 
         let container = CKContainer(identifier: AppConfiguration.cloudKitContainerIdentifier)

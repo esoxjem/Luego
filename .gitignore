@@ -83,10 +83,6 @@ Luego/Core/Configuration/Secrets.swift
 !.codex/environments/
 !.codex/environments/**
 
-# Agent local state
-.agents/skills/macos-deploy/
-.agents/skills/macos-deploy/**
-
 # Conductor local hooks (personal configuration)
 conductor.local/
 

@@ -1,9 +1,6 @@
 import SwiftUI
 import Textual
-
-#if os(iOS)
 import UIKit
-#endif
 
 extension Color {
     static let paperCream = Color(red: 252 / 255, green: 252 / 255, blue: 253 / 255)
@@ -15,21 +12,11 @@ extension Color {
     static let regularOutline = Color.primary.opacity(0.18)
     static let regularGlassTint = mascotPurple.opacity(0.8)
 
-    static let readerBackground: Color = {
-        #if os(macOS)
-        Color(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .vibrantDark]) != nil
-                ? NSColor(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0, alpha: 1)
-                : NSColor(regularPanelBackground)
-        })
-        #else
-        Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0, alpha: 1)
-                : UIColor(regularPanelBackground)
-        })
-        #endif
-    }()
+    static let readerBackground: Color = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0x18 / 255.0, green: 0x19 / 255.0, blue: 0x1d / 255.0, alpha: 1)
+            : UIColor(regularPanelBackground)
+    })
 }
 
 extension StructuredText.Style where Self == StructuredText.GitHubStyle {
@@ -58,7 +45,6 @@ enum AppNavigationStyle {
         }
     }
 
-    #if os(iOS)
     fileprivate var titleDisplayMode: NavigationBarItem.TitleDisplayMode {
         switch self {
         case .inlinePanel, .inlineTransparent:
@@ -67,12 +53,10 @@ enum AppNavigationStyle {
             .large
         }
     }
-    #endif
 }
 
 enum AppNavigationAppearance {
     static func configurePlatformAppearance() {
-        #if os(iOS)
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(Color.regularPanelBackground)
@@ -89,28 +73,18 @@ enum AppNavigationAppearance {
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
-        #endif
     }
 }
 
 extension View {
-    @ViewBuilder
     func appNavigationStyle(_ style: AppNavigationStyle) -> some View {
-        #if os(iOS)
         self
             .appNavigationChrome(style.chrome)
             .navigationBarTitleDisplayMode(style.titleDisplayMode)
-        #elseif os(macOS)
-        self
-            .appNavigationChrome()
-        #else
-        self
-        #endif
     }
 
     @ViewBuilder
     func appNavigationChrome(_ style: AppNavigationChromeStyle = .panel) -> some View {
-        #if os(iOS)
         switch style {
         case .panel:
             self
@@ -120,12 +94,6 @@ extension View {
             self
                 .toolbarBackground(.hidden, for: .navigationBar)
         }
-        #elseif os(macOS)
-        self
-            .toolbar(removing: .sidebarToggle)
-        #else
-        self
-        #endif
     }
 
     func readerContentStyle() -> some View {
@@ -138,12 +106,6 @@ extension View {
 
 enum ReaderLayout {
     static func horizontalPadding(for containerWidth: CGFloat) -> CGFloat {
-        #if os(macOS)
-        let proportional = containerWidth * 0.15
-        let maxContentWidth: CGFloat = 800
-        let paddingForMaxWidth = max(24, (containerWidth - maxContentWidth) / 2)
-        return max(proportional, paddingForMaxWidth)
-        #else
         if UIDevice.current.userInterfaceIdiom == .pad {
             let maxContentWidth: CGFloat = 700
             let paddingForMaxWidth = max(56, (containerWidth - maxContentWidth) / 2)
@@ -151,6 +113,5 @@ enum ReaderLayout {
         }
 
         return 40
-        #endif
     }
 }

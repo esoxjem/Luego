@@ -66,6 +66,4 @@ xcodebuildmcp simulator test --use-latest-os
 xcodebuildmcp simulator list
 xcodebuildmcp simulator screenshot --simulator-id <uuid>
 xcodebuildmcp simulator snapshot-ui --simulator-id <uuid>
-xcodebuildmcp macos build
-xcodebuildmcp macos build-and-run
 ```

@@ -12,9 +12,6 @@ import CloudKit
 struct LuegoApp: App {
     let database: AppDatabase
     @State private var diContainer: DIContainer
-    #if os(macOS)
-    @State private var appUpdateController = AppUpdateController()
-    #endif
 
     init() {
         AppTypography.registerFonts()
@@ -57,30 +54,6 @@ struct LuegoApp: App {
                     await logLaunchDiagnostics()
                 }
         }
-        #if os(macOS)
-        .defaultSize(width: 1000, height: 700)
-        #endif
-
-        #if os(macOS)
-        Settings {
-            SettingsView(
-                viewModel: diContainer.makeSettingsViewModel(),
-                syncStatusObserver: diContainer.syncObserver
-            )
-        }
-        .commands {
-            CommandGroup(replacing: .sidebar) {
-            }
-            #if !DEBUG
-            CommandGroup(after: .appInfo) {
-                Divider()
-                Button("Check for Updates…") {
-                    appUpdateController.checkForUpdates()
-                }
-            }
-            #endif
-        }
-        #endif
     }
 }
 
@@ -150,11 +123,7 @@ extension LuegoApp {
             Logger.cloudKit.error("Launch diagnostics — failed to count articles: \(error.localizedDescription)")
         }
 
-        #if os(iOS)
         Logger.cloudKit.info("Launch diagnostics — Platform: iOS")
-        #elseif os(macOS)
-        Logger.cloudKit.info("Launch diagnostics — Platform: macOS")
-        #endif
     }
 
 }

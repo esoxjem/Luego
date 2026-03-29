@@ -13,12 +13,7 @@ struct DetailPane: View {
                 EmptyDetailView()
             }
         }
-        #if os(iOS)
         .background(Color.regularPanelBackground)
-        #endif
-        #if os(macOS)
-        .background(MacAppBackground())
-        #endif
         .onChange(of: article?.id) { _, _ in
             if let newArticle = article, let container = diContainer {
                 readerViewModel = container.makeReaderViewModel(article: newArticle)
@@ -68,8 +63,6 @@ struct EmptyDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)
-        #if os(iOS)
         .background(Color.regularPanelBackground)
-        #endif
     }
 }

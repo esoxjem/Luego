@@ -79,20 +79,11 @@ struct ArticleListView: View {
                 }
             }
         }
-        #if os(iOS)
         .fullScreenCover(isPresented: $showingDiscovery) {
             if let vm = discoveryViewModel {
                 DiscoveryReaderView(viewModel: vm)
             }
         }
-        #else
-        .sheet(isPresented: $showingDiscovery) {
-            if let vm = discoveryViewModel {
-                DiscoveryReaderView(viewModel: vm)
-                    .frame(minWidth: 600, minHeight: 500)
-            }
-        }
-        #endif
         .onChange(of: showingDiscovery) { _, isShowing in
             if isShowing, discoveryViewModel == nil, let container = diContainer {
                 discoveryViewModel = container.makeDiscoveryViewModel()
@@ -123,7 +114,6 @@ struct ArticleListView: View {
 
     @ViewBuilder
     private func presentingAddArticle<Content: View>(_ content: Content) -> some View {
-        #if os(iOS)
         if horizontalSizeClass == .compact {
             content
         } else {
@@ -132,12 +122,6 @@ struct ArticleListView: View {
                     addArticleDestination
                 }
         }
-        #else
-        content
-            .sheet(isPresented: $showingAddArticle) {
-                addArticleDestination
-            }
-        #endif
     }
 
     @ViewBuilder
@@ -147,7 +131,6 @@ struct ArticleListView: View {
         }
     }
 
-    #if os(iOS)
     private var compactAddArticlePopoverBinding: Binding<Bool> {
         Binding(
             get: {
@@ -164,7 +147,6 @@ struct ArticleListView: View {
         addArticleDestination
             .presentationCompactAdaptation(.popover)
     }
-    #endif
 
     private func handleScenePhaseChange(_ phase: ScenePhase) async {
         guard phase == .active, let viewModel else { return }
@@ -172,11 +154,9 @@ struct ArticleListView: View {
     }
 
     private var navigationTitle: String {
-        #if os(iOS)
         if horizontalSizeClass == .compact {
             return filter.navigationTitle
         }
-        #endif
 
         return filter.title
     }
@@ -229,13 +209,9 @@ struct ArticleListContent: View {
             onCopyAnimationConsumed: onEmptyStateAnimationConsumed
         )
 
-        #if os(iOS)
         RefreshableEmptyStateContainer(onRefresh: { await viewModel.refreshArticles() }) {
             content
         }
-        #else
-        content
-        #endif
     }
 }
 

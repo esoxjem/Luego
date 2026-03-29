@@ -1,11 +1,6 @@
 import SwiftUI
 import CoreText
-
-#if os(iOS)
 import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 
 enum AppFontFamily {
     case lora
@@ -102,25 +97,6 @@ enum AppTextRole {
         }
     }
 
-    fileprivate var macOSPointSize: CGFloat {
-        switch self {
-        case .body:
-            16
-        case .sidebarItem:
-            16
-        case .listTitle:
-            15
-        case .listExcerpt:
-            13
-        case .listMetadata:
-            11.5
-        case .emptyStateBody:
-            15
-        default:
-            basePointSize
-        }
-    }
-
     fileprivate var selectedWeight: Font.Weight {
         switch self {
         case .sidebarItem:
@@ -177,23 +153,13 @@ enum AppTypography {
 
     static func variableFontAxisValue(for weight: Font.Weight) -> CGFloat {
         switch weight {
-        case .ultraLight:
-            400
-        case .thin:
-            400
-        case .light:
-            400
-        case .regular:
+        case .ultraLight, .thin, .light, .regular:
             400
         case .medium:
             500
         case .semibold:
             600
-        case .bold:
-            700
-        case .heavy:
-            700
-        case .black:
+        case .bold, .heavy, .black:
             700
         default:
             400
@@ -232,44 +198,7 @@ enum AppTypography {
     }
 
     static func font(for role: AppTextRole, isEmphasized: Bool = false) -> Font {
-        #if os(iOS)
         Font(uiFont(for: role, isEmphasized: isEmphasized))
-        #elseif os(macOS)
-        Font(nsFont(for: role, isEmphasized: isEmphasized))
-        #else
-        switch role.family {
-        case .lora, .nunito:
-            .custom(
-                postScriptName(for: role.family),
-                size: role.basePointSize,
-                relativeTo: role.textStyle
-            )
-        case .system:
-            .system(role.textStyle, design: .default)
-        }
-        #endif
-    }
-
-    private static func postScriptName(for family: AppFontFamily) -> String {
-        switch family {
-        case .lora:
-            loraPostScriptName
-        case .nunito:
-            nunitoPostScriptName
-        case .system:
-            ""
-        }
-    }
-
-    private static func axisIdentifier(for family: AppFontFamily) -> Int {
-        switch family {
-        case .lora:
-            loraWeightAxisIdentifier
-        case .nunito:
-            nunitoWeightAxisIdentifier
-        case .system:
-            0
-        }
     }
 
     private static func resolvedWeight(for role: AppTextRole, isEmphasized: Bool) -> Font.Weight {
@@ -287,35 +216,14 @@ extension Font {
     }
 
     static func lora(_ textStyle: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
-        #if os(iOS)
         Font(UIFont.lora(forTextStyle: textStyle.uiTextStyle, weight: weight))
-        #elseif os(macOS)
-        Font(NSFont.lora(size: AppTypography.fontSize(for: textStyle), weight: weight))
-        #else
-        .custom(
-            AppTypography.loraPostScriptName,
-            size: AppTypography.fontSize(for: textStyle),
-            relativeTo: textStyle
-        )
-        #endif
     }
 
     static func nunito(_ textStyle: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
-        #if os(iOS)
         Font(UIFont.nunito(forTextStyle: textStyle.uiTextStyle, weight: weight))
-        #elseif os(macOS)
-        Font(NSFont.nunito(size: AppTypography.fontSize(for: textStyle), weight: weight))
-        #else
-        .custom(
-            AppTypography.nunitoPostScriptName,
-            size: AppTypography.fontSize(for: textStyle),
-            relativeTo: textStyle
-        )
-        #endif
     }
 }
 
-#if os(iOS)
 extension UIFont {
     static func app(_ role: AppTextRole, emphasized: Bool = false) -> UIFont {
         AppTypography.uiFont(for: role, isEmphasized: emphasized)
@@ -390,81 +298,3 @@ private extension Font.TextStyle {
         }
     }
 }
-#elseif os(macOS)
-extension NSFont {
-    static func app(_ role: AppTextRole, emphasized: Bool = false) -> NSFont {
-        AppTypography.nsFont(for: role, isEmphasized: emphasized)
-    }
-
-    static func lora(size: CGFloat, weight: Font.Weight = .regular) -> NSFont {
-        let axisValue = AppTypography.variableFontAxisValue(for: weight)
-        let variationAttributeName = NSFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
-        let descriptor = NSFontDescriptor(fontAttributes: [
-            .name: AppTypography.loraPostScriptName,
-            variationAttributeName: [AppTypography.loraWeightAxisIdentifier: axisValue]
-        ])
-
-        return NSFont(descriptor: descriptor, size: size)
-            ?? NSFont(name: AppTypography.loraPostScriptName, size: size)
-            ?? .systemFont(ofSize: size)
-    }
-
-    static func nunito(size: CGFloat, weight: Font.Weight = .regular) -> NSFont {
-        let axisValue = AppTypography.variableFontAxisValue(for: weight)
-        let variationAttributeName = NSFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
-        let descriptor = NSFontDescriptor(fontAttributes: [
-            .name: AppTypography.nunitoPostScriptName,
-            variationAttributeName: [AppTypography.nunitoWeightAxisIdentifier: axisValue]
-        ])
-
-        return NSFont(descriptor: descriptor, size: size)
-            ?? NSFont(name: AppTypography.nunitoPostScriptName, size: size)
-            ?? .systemFont(ofSize: size)
-    }
-}
-
-extension AppTypography {
-    static func nsFont(for role: AppTextRole, isEmphasized: Bool = false) -> NSFont {
-        let weight = resolvedWeight(for: role, isEmphasized: isEmphasized)
-        let size = role.macOSPointSize
-        if role.family == .system {
-            return NSFont.systemFont(ofSize: size, weight: nsFontWeight(for: weight))
-        }
-        let variationAttributeName = NSFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
-        let descriptor = NSFontDescriptor(fontAttributes: [
-            .name: postScriptName(for: role.family),
-            .size: size,
-            variationAttributeName: [axisIdentifier(for: role.family): variableFontAxisValue(for: weight)]
-        ])
-
-        return NSFont(descriptor: descriptor, size: size)
-            ?? NSFont(name: postScriptName(for: role.family), size: size)
-            ?? .systemFont(ofSize: size)
-    }
-
-    private static func nsFontWeight(for weight: Font.Weight) -> NSFont.Weight {
-        switch weight {
-        case .ultraLight:
-            .ultraLight
-        case .thin:
-            .thin
-        case .light:
-            .light
-        case .regular:
-            .regular
-        case .medium:
-            .medium
-        case .semibold:
-            .semibold
-        case .bold:
-            .bold
-        case .heavy:
-            .heavy
-        case .black:
-            .black
-        default:
-            .regular
-        }
-    }
-}
-#endif

@@ -1,7 +1,6 @@
 schemaVersion: 1
 enabledWorkflows:
   - simulator
-  - macos
   - logging
   - debugging
   - project-discovery
