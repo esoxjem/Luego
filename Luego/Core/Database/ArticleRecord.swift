@@ -24,6 +24,7 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
     var author: String?
     var wordCount: Int?
     var cloudKitSystemFields: Data?
+    var deletedAt: Date?
 
     init(
         id: String,
@@ -38,7 +39,8 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
         isArchived: Bool = false,
         author: String? = nil,
         wordCount: Int? = nil,
-        cloudKitSystemFields: Data? = nil
+        cloudKitSystemFields: Data? = nil,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.url = url
@@ -53,6 +55,7 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
         self.author = author
         self.wordCount = wordCount
         self.cloudKitSystemFields = cloudKitSystemFields
+        self.deletedAt = deletedAt
     }
 
     init(_ article: Article, cloudKitSystemFields: Data? = nil) {
@@ -69,7 +72,8 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
             isArchived: article.isArchived,
             author: article.author,
             wordCount: article.wordCount,
-            cloudKitSystemFields: cloudKitSystemFields
+            cloudKitSystemFields: cloudKitSystemFields,
+            deletedAt: nil
         )
     }
 
@@ -95,7 +99,8 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
             isArchived: record["isArchived"] as? Bool ?? false,
             author: record["author"] as? String,
             wordCount: record["wordCount"] as? Int,
-            cloudKitSystemFields: Self.encodeSystemFields(record)
+            cloudKitSystemFields: Self.encodeSystemFields(record),
+            deletedAt: record["deletedAt"] as? Date
         )
     }
 
@@ -138,6 +143,7 @@ struct ArticleRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
         record["isArchived"] = isArchived
         record["author"] = author
         record["wordCount"] = wordCount
+        record["deletedAt"] = deletedAt
         return record
     }
 

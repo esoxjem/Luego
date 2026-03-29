@@ -20,9 +20,22 @@ enum SyncEngineStatusPayloadKey {
     static let recentFailedSaveDetails = "recentFailedSaveDetails"
 }
 
+private enum ArticleSyncLocation: String {
+    case missingLocally
+    case localOnly
+    case pendingUpload
+    case serverConfirmed
+    case pendingDeletion
+    case conflictResolvedFromServer
+    case unknownItemRecovered
+}
+
 @Observable
 @MainActor
 final class SyncEngineManager: SyncEngineManagerProtocol {
+    private static let watchedArticleRecordName = "DF060EDE-2119-4958-A5C5-50BBC3E8146F"
+    private static let watchedArticleURLString = "https://www.patrickrhone.net/17175-2/"
+
     private(set) var state: SyncState = .idle
     private(set) var lastSyncTime: Date?
 
@@ -46,6 +59,9 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
 
     @ObservationIgnored
     private var recentFailedSaveDetails: [String] = []
+
+    @ObservationIgnored
+    private var isRepairSyncRecoveryEnabled = false
 
     init(
         database: AppDatabase,
@@ -101,6 +117,12 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
         syncEngine?.state.add(
             pendingRecordZoneChanges: [.saveRecord(recordID)]
         )
+        logWatchedRecordTransition(
+            prefix: "Watched article queue event",
+            recordID: recordID,
+            eventSource: "localQueue.save",
+            overrideLocation: .pendingUpload
+        )
         publishStatus(.syncing, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
     }
 
@@ -108,38 +130,152 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
         syncEngine?.state.add(
             pendingRecordZoneChanges: [.deleteRecord(recordID)]
         )
+        logWatchedRecordTransition(
+            prefix: "Watched article queue event",
+            recordID: recordID,
+            eventSource: "localQueue.delete",
+            overrideLocation: .pendingDeletion
+        )
         publishStatus(.syncing, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
     }
 
-    func fetchChanges() async {
+    func fetchChanges() async throws {
         guard let syncEngine else { return }
 
+        logWatchedRecordSummary(context: "fetchChanges:willFetch")
         publishStatus(.syncing, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
 
         do {
             try await syncEngine.fetchChanges()
+            logWatchedRecordSummary(context: "fetchChanges:didFetch")
+            endRepairSyncRecoveryIfPossible()
         } catch {
             Logger.cloudKit.error("Fetch changes failed: \(error.localizedDescription)")
-            let diagnostics = await CloudKitRuntimeDiagnostics.collect(
-                container: container,
-                containerIdentifier: AppConfiguration.cloudKitContainerIdentifier
-            )
-            Logger.cloudKit.info("Fetch changes diagnostics — \(diagnostics.summaryLine)")
-            for line in diagnostics.detailLines {
-                Logger.cloudKit.info("Fetch changes diagnostics — \(line)")
-            }
-            publishStatus(
-                .error(message: diagnostics.actionableHint, needsSignIn: diagnostics.needsSignIn),
-                lastSyncTime: lastSyncTime,
-                errorMessage: diagnostics.actionableHint,
-                needsSignIn: diagnostics.needsSignIn,
-                accountStatus: diagnostics.accountStatus,
-                diagnosticHint: diagnostics.actionableHint,
-                cloudKitContainerIdentifier: diagnostics.containerIdentifier,
-                cloudKitIdentityTokenState: diagnostics.identityTokenState,
-                cloudKitUserRecordID: diagnostics.userRecordID
-            )
+            logWatchedRecordSummary(context: "fetchChanges:failed")
+            await publishSyncFailure(error, prefix: "Fetch changes")
+            throw error
         }
+    }
+
+    func sendChanges() async throws {
+        guard let syncEngine else { return }
+
+        logWatchedRecordSummary(context: "sendChanges:willSend")
+        publishStatus(.syncing, lastSyncTime: lastSyncTime, errorMessage: nil, needsSignIn: false, accountStatus: nil)
+        defer {
+            endRepairSyncRecoveryIfPossible()
+        }
+
+        do {
+            try await syncEngine.sendChanges()
+            logWatchedRecordSummary(context: "sendChanges:didSend")
+        } catch {
+            Logger.cloudKit.error("Send changes failed: \(error.localizedDescription)")
+            logWatchedRecordSummary(context: "sendChanges:failed")
+            await publishSyncFailure(error, prefix: "Send changes")
+            throw error
+        }
+    }
+
+    func resetSyncStateForFullRefetch() async throws {
+        let pendingChanges = Array(syncEngine?.state.pendingRecordZoneChanges ?? [])
+
+        logWatchedRecordSummary(context: "repairSync:beforeStateReset")
+
+        if let syncEngine {
+            await syncEngine.cancelOperations()
+        }
+
+        idleTask?.cancel()
+        syncEngine = nil
+        currentStateSerialization = nil
+
+        var payload = (try? database.syncEngineStatePayload()) ?? SyncEngineStatePayload()
+        payload.stateSerialization = nil
+        try database.saveSyncEngineStatePayload(payload)
+
+        try start()
+
+        if !pendingChanges.isEmpty {
+            syncEngine?.state.add(pendingRecordZoneChanges: pendingChanges)
+        }
+
+        logWatchedRecordSummary(context: "repairSync:afterStateReset")
+    }
+
+    func backfillAllArticlesFromServer() async throws -> Int {
+        var totalApplied = 0
+        var cursor: CKQueryOperation.Cursor?
+        var fetchedRecordNames = Set<String>()
+        let database = container.privateCloudDatabase
+
+        logWatchedRecordSummary(context: "repairSync:serverBackfill:start")
+
+        repeat {
+            let matchResults: [(CKRecord.ID, Result<CKRecord, Error>)]
+            let nextCursor: CKQueryOperation.Cursor?
+
+            if let cursor {
+                let page = try await database.records(continuingMatchFrom: cursor)
+                matchResults = Array(page.matchResults)
+                nextCursor = page.queryCursor
+            } else {
+                let query = CKQuery(
+                    recordType: ArticleRecord.recordType,
+                    predicate: NSPredicate(format: "savedDate > %@", Date.distantPast as NSDate)
+                )
+                let page = try await database.records(matching: query)
+                matchResults = Array(page.matchResults)
+                nextCursor = page.queryCursor
+            }
+
+            for (recordID, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    fetchedRecordNames.insert(recordID.recordName)
+                    do {
+                        try await processIncomingRecord(record)
+                        totalApplied += 1
+                    } catch {
+                        let detail = "Server backfill apply failed for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
+                        Logger.cloudKit.error(detail)
+                        appendRecentFailedSaveDetail(detail)
+                    }
+                case .failure(let error):
+                    let detail = structuredFailureLine(
+                        recordID: recordID,
+                        error: error,
+                        context: "storedRecord=\(fetchStoredRecord(recordName: recordID.recordName) == nil ? "missing" : "present")",
+                        prefix: "Server backfill match failure",
+                        eventSource: "repairSync.serverBackfill"
+                    )
+                    Logger.cloudKit.error(detail)
+                    appendRecentFailedSaveDetail(detail)
+                }
+            }
+
+            cursor = nextCursor
+        } while cursor != nil
+
+        try reconcileLocalRecordsMissingFromServer(fetchedRecordNames: fetchedRecordNames)
+        isRepairSyncRecoveryEnabled = true
+
+        Logger.cloudKit.info("Server backfill applied \(totalApplied) Article records")
+        logWatchedRecordSummary(context: "repairSync:serverBackfill:complete")
+        return totalApplied
+    }
+
+    func logWatchedRecordSummary(context: String) {
+        guard let line = watchedArticleStateLine(
+            recordID: watchedRecordID,
+            record: nil,
+            storedRecord: fetchWatchedStoredRecord(),
+            eventSource: "summary.\(context)"
+        ) else {
+            return
+        }
+
+        Logger.cloudKit.info("Watched article summary — \(line)")
     }
 
     func dismissError() {
@@ -190,6 +326,29 @@ extension SyncEngineManager: CKSyncEngineDelegate {
             return (recordID, record)
         })
 
+        for pendingChange in pendingChanges {
+            switch pendingChange {
+            case .saveRecord(let recordID):
+                logWatchedRecordTransition(
+                    prefix: "Watched article send batch",
+                    recordID: recordID,
+                    storedRecord: recordsByID[recordID],
+                    eventSource: "sendBatch.save",
+                    overrideLocation: .pendingUpload
+                )
+            case .deleteRecord(let recordID):
+                logWatchedRecordTransition(
+                    prefix: "Watched article send batch",
+                    recordID: recordID,
+                    storedRecord: fetchStoredRecord(recordName: recordID.recordName),
+                    eventSource: "sendBatch.delete",
+                    overrideLocation: .pendingDeletion
+                )
+            @unknown default:
+                break
+            }
+        }
+
         return await CKSyncEngine.RecordZoneChangeBatch(
             pendingChanges: pendingChanges
         ) { recordID in
@@ -235,10 +394,33 @@ private extension SyncEngineManager {
 
     func processIncomingRecord(_ record: CKRecord) async throws {
         guard record.recordType == ArticleRecord.recordType else { return }
+        logWatchedRecordTransition(
+            prefix: "Watched article inbound record",
+            recordID: record.recordID,
+            record: record,
+            storedRecord: fetchStoredRecord(recordName: record.recordID.recordName),
+            eventSource: "remoteFetch.beforeApply",
+            overrideLocation: .serverConfirmed
+        )
         try store.saveRecord(try ArticleRecord(record: record))
+        logWatchedRecordTransition(
+            prefix: "Watched article inbound record",
+            recordID: record.recordID,
+            record: record,
+            storedRecord: fetchStoredRecord(recordName: record.recordID.recordName),
+            eventSource: "remoteFetch.afterApply",
+            overrideLocation: .serverConfirmed
+        )
     }
 
     func processIncomingDeletion(_ recordID: CKRecord.ID) async throws {
+        logWatchedRecordTransition(
+            prefix: "Watched article inbound deletion",
+            recordID: recordID,
+            storedRecord: fetchStoredRecord(recordName: recordID.recordName),
+            eventSource: "remoteFetch.delete",
+            overrideLocation: .pendingDeletion
+        )
         try store.deleteRecord(recordName: recordID.recordName)
         syncEngine?.state.remove(
             pendingRecordZoneChanges: [.saveRecord(recordID), .deleteRecord(recordID)]
@@ -253,9 +435,25 @@ private extension SyncEngineManager {
 
         for savedRecord in sent.savedRecords {
             await updateSystemFields(for: savedRecord)
+            logWatchedRecordTransition(
+                prefix: "Watched article send confirmation",
+                recordID: savedRecord.recordID,
+                record: savedRecord,
+                storedRecord: fetchStoredRecord(recordName: savedRecord.recordID.recordName),
+                eventSource: "sendConfirmation.savedRecord",
+                overrideLocation: .serverConfirmed
+            )
         }
 
         for failedSave in sent.failedRecordSaves {
+            logWatchedRecordTransition(
+                prefix: "Watched article send failure",
+                recordID: failedSave.record.recordID,
+                record: failedSave.record,
+                storedRecord: fetchStoredRecord(recordName: failedSave.record.recordID.recordName),
+                eventSource: "sendConfirmation.failedRecord",
+                overrideLocation: nil
+            )
             if await handleSendFailure(failedSave, syncEngine: syncEngine) {
                 didFail = true
             }
@@ -290,19 +488,31 @@ private extension SyncEngineManager {
     ) async -> Bool {
         let ckError = failedSave.error
         let recordID = failedSave.record.recordID
-        let storedRecord = try? store.fetchRecord(recordName: recordID.recordName)
+        let storedRecord = fetchStoredRecord(recordName: recordID.recordName)
         let recordContext = recordDiagnosticsContext(
             for: failedSave.record,
-            storedRecord: storedRecord ?? nil
+            storedRecord: storedRecord,
+            eventSource: "sendFailure.recordContext"
         )
 
         if ckError.code == .serverRecordChanged,
            let serverRecord = ckError.serverRecord {
+            logWatchedRecordTransition(
+                prefix: "Watched article conflict resolution",
+                recordID: recordID,
+                record: serverRecord,
+                storedRecord: storedRecord,
+                eventSource: "sendFailure.serverRecordChanged",
+                overrideLocation: .conflictResolvedFromServer
+            )
             Logger.cloudKit.warning(
                 "Resolved serverRecordChanged for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) context=\(recordContext)"
             )
             do {
                 try await processIncomingRecord(serverRecord)
+                syncEngine.state.remove(
+                    pendingRecordZoneChanges: [.saveRecord(recordID)]
+                )
                 return false
             } catch {
                 Logger.cloudKit.error(
@@ -315,31 +525,68 @@ private extension SyncEngineManager {
             }
         }
 
-        if shouldTreatMissingServerRecordAsRemoteDeletion(
+        if shouldRecoverMissingServerRecord(
             error: ckError,
             storedRecord: storedRecord
         ) {
+            if !isRepairSyncRecoveryEnabled {
+                let detail = [
+                    "Remote deletion detected for local record \(recordID.recordName)",
+                    "zone=\(recordZoneDescription(for: recordID))",
+                    "action=deletedLocalCopy",
+                    recordContext
+                ].joined(separator: " | ")
+                Logger.cloudKit.warning(detail)
+                appendRecentFailedSaveDetail(detail)
+
+                do {
+                    try store.deleteRecord(recordName: recordID.recordName)
+                    syncEngine.state.remove(
+                        pendingRecordZoneChanges: [.saveRecord(recordID), .deleteRecord(recordID)]
+                    )
+                    return false
+                } catch {
+                    Logger.cloudKit.error(
+                        "Failed to delete local record after remote deletion detection for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
+                    )
+                    appendRecentFailedSaveDetail(
+                        "Remote deletion recovery failed for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
+                    )
+                    return true
+                }
+            }
+
             let detail = [
-                "Remote deletion detected for local record \(recordID.recordName)",
+                "Recovered missing server record for local record \(recordID.recordName)",
                 "zone=\(recordZoneDescription(for: recordID))",
-                "action=deletedLocalCopy",
+                "action=clearedSystemFieldsAndRequeuedSave",
                 recordContext
             ].joined(separator: " | ")
             Logger.cloudKit.warning(detail)
             appendRecentFailedSaveDetail(detail)
 
             do {
-                try store.deleteRecord(recordName: recordID.recordName)
+                try store.clearCloudKitSystemFields(recordName: recordID.recordName)
                 syncEngine.state.remove(
-                    pendingRecordZoneChanges: [.saveRecord(recordID), .deleteRecord(recordID)]
+                    pendingRecordZoneChanges: [.deleteRecord(recordID)]
+                )
+                syncEngine.state.add(
+                    pendingRecordZoneChanges: [.saveRecord(recordID)]
+                )
+                logWatchedRecordTransition(
+                    prefix: "Watched article unknownItem recovery",
+                    recordID: recordID,
+                    storedRecord: fetchStoredRecord(recordName: recordID.recordName),
+                    eventSource: "sendFailure.unknownItem",
+                    overrideLocation: .unknownItemRecovered
                 )
                 return false
             } catch {
                 Logger.cloudKit.error(
-                    "Failed to delete local record after remote deletion detection for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
+                    "Failed to recover local record after missing server record for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
                 )
                 appendRecentFailedSaveDetail(
-                    "Remote deletion recovery failed for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
+                    "Missing server record recovery failed for \(recordID.recordName) zone=\(recordZoneDescription(for: recordID)) error=\(describe(error: error))"
                 )
                 return true
             }
@@ -349,7 +596,8 @@ private extension SyncEngineManager {
             recordID: recordID,
             error: ckError,
             context: recordContext,
-            prefix: "Failed to save record"
+            prefix: "Failed to save record",
+            eventSource: "sendFailure.topLevel"
         )
         Logger.cloudKit.error(topLevelLine)
         appendRecentFailedSaveDetail(topLevelLine)
@@ -366,7 +614,8 @@ private extension SyncEngineManager {
                         recordID: partialRecordID,
                         error: partialError,
                         context: recordContext,
-                        prefix: "Partial failure item"
+                        prefix: "Partial failure item",
+                        eventSource: "sendFailure.partial"
                     )
                     Logger.cloudKit.error(partialLine)
                     appendRecentFailedSaveDetail(partialLine)
@@ -379,7 +628,8 @@ private extension SyncEngineManager {
                                 recordID: nestedRecordID,
                                 error: nestedError,
                                 context: recordContext,
-                                prefix: "Nested partial failure item"
+                                prefix: "Nested partial failure item",
+                                eventSource: "sendFailure.partialNested"
                             )
                             Logger.cloudKit.error(nestedLine)
                             appendRecentFailedSaveDetail(nestedLine)
@@ -518,6 +768,7 @@ private extension SyncEngineManager {
             "isArchived=\(isArchived)",
             "thumbnailURL=\(thumbnailPresent ? "present" : "absent")",
             "publishedDate=\(publishedDatePresent ? "present" : "absent")",
+            "deletedAt=\(storedRecord?.deletedAt.map { ISO8601DateFormatter().string(from: $0) } ?? "nil")",
             "cloudKitSystemFields=\(systemFieldsState)"
         ].joined(separator: " | ")
     }
@@ -526,7 +777,8 @@ private extension SyncEngineManager {
         recordID: CKRecord.ID,
         error: Error,
         context: String,
-        prefix: String
+        prefix: String,
+        eventSource: String
     ) -> String {
         let nsError = error as NSError
         let retryAfterSeconds = retryAfterSeconds(for: nsError)
@@ -541,6 +793,7 @@ private extension SyncEngineManager {
             "clientRecord=\(ckRecordPresence(error: error, keyPath: \.clientRecord))",
             "serverRecord=\(ckRecordPresence(error: error, keyPath: \.serverRecord))",
             "ancestorRecord=\(ckRecordPresence(error: error, keyPath: \.ancestorRecord))",
+            "eventSource=\(eventSource)",
             context
         ].joined(separator: " | ")
     }
@@ -588,25 +841,224 @@ private extension SyncEngineManager {
         return "domain=\(nsError.domain) code=\(nsError.code) description=\(nsError.localizedDescription)"
     }
 
-    func shouldTreatMissingServerRecordAsRemoteDeletion(
+    func shouldRecoverMissingServerRecord(
         error: CKError,
         storedRecord: ArticleRecord?
     ) -> Bool {
         error.code == .unknownItem && storedRecord?.cloudKitSystemFields != nil
     }
 
+    func reconcileLocalRecordsMissingFromServer(fetchedRecordNames: Set<String>) throws {
+        let localRecords = try store.fetchAllRecords()
+
+        for record in localRecords {
+            guard record.deletedAt == nil,
+                  record.cloudKitSystemFields != nil,
+                  !fetchedRecordNames.contains(record.id) else {
+                continue
+            }
+
+            try store.clearCloudKitSystemFields(recordName: record.id)
+        }
+    }
+
+    func endRepairSyncRecoveryIfPossible() {
+        guard isRepairSyncRecoveryEnabled,
+              syncEngine?.state.pendingRecordZoneChanges.isEmpty ?? true else {
+            return
+        }
+
+        isRepairSyncRecoveryEnabled = false
+    }
+
+    func publishSyncFailure(_ error: Error, prefix: String) async {
+        let diagnostics = await CloudKitRuntimeDiagnostics.collect(
+            container: container,
+            containerIdentifier: AppConfiguration.cloudKitContainerIdentifier
+        )
+        Logger.cloudKit.info("\(prefix) diagnostics — \(diagnostics.summaryLine)")
+        for line in diagnostics.detailLines {
+            Logger.cloudKit.info("\(prefix) diagnostics — \(line)")
+        }
+        publishStatus(
+            .error(message: diagnostics.actionableHint, needsSignIn: diagnostics.needsSignIn),
+            lastSyncTime: lastSyncTime,
+            errorMessage: diagnostics.actionableHint,
+            needsSignIn: diagnostics.needsSignIn,
+            accountStatus: diagnostics.accountStatus,
+            diagnosticHint: diagnostics.actionableHint,
+            cloudKitContainerIdentifier: diagnostics.containerIdentifier,
+            cloudKitIdentityTokenState: diagnostics.identityTokenState,
+            cloudKitUserRecordID: diagnostics.userRecordID
+        )
+    }
+
     func recordDiagnosticsContext(
         for record: CKRecord,
-        storedRecord: ArticleRecord?
+        storedRecord: ArticleRecord?,
+        eventSource: String,
+        overrideLocation: ArticleSyncLocation? = nil
     ) -> String {
         guard let articleID = UUID(uuidString: record.recordID.recordName) else {
-            return "storedRecord=unavailable"
+            return "storedRecord=unavailable | eventSource=\(eventSource)"
         }
 
-        guard let storedRecord else {
-            return "storedRecord=missing id=\(articleID.uuidString)"
+        let storageSummary = watchedArticleStateLine(
+            recordID: record.recordID,
+            record: record,
+            storedRecord: storedRecord,
+            eventSource: eventSource,
+            overrideLocation: overrideLocation
+        ) ?? "id=\(articleID.uuidString) | eventSource=\(eventSource)"
+
+        if storedRecord == nil {
+            return "storedRecord=missing | \(storageSummary)"
         }
 
-        return "storedRecord=present | \(recordPayloadSummary(record: record, storedRecord: storedRecord))"
+        return "storedRecord=present | \(storageSummary)"
+    }
+
+    var watchedRecordID: CKRecord.ID {
+        ArticleRecord.makeRecordID(for: Self.watchedArticleRecordName)
+    }
+
+    func fetchWatchedStoredRecord() -> ArticleRecord? {
+        if let record = fetchStoredRecord(recordName: Self.watchedArticleRecordName) {
+            return record
+        }
+
+        guard let url = URL(string: Self.watchedArticleURLString) else {
+            return nil
+        }
+
+        return fetchStoredRecord(url: url)
+    }
+
+    func fetchStoredRecord(recordName: String) -> ArticleRecord? {
+        (try? store.fetchRecord(recordName: recordName)) ?? nil
+    }
+
+    func fetchStoredRecord(url: URL) -> ArticleRecord? {
+        (try? store.fetchRecord(url: url)) ?? nil
+    }
+
+    func logWatchedRecordTransition(
+        prefix: String,
+        recordID: CKRecord.ID,
+        record: CKRecord? = nil,
+        storedRecord: ArticleRecord? = nil,
+        eventSource: String,
+        overrideLocation: ArticleSyncLocation? = nil
+    ) {
+        guard let line = watchedArticleStateLine(
+            recordID: recordID,
+            record: record,
+            storedRecord: storedRecord,
+            eventSource: eventSource,
+            overrideLocation: overrideLocation
+        ) else {
+            return
+        }
+
+        Logger.cloudKit.info("\(prefix) — \(line)")
+    }
+
+    func watchedArticleStateLine(
+        recordID: CKRecord.ID,
+        record: CKRecord?,
+        storedRecord: ArticleRecord?,
+        eventSource: String,
+        overrideLocation: ArticleSyncLocation? = nil
+    ) -> String? {
+        guard isWatched(recordID: recordID, record: record, storedRecord: storedRecord) else {
+            return nil
+        }
+
+        let pendingChanges = pendingChangeFlags(for: recordID)
+        let effectiveStoredRecord = storedRecord ?? fetchWatchedStoredRecord()
+        let effectiveURL = (record?["url"] as? String) ?? effectiveStoredRecord?.url.absoluteString ?? "missing"
+        let effectiveLocation = deriveSyncLocation(
+            recordID: recordID,
+            storedRecord: effectiveStoredRecord,
+            pendingSave: pendingChanges.save,
+            pendingDelete: pendingChanges.delete,
+            overrideLocation: overrideLocation
+        )
+
+        return [
+            "recordID=\(recordID.recordName)",
+            "url=\(effectiveURL)",
+            "syncLocation=\(effectiveLocation.rawValue)",
+            "hasSystemFields=\(effectiveStoredRecord?.cloudKitSystemFields != nil)",
+            "deletedAt=\(effectiveStoredRecord?.deletedAt.map { ISO8601DateFormatter().string(from: $0) } ?? "nil")",
+            "visible=\(effectiveStoredRecord?.deletedAt == nil && effectiveStoredRecord != nil)",
+            "pendingSave=\(pendingChanges.save)",
+            "pendingDelete=\(pendingChanges.delete)",
+            "eventSource=\(eventSource)"
+        ].joined(separator: " | ")
+    }
+
+    func isWatched(recordID: CKRecord.ID, record: CKRecord?, storedRecord: ArticleRecord?) -> Bool {
+        if recordID.recordName == Self.watchedArticleRecordName {
+            return true
+        }
+
+        if let recordURL = record?["url"] as? String, recordURL == Self.watchedArticleURLString {
+            return true
+        }
+
+        return storedRecord?.url.absoluteString == Self.watchedArticleURLString
+    }
+
+    func pendingChangeFlags(for recordID: CKRecord.ID) -> (save: Bool, delete: Bool) {
+        guard let syncEngine else {
+            return (false, false)
+        }
+
+        var hasPendingSave = false
+        var hasPendingDelete = false
+
+        for pendingChange in syncEngine.state.pendingRecordZoneChanges {
+            switch pendingChange {
+            case .saveRecord(let pendingRecordID) where pendingRecordID == recordID:
+                hasPendingSave = true
+            case .deleteRecord(let pendingRecordID) where pendingRecordID == recordID:
+                hasPendingDelete = true
+            default:
+                break
+            }
+        }
+
+        return (hasPendingSave, hasPendingDelete)
+    }
+
+    func deriveSyncLocation(
+        recordID: CKRecord.ID,
+        storedRecord: ArticleRecord?,
+        pendingSave: Bool,
+        pendingDelete: Bool,
+        overrideLocation: ArticleSyncLocation?
+    ) -> ArticleSyncLocation {
+        if let overrideLocation {
+            return overrideLocation
+        }
+
+        if pendingDelete || storedRecord?.deletedAt != nil {
+            return .pendingDeletion
+        }
+
+        if pendingSave {
+            return .pendingUpload
+        }
+
+        if storedRecord == nil && recordID.recordName == Self.watchedArticleRecordName {
+            return .missingLocally
+        }
+
+        if storedRecord?.cloudKitSystemFields != nil {
+            return .serverConfirmed
+        }
+
+        return .localOnly
     }
 }

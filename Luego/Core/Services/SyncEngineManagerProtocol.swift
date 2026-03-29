@@ -8,6 +8,10 @@ protocol SyncEngineManagerProtocol: AnyObject {
     func start() throws
     func enqueueSave(for recordID: CKRecord.ID)
     func enqueueDelete(for recordID: CKRecord.ID)
-    func fetchChanges() async
+    func fetchChanges() async throws
+    func sendChanges() async throws
+    func resetSyncStateForFullRefetch() async throws
+    func backfillAllArticlesFromServer() async throws -> Int
+    func logWatchedRecordSummary(context: String)
     func dismissError()
 }

@@ -50,6 +50,11 @@ struct AppDatabase {
                 table.column("value", .text).notNull()
             }
         }
+        migrator.registerMigration("v2") { db in
+            try db.alter(table: "articles") { table in
+                table.add(column: "deletedAt", .datetime)
+            }
+        }
         return migrator
     }
 

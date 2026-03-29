@@ -6,6 +6,12 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     private let database: AppDatabase
     weak var syncEngineManager: SyncEngineManagerProtocol?
 
+    private let visibleArticlesSQL = """
+        SELECT * FROM articles
+        WHERE deletedAt IS NULL
+        ORDER BY savedDate DESC
+        """
+
     init(database: AppDatabase) {
         self.database = database
     }
@@ -14,8 +20,17 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         try database.reader.read { db in
             try ArticleRecord.fetchAll(
                 db,
-                sql: "SELECT * FROM articles ORDER BY savedDate DESC"
+                sql: self.visibleArticlesSQL
             ).map { $0.toArticle() }
+        }
+    }
+
+    func fetchAllRecords() throws -> [ArticleRecord] {
+        try database.reader.read { db in
+            try ArticleRecord.fetchAll(
+                db,
+                sql: "SELECT * FROM articles ORDER BY savedDate DESC"
+            )
         }
     }
 
@@ -23,7 +38,7 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         let observation = ValueObservation.tracking { db in
             try ArticleRecord.fetchAll(
                 db,
-                sql: "SELECT * FROM articles ORDER BY savedDate DESC"
+                sql: self.visibleArticlesSQL
             ).map { $0.toArticle() }
         }
 
@@ -46,11 +61,17 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     func fetchArticle(id: UUID) throws -> Article? {
-        try fetchRecord(id: id)?.toArticle()
+        guard let record = try fetchRecord(id: id), record.deletedAt == nil else {
+            return nil
+        }
+        return record.toArticle()
     }
 
     func fetchArticle(url: URL) throws -> Article? {
-        try fetchRecord(url: url)?.toArticle()
+        guard let record = try fetchRecord(url: url), record.deletedAt == nil else {
+            return nil
+        }
+        return record.toArticle()
     }
 
     func fetchRecord(id: UUID) throws -> ArticleRecord? {
@@ -74,15 +95,26 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     func saveArticle(_ article: Article) throws -> Article {
-        if let existing = try fetchArticle(url: article.url),
-           existing.id != article.id {
-            return existing
+        if let existingRecord = try fetchRecord(url: article.url),
+           existingRecord.id != article.id.uuidString {
+            if existingRecord.deletedAt == nil {
+                return existingRecord.toArticle()
+            }
+
+            var revivedRecord = ArticleRecord(article)
+            revivedRecord.id = existingRecord.id
+            revivedRecord.cloudKitSystemFields = existingRecord.cloudKitSystemFields
+            revivedRecord.deletedAt = nil
+            try saveRecord(revivedRecord)
+            syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: revivedRecord.id))
+            return revivedRecord.toArticle()
         }
 
         var record = ArticleRecord(article)
         if let existingRecord = try fetchRecord(id: article.id) {
             record.cloudKitSystemFields = existingRecord.cloudKitSystemFields
         }
+        record.deletedAt = nil
 
         try saveRecord(record)
         syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: record.id))
@@ -100,8 +132,20 @@ final class GRDBArticleStore: ArticleStoreProtocol {
     }
 
     func deleteArticle(id: UUID) throws {
-        try deleteRecord(recordName: id.uuidString)
-        syncEngineManager?.enqueueDelete(for: ArticleRecord.makeRecordID(for: id.uuidString))
+        var didTombstone = false
+        try database.writer.write { db in
+            guard var record = try ArticleRecord.fetchOne(db, key: id.uuidString),
+                  record.deletedAt == nil else {
+                return
+            }
+
+            record.deletedAt = Date()
+            try record.save(db)
+            didTombstone = true
+        }
+        if didTombstone {
+            syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: id.uuidString))
+        }
     }
 
     func deleteRecord(recordName: String) throws {
@@ -110,9 +154,25 @@ final class GRDBArticleStore: ArticleStoreProtocol {
         }
     }
 
+    func clearCloudKitSystemFields(recordName: String) throws {
+        try database.writer.write { db in
+            guard var record = try ArticleRecord.fetchOne(db, key: recordName) else {
+                return
+            }
+
+            record.cloudKitSystemFields = nil
+            try record.save(db)
+        }
+    }
+
     func toggleFavorite(id: UUID) throws {
+        var didUpdate = false
         try database.writer.write { db in
             guard var record = try ArticleRecord.fetchOne(db, key: id.uuidString) else {
+                return
+            }
+
+            guard record.deletedAt == nil else {
                 return
             }
 
@@ -121,12 +181,21 @@ final class GRDBArticleStore: ArticleStoreProtocol {
                 record.isArchived = false
             }
             try record.save(db)
+            didUpdate = true
+        }
+        if didUpdate {
+            syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: id.uuidString))
         }
     }
 
     func toggleArchive(id: UUID) throws {
+        var didUpdate = false
         try database.writer.write { db in
             guard var record = try ArticleRecord.fetchOne(db, key: id.uuidString) else {
+                return
+            }
+
+            guard record.deletedAt == nil else {
                 return
             }
 
@@ -135,23 +204,39 @@ final class GRDBArticleStore: ArticleStoreProtocol {
                 record.isFavorite = false
             }
             try record.save(db)
+            didUpdate = true
+        }
+        if didUpdate {
+            syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: id.uuidString))
         }
     }
 
     func updateReadPosition(id: UUID, position: Double) throws {
+        var didUpdate = false
         try database.writer.write { db in
             guard var record = try ArticleRecord.fetchOne(db, key: id.uuidString) else {
                 return
             }
 
+            guard record.deletedAt == nil else {
+                return
+            }
+
             record.readPosition = position
             try record.save(db)
+            didUpdate = true
+        }
+        if didUpdate {
+            syncEngineManager?.enqueueSave(for: ArticleRecord.makeRecordID(for: id.uuidString))
         }
     }
 
     func countArticles() throws -> Int {
         try database.reader.read { db in
-            try ArticleRecord.fetchCount(db)
+            try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM articles WHERE deletedAt IS NULL"
+            ) ?? 0
         }
     }
 }

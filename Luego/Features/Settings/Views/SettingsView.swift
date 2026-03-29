@@ -27,6 +27,7 @@ struct SettingsView: View {
                     syncStatusObserver: resolvedObserver,
                     isSyncing: viewModel.isForceSyncing,
                     didSync: viewModel.didForceSync,
+                    repairErrorMessage: viewModel.forceSyncErrorMessage,
                     onSync: { Task { await viewModel.forceReSync() } }
                 )
 
@@ -370,6 +371,7 @@ struct SyncStatusSection: View {
     let syncStatusObserver: SyncStatusObserver?
     let isSyncing: Bool
     let didSync: Bool
+    let repairErrorMessage: String?
     let onSync: () -> Void
 
     private var statusText: String {
@@ -444,6 +446,12 @@ struct SyncStatusSection: View {
                 didSync: didSync,
                 onSync: onSync
             )
+            if let repairErrorMessage {
+                Text(repairErrorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         } footer: {
             Text("Articles sync automatically across your devices via iCloud.")
         }
@@ -660,6 +668,7 @@ struct SettingsMacLayout: View {
                         syncStatusObserver: syncStatusObserver,
                         isSyncing: viewModel.isForceSyncing,
                         didSync: viewModel.didForceSync,
+                        repairErrorMessage: viewModel.forceSyncErrorMessage,
                         onSync: { Task { await viewModel.forceReSync() } }
                     )
                 }
@@ -1050,6 +1059,7 @@ struct SyncStatusCard: View {
     let syncStatusObserver: SyncStatusObserver?
     let isSyncing: Bool
     let didSync: Bool
+    let repairErrorMessage: String?
     let onSync: () -> Void
 
     private var statusText: String {
@@ -1115,6 +1125,14 @@ struct SyncStatusCard: View {
                 didSync: didSync,
                 onSync: onSync
             )
+
+            if let repairErrorMessage {
+                Text(repairErrorMessage)
+                    .font(.nunito(.footnote))
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 }
@@ -1270,11 +1288,11 @@ struct ForceReSyncButton: View {
                     SettingsRowGlyph(symbolName: "arrow.clockwise.icloud", isSelected: didSync || isSyncing)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(isSyncing ? "Syncing..." : "Force Re-sync")
+                        Text(isSyncing ? "Repairing Sync..." : "Repair Sync")
                             .font(.nunito(.subheadline, weight: .semibold))
                             .foregroundStyle(.primary)
 
-                        Text("Push local articles to iCloud")
+                        Text("Fetch from iCloud, resend local changes, and reconcile drift")
                             .font(.nunito(.footnote))
                             .foregroundStyle(.secondary)
                     }
@@ -1296,8 +1314,8 @@ struct ForceReSyncButton: View {
             }
             #else
             IOSSettingsRow(
-                title: isSyncing ? "Syncing..." : "Force Re-sync",
-                subtitle: "Push local articles to iCloud",
+                title: isSyncing ? "Repairing Sync..." : "Repair Sync",
+                subtitle: "Fetch from iCloud, resend local changes, and reconcile drift",
                 systemImage: "arrow.clockwise.icloud"
             ) {
                 if isSyncing {

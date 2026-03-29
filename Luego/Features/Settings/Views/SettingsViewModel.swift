@@ -16,6 +16,7 @@ final class SettingsViewModel {
     var isForceSyncing = false
     var didForceSync = false
     var forceSyncCount = 0
+    var forceSyncErrorMessage: String?
 
     private let preferencesDataSource: DiscoveryPreferencesDataSourceProtocol
     private let discoveryService: DiscoveryServiceProtocol
@@ -85,6 +86,7 @@ final class SettingsViewModel {
     func forceReSync() async {
         isForceSyncing = true
         didForceSync = false
+        forceSyncErrorMessage = nil
 
         let syncStartTime = Date()
 
@@ -100,7 +102,9 @@ final class SettingsViewModel {
 
             didForceSync = true
         } catch {
-            Logger.cloudKit.error("Force re-sync failed: \(error.localizedDescription)")
+            let message = error.localizedDescription
+            forceSyncErrorMessage = message
+            Logger.cloudKit.error("Repair sync failed: \(message)")
         }
 
         isForceSyncing = false
@@ -150,6 +154,7 @@ final class SettingsViewModel {
 
         lines.append(contentsOf: cloudKitDiagnostics.detailLines)
         lines.append("Local Article Count: \(articles.count)")
+        lines.append("Last Repair Sync Error: \(forceSyncErrorMessage ?? "none")")
         lines.append("")
 
         if let syncStatusObserver {

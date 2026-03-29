@@ -17,13 +17,16 @@ protocol ArticleServiceProtocol: Sendable {
 final class ArticleService: ArticleServiceProtocol {
     private let articleStore: ArticleStoreProtocol
     private let metadataDataSource: MetadataDataSourceProtocol
+    private let syncEngineManager: SyncEngineManagerProtocol
 
     init(
         articleStore: ArticleStoreProtocol,
-        metadataDataSource: MetadataDataSourceProtocol
+        metadataDataSource: MetadataDataSourceProtocol,
+        syncEngineManager: SyncEngineManagerProtocol
     ) {
         self.articleStore = articleStore
         self.metadataDataSource = metadataDataSource
+        self.syncEngineManager = syncEngineManager
     }
 
     func getAllArticles() async throws -> [Article] {
@@ -128,13 +131,25 @@ final class ArticleService: ArticleServiceProtocol {
     }
 
     func forceReSyncAllArticles() async throws -> Int {
-        let articles = try articleStore.fetchAllArticles()
+        syncEngineManager.logWatchedRecordSummary(context: "repairSync:start")
 
-        for article in articles {
-            article.savedDate = article.savedDate.addingTimeInterval(0.001)
-            _ = try articleStore.saveArticle(article)
+        do {
+            try await syncEngineManager.resetSyncStateForFullRefetch()
+            try await syncEngineManager.fetchChanges()
+            _ = try await syncEngineManager.backfillAllArticlesFromServer()
+            let records = try articleStore.fetchAllRecords()
+
+            for record in records {
+                syncEngineManager.enqueueSave(for: ArticleRecord.makeRecordID(for: record.id))
+            }
+
+            try await syncEngineManager.sendChanges()
+            try await syncEngineManager.fetchChanges()
+            syncEngineManager.logWatchedRecordSummary(context: "repairSync:complete")
+            return records.count
+        } catch {
+            syncEngineManager.logWatchedRecordSummary(context: "repairSync:failed")
+            throw error
         }
-
-        return articles.count
     }
 }

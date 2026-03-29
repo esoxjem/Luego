@@ -86,7 +86,8 @@ final class DIContainer {
     private lazy var articleService: ArticleServiceProtocol = {
         ArticleService(
             articleStore: articleStore,
-            metadataDataSource: metadataDataSource
+            metadataDataSource: metadataDataSource,
+            syncEngineManager: syncEngineManager
         )
     }()
 

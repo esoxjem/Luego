@@ -44,8 +44,8 @@ struct LegacySwiftDataArticleMigration {
     private func importArticles(_ articles: [Article]) throws -> Int {
         var importedCount = 0
         for article in articles {
-            if let existingArticle = try store.fetchArticle(url: article.url) {
-                syncEngineManager.enqueueSave(for: ArticleRecord.makeRecordID(for: existingArticle.id.uuidString))
+            if let existingRecord = try store.fetchRecord(url: article.url) {
+                syncEngineManager.enqueueSave(for: ArticleRecord.makeRecordID(for: existingRecord.id))
                 continue
             }
 

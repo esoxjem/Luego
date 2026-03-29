@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 protocol ArticleStoreProtocol: AnyObject {
     func fetchAllArticles() throws -> [Article]
+    func fetchAllRecords() throws -> [ArticleRecord]
     func observeArticles() -> AsyncThrowingStream<[Article], Error>
     func fetchArticle(id: UUID) throws -> Article?
     func fetchArticle(url: URL) throws -> Article?
@@ -13,6 +14,7 @@ protocol ArticleStoreProtocol: AnyObject {
     func saveRecord(_ record: ArticleRecord) throws
     func deleteArticle(id: UUID) throws
     func deleteRecord(recordName: String) throws
+    func clearCloudKitSystemFields(recordName: String) throws
     func toggleFavorite(id: UUID) throws
     func toggleArchive(id: UUID) throws
     func updateReadPosition(id: UUID, position: Double) throws
