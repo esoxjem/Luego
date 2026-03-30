@@ -174,7 +174,7 @@ struct DiscoveryBottomBar: View {
 
             Divider()
                 .frame(height: 24)
-                .overlay(.white.opacity(0.8))
+                .overlay(Color.barAccentInk.opacity(0.35))
 
             DiscoveryBottomBarButton(
                 systemImage: isSaved ? "checkmark" : "plus",
@@ -182,7 +182,7 @@ struct DiscoveryBottomBar: View {
             )
             .disabled(isSaved)
         }
-        .glassEffect(.regular.interactive().tint(Color.regularGlassTint))
+        .glassEffect(.regular.interactive().tint(Color.barAccentFill))
     }
 }
 
@@ -194,7 +194,7 @@ struct DiscoveryBottomBarButton: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.title2)
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.barAccentInk)
                 .frame(width: 44, height: 44, alignment: .center)
                 .contentShape(Rectangle())
         }

@@ -171,9 +171,9 @@ struct ContentView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 40)
-                    .foregroundStyle(Color.mascotPurpleInk)
+                    .foregroundStyle(Color.barAccentInk)
             }
-            .tint(Color.mascotPurple.opacity(0.72))
+            .tint(Color.barAccentFill)
             .buttonStyle(.glassProminent)
             .contentShape(Capsule())
             .accessibilityLabel(label)
