@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 struct ArticleRowView: View {
-    @ObservedObject var article: Article
+    let article: Article
     var isSelected: Bool = false
 
     var body: some View {
