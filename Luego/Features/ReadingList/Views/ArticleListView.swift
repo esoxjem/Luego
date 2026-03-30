@@ -49,6 +49,7 @@ struct ArticleListView: View {
                         } label: {
                             Image(systemName: "die.face.5")
                         }
+                        .accessibilityIdentifier(ReadingListAccessibilityID.discoverButton)
                         .accessibilityLabel("Inspire Me")
                     }
                     Button {
@@ -56,6 +57,7 @@ struct ArticleListView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityIdentifier(ReadingListAccessibilityID.addButton)
                     #if os(iOS)
                     .popover(
                         isPresented: compactAddArticlePopoverBinding,
@@ -70,6 +72,7 @@ struct ArticleListView: View {
                     } label: {
                         Image(systemName: "gearshape")
                     }
+                    .accessibilityIdentifier(ReadingListAccessibilityID.settingsButton)
                 }
             }
         )
@@ -209,6 +212,7 @@ struct ArticleList: View {
                 } label: {
                     ArticleRowView(article: article)
                 }
+                .accessibilityIdentifier(ReadingListAccessibilityID.open(article))
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     swipeActions.favoriteButton(for: article)
                 }
@@ -219,6 +223,7 @@ struct ArticleList: View {
             }
         }
         .id(filter)
+        .accessibilityIdentifier(ReadingListAccessibilityID.list(filter))
         .scrollContentBackground(.hidden)
         #if os(iOS)
         .refreshable {

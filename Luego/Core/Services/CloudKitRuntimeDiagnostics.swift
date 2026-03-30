@@ -110,7 +110,7 @@ struct CloudKitRuntimeDiagnostics: Sendable {
                 return "CloudKit is available, but fetching the user record ID failed. Retry after confirming network access."
             }
             if identityTokenState == "absent" {
-                return "CloudKit is available, but the local iCloud identity token is absent. Recheck the signed-in Apple ID if sync still fails."
+                return "CloudKit is available. Some environments may not expose a local iCloud identity token even when sync works, so only investigate this further if sync fails."
             }
             return "CloudKit is available."
         case .noAccount:

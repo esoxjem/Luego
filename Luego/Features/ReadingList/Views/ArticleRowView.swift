@@ -15,6 +15,7 @@ struct ArticleRowView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 ArticleTitleRow(
+                    article: article,
                     title: article.title,
                     excerpt: article.excerpt,
                     isFavorite: article.isFavorite,
@@ -22,6 +23,7 @@ struct ArticleRowView: View {
                 )
 
                 ArticleMetadataRow(
+                    article: article,
                     domain: article.domain,
                     author: article.author,
                     readPercentage: Int(article.readPosition * 100),
@@ -32,6 +34,7 @@ struct ArticleRowView: View {
             }
         }
         .padding(.vertical, 6)
+        .accessibilityIdentifier(ReadingListAccessibilityID.row(article))
     }
 
     private func formatDisplayDate(_ article: Article) -> String {
@@ -52,6 +55,7 @@ struct ArticleRowView: View {
 }
 
 struct ArticleTitleRow: View {
+    let article: Article
     let title: String
     let excerpt: String
     let isFavorite: Bool
@@ -106,6 +110,7 @@ struct ArticleTitleRow: View {
                 Image(systemName: "heart.fill")
                     .font(.app(.listMetadata))
                     .foregroundStyle(.pink)
+                    .accessibilityIdentifier(ReadingListAccessibilityID.favoriteBadge(article))
             }
         }
     }
@@ -120,6 +125,7 @@ private struct ArticleTitleHeightPreferenceKey: PreferenceKey {
 }
 
 struct ArticleMetadataRow: View {
+    let article: Article
     let domain: String
     let author: String?
     let readPercentage: Int
@@ -146,6 +152,7 @@ struct ArticleMetadataRow: View {
             HStack(spacing: 0) {
                 Text("Read \(readPercentage)%")
                     .foregroundStyle(.blue)
+                    .accessibilityIdentifier(ReadingListAccessibilityID.readProgress(article))
 
                 if showReadingTime, let time = estimatedReadingTime {
                     Text(" · ")

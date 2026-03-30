@@ -48,6 +48,7 @@ struct ArticleListPane: View {
                     Button(action: onDiscover) {
                         Image(systemName: "die.face.5")
                     }
+                    .accessibilityIdentifier(ReadingListAccessibilityID.discoverButton)
                     .accessibilityLabel("Inspire Me")
                 }
 
@@ -56,12 +57,14 @@ struct ArticleListPane: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityIdentifier(ReadingListAccessibilityID.addButton)
 
                 Button {
                     showingSettings = true
                 } label: {
                     Image(systemName: "gearshape")
                 }
+                .accessibilityIdentifier(ReadingListAccessibilityID.settingsButton)
             }
         }
         .sheet(isPresented: $showingAddArticle) {
@@ -125,6 +128,7 @@ struct SelectableArticleList: View {
                 } label: {
                     ArticleRowView(article: article, isSelected: selection?.id == article.id)
                 }
+                .accessibilityIdentifier(ReadingListAccessibilityID.open(article))
                 .buttonStyle(.plain)
                 .listRowSeparator(.hidden)
                 .listRowBackground(selectionBackground(isSelected: selection?.id == article.id))
@@ -138,6 +142,7 @@ struct SelectableArticleList: View {
             }
         }
         .id(filter)
+        .accessibilityIdentifier(ReadingListAccessibilityID.list(filter))
         .scrollContentBackground(.hidden)
         .background(Color.regularPanelBackground)
         .refreshable {

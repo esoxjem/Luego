@@ -19,6 +19,5 @@ protocol SyncEngineManagerProtocol: AnyObject {
     func sendChanges() async throws
     func resetSyncStateForFullRefetch() async throws
     func backfillAllArticlesFromServer() async throws -> Int
-    func logWatchedRecordSummary(context: String)
     func dismissError()
 }

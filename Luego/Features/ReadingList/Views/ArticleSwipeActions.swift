@@ -17,6 +17,7 @@ struct ArticleSwipeActions {
                 systemImage: isFavorited ? "heart.slash.fill" : "heart.fill"
             )
         }
+        .accessibilityIdentifier(ReadingListAccessibilityID.favoriteAction(article))
         .tint(isFavorited ? .gray : .red)
     }
 
@@ -32,6 +33,7 @@ struct ArticleSwipeActions {
                 systemImage: isArchived ? "tray.and.arrow.up.fill" : "archivebox.fill"
             )
         }
+        .accessibilityIdentifier(ReadingListAccessibilityID.archiveAction(article))
         .tint(.blue)
     }
 
@@ -44,5 +46,6 @@ struct ArticleSwipeActions {
         } label: {
             Label("Delete", systemImage: "trash.fill")
         }
+        .accessibilityIdentifier(ReadingListAccessibilityID.deleteAction(article))
     }
 }
