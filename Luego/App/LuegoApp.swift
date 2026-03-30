@@ -48,9 +48,6 @@ struct LuegoApp: App {
                 .task(id: "sdkInit") {
                     await diContainer.sdkManager.ensureSDKReady()
                 }
-                .task(id: "initialSync") {
-                    _ = try? await diContainer.syncEngineManager.refresh(mode: .smart)
-                }
                 .task(id: "launchDiagnostics") {
                     await logLaunchDiagnostics()
                 }

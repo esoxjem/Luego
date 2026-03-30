@@ -148,6 +148,24 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
         }
     }
 
+    func performForegroundCatchUp() async {
+        guard canPerformForegroundCatchUp() else { return }
+        let previousState = state
+
+        isRefreshInProgress = true
+        defer {
+            isRefreshInProgress = false
+            isVisibleRestoreInProgress = false
+        }
+
+        do {
+            _ = try await performSmartRefresh(publishFailures: false)
+        } catch {
+            Logger.cloudKit.warning("Foreground catch-up failed: \(error.localizedDescription)")
+            restoreAutomaticRefreshState(previousState)
+        }
+    }
+
     func enqueueSave(for recordID: CKRecord.ID) {
         syncEngine?.state.add(
             pendingRecordZoneChanges: [.saveRecord(recordID)]
@@ -175,6 +193,10 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
     }
 
     func fetchChanges() async throws {
+        try await fetchChanges(publishFailures: true)
+    }
+
+    private func fetchChanges(publishFailures: Bool) async throws {
         guard let syncEngine else { return }
 
         logWatchedRecordSummary(context: "fetchChanges:willFetch")
@@ -187,7 +209,9 @@ final class SyncEngineManager: SyncEngineManagerProtocol {
         } catch {
             Logger.cloudKit.error("Fetch changes failed: \(error.localizedDescription)")
             logWatchedRecordSummary(context: "fetchChanges:failed")
-            await publishSyncFailure(error, prefix: "Fetch changes")
+            if publishFailures {
+                await publishSyncFailure(error, prefix: "Fetch changes")
+            }
             throw error
         }
     }
@@ -913,14 +937,14 @@ private extension SyncEngineManager {
         isRepairSyncRecoveryEnabled = false
     }
 
-    func performSmartRefresh() async throws -> Int {
+    func performSmartRefresh(publishFailures: Bool = true) async throws -> Int {
         let shouldRestore = try shouldAttemptBootstrapRestore()
         var didCompleteFetchChanges = false
         isVisibleRestoreInProgress = shouldRestore
         publishRefreshStartState(isRestoring: shouldRestore)
 
         do {
-            try await fetchChanges()
+            try await fetchChanges(publishFailures: publishFailures)
             didCompleteFetchChanges = true
 
             if shouldRestore, try store.countArticles() == 0 {
@@ -935,11 +959,39 @@ private extension SyncEngineManager {
             markSyncSuccess()
             return 0
         } catch {
-            if shouldRestore, didCompleteFetchChanges {
+            if publishFailures, shouldRestore, didCompleteFetchChanges {
                 await publishSyncFailure(error, prefix: "Bootstrap restore")
             }
             isVisibleRestoreInProgress = false
             throw error
+        }
+    }
+
+    private func canPerformForegroundCatchUp() -> Bool {
+        guard syncEngine != nil else { return false }
+        guard !isRefreshInProgress else { return false }
+        guard state != .syncing, state != .restoring else { return false }
+        return true
+    }
+
+    private func restoreAutomaticRefreshState(_ previousState: SyncState) {
+        switch previousState {
+        case .error(let message, let needsSignIn):
+            publishStatus(
+                .error(message: message, needsSignIn: needsSignIn),
+                lastSyncTime: lastSyncTime,
+                errorMessage: message,
+                needsSignIn: needsSignIn,
+                accountStatus: nil
+            )
+        default:
+            publishStatus(
+                previousState,
+                lastSyncTime: lastSyncTime,
+                errorMessage: nil,
+                needsSignIn: false,
+                accountStatus: nil
+            )
         }
     }
 

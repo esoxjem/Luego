@@ -14,6 +14,7 @@ protocol SyncEngineManagerProtocol: AnyObject {
     func enqueueSave(for recordID: CKRecord.ID)
     func enqueueDelete(for recordID: CKRecord.ID)
     func refresh(mode: SyncRefreshMode) async throws -> Int
+    func performForegroundCatchUp() async
     func fetchChanges() async throws
     func sendChanges() async throws
     func resetSyncStateForFullRefetch() async throws

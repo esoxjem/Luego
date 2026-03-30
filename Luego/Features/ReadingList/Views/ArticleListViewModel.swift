@@ -1,11 +1,11 @@
 import Foundation
 import Observation
+import SwiftUI
 
 @Observable
 @MainActor
 final class ArticleListViewModel {
     var articles: [Article] = []
-    var membershipRevision = 0
     var isLoading = false
     var errorMessage: String?
     var pendingMemberships: [UUID: ArticleListMembership] = [:]
@@ -45,9 +45,16 @@ final class ArticleListViewModel {
             do {
                 self.errorMessage = nil
                 for try await articles in articleService.observeArticles() {
-                    self.articles = articles
                     discardResolvedPendingMemberships(using: articles)
-                    membershipRevision += 1
+                    if shouldReplaceArticles(with: articles) {
+                        if self.articles.isEmpty {
+                            self.articles = articles
+                        } else {
+                            withAnimation(.snappy) {
+                                self.articles = articles
+                            }
+                        }
+                    }
                 }
             } catch is CancellationError {
             } catch {
@@ -145,35 +152,37 @@ final class ArticleListViewModel {
     }
 
     func filteredArticles(for filter: ArticleFilter) -> [Article] {
-        _ = membershipRevision
         return filter.filtered(articles, membership: membership(for:))
     }
 
     private func applyPendingMembership(_ membership: ArticleListMembership, for id: UUID) {
-        pendingMemberships[id] = membership
-        membershipRevision += 1
+        withAnimation(.snappy) {
+            pendingMemberships[id] = membership
+            guard let article = articles.first(where: { $0.id == id }) else {
+                return
+            }
+            article.applyListMembership(membership)
+        }
     }
 
     private func reconcileArticleState(id: UUID, membership: ArticleListMembership) {
-        pendingMemberships.removeValue(forKey: id)
-        guard let index = articles.firstIndex(where: { $0.id == id }) else {
-            membershipRevision += 1
-            return
+        withAnimation(.snappy) {
+            pendingMemberships.removeValue(forKey: id)
+            guard let index = articles.firstIndex(where: { $0.id == id }) else {
+                return
+            }
+            articles[index].applyListMembership(membership)
         }
-        articles[index].applyListMembership(membership)
-        articles = Array(articles)
-        membershipRevision += 1
     }
 
     private func revertArticleState(id: UUID, membership: ArticleListMembership) {
-        pendingMemberships.removeValue(forKey: id)
-        guard let index = articles.firstIndex(where: { $0.id == id }) else {
-            membershipRevision += 1
-            return
+        withAnimation(.snappy) {
+            pendingMemberships.removeValue(forKey: id)
+            guard let index = articles.firstIndex(where: { $0.id == id }) else {
+                return
+            }
+            articles[index].applyListMembership(membership)
         }
-        articles[index].applyListMembership(membership)
-        articles = Array(articles)
-        membershipRevision += 1
     }
 
     private func discardResolvedPendingMemberships(using articles: [Article]) {
@@ -203,5 +212,19 @@ final class ArticleListViewModel {
 
             self?.startObservingArticles()
         }
+    }
+
+    private func shouldReplaceArticles(with newArticles: [Article]) -> Bool {
+        guard articles.count == newArticles.count else {
+            return true
+        }
+
+        for (currentArticle, newArticle) in zip(articles, newArticles) {
+            if currentArticle.id != newArticle.id || currentArticle !== newArticle {
+                return true
+            }
+        }
+
+        return false
     }
 }

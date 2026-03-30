@@ -39,6 +39,7 @@ struct ContentView: View {
         .font(.app(.body))
         .task {
             initializeArticleListViewModelIfNeeded()
+            await handleScenePhaseChange(scenePhase)
         }
         .onChange(of: scenePhase) { _, newPhase in
             Task {
@@ -206,9 +207,9 @@ struct ContentView: View {
     }
 
     private func handleScenePhaseChange(_ phase: ScenePhase) async {
-        guard phase == .active, articleListViewModel != nil else { return }
         initializeArticleListViewModelIfNeeded()
-        guard let articleListViewModel else { return }
+        guard phase == .active, let articleListViewModel, let diContainer else { return }
+        await diContainer.syncEngineManager.performForegroundCatchUp()
         await articleListViewModel.syncSharedArticles()
     }
 }
