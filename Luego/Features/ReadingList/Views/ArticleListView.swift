@@ -207,9 +207,7 @@ struct ArticleList: View {
     var body: some View {
         List {
             ForEach(articles) { article in
-                NavigationLink {
-                    ArticleReaderDestination(article: article, diContainer: diContainer)
-                } label: {
+                NavigationLink(value: article) {
                     ArticleRowView(article: article)
                 }
                 .accessibilityIdentifier(ReadingListAccessibilityID.open(article))

@@ -18,6 +18,11 @@ struct ContentView: View {
     @State private var shouldAnimateHomeEmptyStateOnLaunch = true
     @State private var iPhoneTabBarVisibilityController = IPhoneTabBarVisibilityController()
     @State private var articleListViewModel: ArticleListViewModel?
+    @State private var readingListPath: [Article] = []
+    @State private var favoritesPath: [Article] = []
+    @State private var archivedPath: [Article] = []
+    @State private var pendingDeepLink: ArticleDeepLink?
+    @State private var deepLinkAlert: DeepLinkAlert?
 
     var body: some View {
         ZStack {
@@ -45,6 +50,18 @@ struct ContentView: View {
             Task {
                 await handleScenePhaseChange(newPhase)
             }
+        }
+        .onOpenURL { url in
+            Task {
+                await handleIncomingURL(url)
+            }
+        }
+        .alert("Unable to Open Article", isPresented: deepLinkAlertIsPresentedBinding) {
+            Button("OK", role: .cancel) {
+                deepLinkAlert = nil
+            }
+        } message: {
+            Text(deepLinkAlert?.message ?? "")
         }
     }
 
@@ -86,7 +103,7 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             Tab(ArticleFilter.readingList.navigationTitle, systemImage: "list.bullet", value: 0) {
                 iPhoneTabBackground {
-                    iPhoneTabNavigationStack(for: .readingList) {
+                    iPhoneTabNavigationStack(for: .readingList, path: $readingListPath) {
                         ArticleListView(
                             viewModel: viewModel,
                             filter: .readingList,
@@ -99,7 +116,7 @@ struct ContentView: View {
 
             Tab(ArticleFilter.favorites.navigationTitle, systemImage: "heart", value: 1) {
                 iPhoneTabBackground {
-                    iPhoneTabNavigationStack(for: .favorites) {
+                    iPhoneTabNavigationStack(for: .favorites, path: $favoritesPath) {
                         ArticleListView(viewModel: viewModel, filter: .favorites)
                     }
                 }
@@ -107,7 +124,7 @@ struct ContentView: View {
 
             Tab(ArticleFilter.archived.navigationTitle, systemImage: "archivebox.fill", value: 2) {
                 iPhoneTabBackground {
-                    iPhoneTabNavigationStack(for: .archived) {
+                    iPhoneTabNavigationStack(for: .archived, path: $archivedPath) {
                         ArticleListView(viewModel: viewModel, filter: .archived)
                     }
                 }
@@ -132,10 +149,14 @@ struct ContentView: View {
 
     private func iPhoneTabNavigationStack<Content: View>(
         for filter: ArticleFilter,
+        path: Binding<[Article]>,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        NavigationStack {
+        NavigationStack(path: path) {
             content()
+                .navigationDestination(for: Article.self) { article in
+                    ArticleReaderDestination(article: article, diContainer: diContainer)
+                }
         }
         .id(filter)
         .toolbar(.hidden, for: .tabBar)
@@ -201,6 +222,11 @@ struct ContentView: View {
     private func initializeArticleListViewModelIfNeeded() {
         if articleListViewModel == nil, let diContainer {
             articleListViewModel = diContainer.makeArticleListViewModel()
+            if let pendingDeepLink {
+                Task {
+                    await handleDeepLink(pendingDeepLink)
+                }
+            }
         }
 
         articleListViewModel?.startObservingArticles()
@@ -212,4 +238,111 @@ struct ContentView: View {
         await diContainer.syncEngineManager.performForegroundCatchUp()
         await articleListViewModel.syncSharedArticles()
     }
+
+    private func handleIncomingURL(_ url: URL) async {
+        do {
+            let deepLink = try ArticleDeepLink(url: url)
+            if articleListViewModel == nil {
+                pendingDeepLink = deepLink
+                initializeArticleListViewModelIfNeeded()
+                return
+            }
+            await handleDeepLink(deepLink)
+        } catch {
+            presentDeepLinkError(error)
+        }
+    }
+
+    private func handleDeepLink(_ deepLink: ArticleDeepLink) async {
+        guard let articleListViewModel else {
+            pendingDeepLink = deepLink
+            return
+        }
+
+        pendingDeepLink = nil
+
+        do {
+            switch deepLink {
+            case .article(let url):
+                let article = try await articleListViewModel.openOrImportArticle(from: url)
+                openArticle(article)
+            }
+        } catch {
+            presentDeepLinkError(error)
+        }
+    }
+
+    private func openArticle(_ article: Article) {
+        let filter = preferredFilter(for: article)
+
+        selectedFilter = filter
+        selectedArticle = article
+
+        guard horizontalSizeClass != .regular else {
+            return
+        }
+
+        selectedTab = tabSelection(for: filter)
+
+        switch filter {
+        case .readingList:
+            readingListPath.removeAll()
+            readingListPath.append(article)
+        case .favorites:
+            favoritesPath.removeAll()
+            favoritesPath.append(article)
+        case .archived:
+            archivedPath.removeAll()
+            archivedPath.append(article)
+        case .discovery:
+            break
+        }
+    }
+
+    private func presentDeepLinkError(_ error: Error) {
+        deepLinkAlert = DeepLinkAlert(message: error.localizedDescription)
+    }
+
+    private func preferredFilter(for article: Article) -> ArticleFilter {
+        if article.isArchived {
+            return .archived
+        }
+
+        if article.isFavorite {
+            return .favorites
+        }
+
+        return .readingList
+    }
+
+    private func tabSelection(for filter: ArticleFilter) -> Int {
+        switch filter {
+        case .readingList:
+            return 0
+        case .favorites:
+            return 1
+        case .archived:
+            return 2
+        case .discovery:
+            return 0
+        }
+    }
+
+    private var deepLinkAlertIsPresentedBinding: Binding<Bool> {
+        Binding(
+            get: {
+                deepLinkAlert != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    deepLinkAlert = nil
+                }
+            }
+        )
+    }
+}
+
+private struct DeepLinkAlert: Identifiable {
+    let id = UUID()
+    let message: String
 }

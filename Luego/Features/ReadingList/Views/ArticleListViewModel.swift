@@ -91,6 +91,10 @@ final class ArticleListViewModel {
         }
     }
 
+    func openOrImportArticle(from url: URL) async throws -> Article {
+        try await articleService.addArticle(url: url)
+    }
+
     func deleteArticle(_ article: Article) async {
         do {
             try await articleService.deleteArticle(id: article.id)
