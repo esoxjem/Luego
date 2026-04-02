@@ -43,6 +43,8 @@ struct SettingsView: View {
             SavedArticleTransferSection(
                 isImporting: viewModel.isImporting,
                 isPreparingExport: viewModel.isPreparingExport,
+                totalSavedArticleCount: viewModel.totalSavedArticleCount,
+                readingListArticleCount: viewModel.readingListArticleCount,
                 onImportFromFile: {
                     isShowingFileImporter = true
                 },
@@ -118,6 +120,9 @@ struct SettingsView: View {
             allowedContentTypes: [.plainText, .text]
         ) { result in
             handleFileImport(result)
+        }
+        .task {
+            await viewModel.refreshTransferCounts()
         }
         .font(.nunito(.body))
     }
@@ -376,6 +381,8 @@ struct SDKUpdateSection: View {
 struct SavedArticleTransferSection: View {
     let isImporting: Bool
     let isPreparingExport: Bool
+    let totalSavedArticleCount: Int
+    let readingListArticleCount: Int
     let onImportFromFile: () -> Void
     let onPasteArticleList: () -> Void
     let onExportAllArticles: () -> Void
@@ -383,11 +390,14 @@ struct SavedArticleTransferSection: View {
 
     var body: some View {
         Section {
+            TransferSubsectionLabel(title: "Import")
+
             Button(action: onImportFromFile) {
                 IOSSettingsRow(
-                    title: "Import from File",
-                    subtitle: "Read a plain-text list of article URLs.",
-                    systemImage: "square.and.arrow.down"
+                    title: "Import Links from File",
+                    subtitle: "Use a plain-text file with one link per line.",
+                    systemImage: "square.and.arrow.down",
+                    iconColor: .regularSelectionInk
                 ) {
                     rowAccessory(isLoading: isImporting)
                 }
@@ -397,9 +407,10 @@ struct SavedArticleTransferSection: View {
 
             Button(action: onPasteArticleList) {
                 IOSSettingsRow(
-                    title: "Paste Article List",
-                    subtitle: "Import URLs directly from pasted text.",
-                    systemImage: "doc.on.clipboard"
+                    title: "Paste Links",
+                    subtitle: "Paste any text that contains article links.",
+                    systemImage: "doc.on.clipboard",
+                    iconColor: .regularSelectionInk
                 ) {
                     rowAccessory(isLoading: isImporting)
                 }
@@ -407,13 +418,19 @@ struct SavedArticleTransferSection: View {
             .buttonStyle(.plain)
             .disabled(isImporting || isPreparingExport)
 
+            TransferSubsectionLabel(title: "Export")
+
             Button(action: onExportAllArticles) {
                 IOSSettingsRow(
-                    title: "Export All Articles",
-                    subtitle: "Share a text file with every saved article.",
-                    systemImage: "square.and.arrow.up"
+                    title: "Export Full Library",
+                    subtitle: "Create a text file with every saved link.",
+                    systemImage: "square.and.arrow.up",
+                    iconColor: .regularSelectionInk
                 ) {
-                    rowAccessory(isLoading: isPreparingExport)
+                    rowAccessory(
+                        isLoading: isPreparingExport,
+                        countLabel: transferCountLabel(totalSavedArticleCount)
+                    )
                 }
             }
             .buttonStyle(.plain)
@@ -422,32 +439,75 @@ struct SavedArticleTransferSection: View {
             Button(action: onExportReadingList) {
                 IOSSettingsRow(
                     title: "Export Reading List",
-                    subtitle: "Share only active, non-archived articles.",
-                    systemImage: "text.badge.checkmark"
+                    subtitle: "Create a text file with links you haven't archived.",
+                    systemImage: "text.badge.checkmark",
+                    iconColor: .regularSelectionInk
                 ) {
-                    rowAccessory(isLoading: isPreparingExport)
+                    rowAccessory(
+                        isLoading: isPreparingExport,
+                        countLabel: transferCountLabel(readingListArticleCount)
+                    )
                 }
             }
             .buttonStyle(.plain)
             .disabled(isImporting || isPreparingExport)
         } header: {
-            Text("Transfer")
+            Text("Import & Export")
         } footer: {
-            Text("Import plain-text URL lists or export your saved articles for backup and migration.")
+            Text("Exports are plain-text files you can keep as a backup or move to another app.")
         }
         .listRowBackground(Color.paperCream)
     }
 
     @ViewBuilder
-    private func rowAccessory(isLoading: Bool) -> some View {
+    private func rowAccessory(isLoading: Bool, countLabel: String? = nil) -> some View {
         if isLoading {
             ProgressView()
                 .controlSize(.small)
         } else {
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            HStack(spacing: 8) {
+                if let countLabel {
+                    TransferCountBadge(label: countLabel)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
         }
+    }
+
+    private func transferCountLabel(_ count: Int) -> String {
+        count.formatted()
+    }
+}
+
+private struct TransferSubsectionLabel: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: title == "Import" ? 4 : 12, leading: 16, bottom: 2, trailing: 16))
+    }
+}
+
+private struct TransferCountBadge: View {
+    let label: String
+
+    var body: some View {
+        Text(label)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.regularSelectionInk)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.regularSelectionInk.opacity(0.12))
+            )
     }
 }
 
@@ -471,7 +531,7 @@ struct SavedArticlePasteImportSheet: View {
                         )
 
                     if viewModel.pasteImportText.isEmpty {
-                        Text("Paste one article URL per line, or any text containing article links.")
+                        Text("Paste one link per line, or any text that contains article links.")
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 18)
                             .padding(.vertical, 20)
@@ -482,7 +542,7 @@ struct SavedArticlePasteImportSheet: View {
             }
             .padding(20)
             .background(Color.regularPanelBackground)
-            .navigationTitle("Paste Article List")
+            .navigationTitle("Paste Links")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

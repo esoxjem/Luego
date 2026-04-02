@@ -36,6 +36,8 @@ final class SettingsViewModel {
     var alertContent: SettingsAlertContent?
     var showAlert = false
     var exportPresentation: SettingsExportPresentation?
+    var totalSavedArticleCount = 0
+    var readingListArticleCount = 0
 
     private let preferencesDataSource: DiscoveryPreferencesDataSourceProtocol
     private let discoveryService: DiscoveryServiceProtocol
@@ -118,6 +120,7 @@ final class SettingsViewModel {
         do {
             let count = try await articleService.forceReSyncAllArticles()
             forceSyncCount = count
+            await refreshTransferCounts()
 
             let elapsed = Date().timeIntervalSince(syncStartTime)
             let minDuration: TimeInterval = 1.5
@@ -146,6 +149,20 @@ final class SettingsViewModel {
         isShowingPasteImportSheet = true
     }
 
+    func refreshTransferCounts() async {
+        do {
+            let articles = try await articleService.getAllArticles()
+            totalSavedArticleCount = articles.count
+            readingListArticleCount = articles.reduce(into: 0) { count, article in
+                if !article.isArchived {
+                    count += 1
+                }
+            }
+        } catch {
+            Logger.article.error("Failed to refresh transfer counts: \(error.localizedDescription)")
+        }
+    }
+
     func dismissPasteImport() {
         isShowingPasteImportSheet = false
     }
@@ -155,7 +172,7 @@ final class SettingsViewModel {
         guard !text.isEmpty else {
             presentAlert(
                 title: "Nothing to Import",
-                message: "Paste a list of article links before importing."
+                message: "Paste article links before importing."
             )
             return
         }
@@ -311,7 +328,7 @@ final class SettingsViewModel {
                 title: "Nothing to Import",
                 message: source == .file
                     ? "The selected file was empty."
-                    : "Paste a list of article links before importing."
+                    : "Paste article links before importing."
             )
             return
         }
@@ -321,6 +338,7 @@ final class SettingsViewModel {
         isImporting = true
         let result = await savedArticleImportService.importArticles(fromPlainText: cleanedText)
         isImporting = false
+        await refreshTransferCounts()
 
         presentAlert(
             title: importAlertTitle(for: result),
