@@ -1,5 +1,4 @@
 import SwiftUI
-import Textual
 
 struct ReaderView: View {
     @Bindable var viewModel: ReaderViewModel
@@ -90,8 +89,11 @@ struct ArticleReaderModeView: View {
 
                         Divider()
 
-                        StructuredText(markdown: stripFirstH1FromMarkdown(content, matchingTitle: article.title))
-                            .readerContentStyle()
+                        ReaderMarkdownContentView(
+                            markdown: content,
+                            title: article.title,
+                            baseURL: article.url
+                        )
                     }
                     .font(.lora(.body))
                     .padding(.vertical)

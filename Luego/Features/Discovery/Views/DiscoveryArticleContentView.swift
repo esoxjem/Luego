@@ -1,5 +1,4 @@
 import SwiftUI
-import Textual
 
 struct DiscoveryArticleContentView: View {
     let article: EphemeralArticle
@@ -17,8 +16,11 @@ struct DiscoveryArticleContentView: View {
 
                     Divider()
 
-                    StructuredText(markdown: stripFirstH1FromMarkdown(article.content, matchingTitle: article.title))
-                        .readerContentStyle()
+                    ReaderMarkdownContentView(
+                        markdown: article.content,
+                        title: article.title,
+                        baseURL: article.url
+                    )
                 }
                 .font(.lora(.body))
                 .padding(.vertical)

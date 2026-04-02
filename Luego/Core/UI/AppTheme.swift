@@ -98,10 +98,10 @@ extension View {
         }
     }
 
-    func readerContentStyle() -> some View {
+    func readerContentStyle(baseURL: URL? = nil) -> some View {
         self
             .textual.structuredTextStyle(.reader)
-            .textual.imageAttachmentLoader(.image())
+            .textual.imageAttachmentLoader(.image(relativeTo: baseURL))
             .textual.textSelection(.enabled)
     }
 }
