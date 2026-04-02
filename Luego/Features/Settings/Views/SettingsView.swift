@@ -30,13 +30,10 @@ struct SettingsView: View {
                 onSourceChanged: viewModel.updateDiscoverySource
             )
 
-            RefreshArticlePoolSection(
+            MaintenanceSettingsSection(
                 didRefresh: viewModel.didRefreshPool,
-                onRefresh: viewModel.refreshArticlePool
-            )
-
-            SDKUpdateSection(
                 isChecking: viewModel.isCheckingForUpdates,
+                onRefresh: viewModel.refreshArticlePool,
                 onCheck: { Task { await viewModel.checkForSDKUpdates() } }
             )
 
@@ -59,20 +56,14 @@ struct SettingsView: View {
                 }
             )
 
-            Section {
-                CopyDiagnosticsButton(
-                    viewModel: viewModel,
-                    syncStatusObserver: resolvedObserver
-                )
-            } header: {
-                Text("Developer")
-            } footer: {
-                Text("Tools for monitoring and debugging.")
-            }
-            .listRowBackground(Color.paperCream)
+            DeveloperToolsSection(
+                viewModel: viewModel,
+                syncStatusObserver: resolvedObserver
+            )
 
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
         }
+        .listSectionSpacing(.compact)
         .scrollContentBackground(.hidden)
         .background(Color.regularPanelBackground)
         .navigationTitle("Settings")
@@ -253,7 +244,6 @@ struct IOSDiscoverySourceRow: View {
                 title: source.displayName,
                 subtitle: source.descriptionText,
                 systemImage: "safari",
-                showsIcon: false,
                 iconColor: .regularSelectionInk
             ) {
                 if let websiteURL = source.websiteURL {
@@ -277,14 +267,12 @@ struct DiscoverySettingsSection: View {
 
     var body: some View {
         Section {
+            SettingsSubsectionLabel(title: "Discovery")
+
             DiscoverySettingsContent(
                 selectedSource: $selectedSource,
                 onSourceChanged: onSourceChanged
             )
-        } header: {
-            Text("Discovery")
-        } footer: {
-            Text("Choose a source for finding new articles.")
         }
         .listRowBackground(Color.paperCream)
     }
@@ -324,57 +312,64 @@ struct SourceWebsiteLinkButton: View {
     }
 }
 
-struct RefreshArticlePoolSection: View {
+struct MaintenanceSettingsSection: View {
     let didRefresh: Bool
-    let onRefresh: () -> Void
-
-    var body: some View {
-        Section {
-            Button(action: onRefresh) {
-                IOSSettingsRow(
-                    title: "Refresh Article Pool",
-                    subtitle: "Clears cached articles and fetches fresh results.",
-                    systemImage: "arrow.clockwise"
-                ) {
-                    if didRefresh {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-            .disabled(didRefresh)
-        } footer: {
-            Text("Clears the cached article pool and fetches fresh articles on next discovery.")
-        }
-        .listRowBackground(Color.paperCream)
-    }
-}
-
-struct SDKUpdateSection: View {
     let isChecking: Bool
+    let onRefresh: () -> Void
     let onCheck: () -> Void
 
     var body: some View {
         Section {
+            SettingsSubsectionLabel(title: "Maintenance")
+
+            Button(action: onRefresh) {
+                IOSSettingsRow(
+                    title: "Refresh Article Pool",
+                    subtitle: "Clears cached articles and fetches fresh results.",
+                    systemImage: "arrow.clockwise",
+                    iconColor: .regularSelectionInk
+                ) {
+                    maintenanceRowAccessory(
+                        isLoading: false,
+                        isComplete: didRefresh
+                    )
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(didRefresh || isChecking)
+
             Button(action: onCheck) {
                 IOSSettingsRow(
                     title: "Check for SDK Updates",
                     subtitle: "Downloads the latest parser rules when available.",
-                    systemImage: "arrow.triangle.2.circlepath"
+                    systemImage: "arrow.triangle.2.circlepath",
+                    iconColor: .regularSelectionInk
                 ) {
-                    if isChecking {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
+                    maintenanceRowAccessory(isLoading: isChecking)
                 }
             }
             .buttonStyle(.plain)
             .disabled(isChecking)
-        } footer: {
-            Text("Downloads the latest parsing rules and parser if available.")
         }
         .listRowBackground(Color.paperCream)
+    }
+
+    @ViewBuilder
+    private func maintenanceRowAccessory(
+        isLoading: Bool,
+        isComplete: Bool = false
+    ) -> some View {
+        if isLoading {
+            ProgressView()
+                .controlSize(.small)
+        } else if isComplete {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        } else {
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
     }
 }
 
@@ -390,7 +385,7 @@ struct SavedArticleTransferSection: View {
 
     var body: some View {
         Section {
-            TransferSubsectionLabel(title: "Import")
+            SettingsSubsectionLabel(title: "Import")
 
             Button(action: onImportFromFile) {
                 IOSSettingsRow(
@@ -418,7 +413,7 @@ struct SavedArticleTransferSection: View {
             .buttonStyle(.plain)
             .disabled(isImporting || isPreparingExport)
 
-            TransferSubsectionLabel(title: "Export")
+            SettingsSubsectionLabel(title: "Export")
 
             Button(action: onExportAllArticles) {
                 IOSSettingsRow(
@@ -451,10 +446,6 @@ struct SavedArticleTransferSection: View {
             }
             .buttonStyle(.plain)
             .disabled(isImporting || isPreparingExport)
-        } header: {
-            Text("Import & Export")
-        } footer: {
-            Text("Exports are plain-text files you can keep as a backup or move to another app.")
         }
         .listRowBackground(Color.paperCream)
     }
@@ -482,7 +473,7 @@ struct SavedArticleTransferSection: View {
     }
 }
 
-private struct TransferSubsectionLabel: View {
+private struct SettingsSubsectionLabel: View {
     let title: String
 
     var body: some View {
@@ -491,7 +482,7 @@ private struct TransferSubsectionLabel: View {
             .foregroundStyle(.secondary)
             .textCase(.uppercase)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: title == "Import" ? 4 : 12, leading: 16, bottom: 2, trailing: 16))
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16))
     }
 }
 
@@ -624,6 +615,8 @@ struct SyncStatusSection: View {
 
     var body: some View {
         Section {
+            SettingsSubsectionLabel(title: "Sync")
+
             IOSSettingsRow(
                 title: "iCloud Sync",
                 subtitle: statusSubtitle,
@@ -668,8 +661,23 @@ struct SyncStatusSection: View {
                     .foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
             }
-        } footer: {
-            Text("Articles sync automatically across your devices via iCloud.")
+        }
+        .listRowBackground(Color.paperCream)
+    }
+}
+
+struct DeveloperToolsSection: View {
+    let viewModel: SettingsViewModel
+    let syncStatusObserver: SyncStatusObserver?
+
+    var body: some View {
+        Section {
+            SettingsSubsectionLabel(title: "Developer")
+
+            CopyDiagnosticsButton(
+                viewModel: viewModel,
+                syncStatusObserver: syncStatusObserver
+            )
         }
         .listRowBackground(Color.paperCream)
     }
