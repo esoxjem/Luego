@@ -30,14 +30,7 @@ struct SettingsView: View {
                 onSourceChanged: viewModel.updateDiscoverySource
             )
 
-            MaintenanceSettingsSection(
-                didRefresh: viewModel.didRefreshPool,
-                isChecking: viewModel.isCheckingForUpdates,
-                onRefresh: viewModel.refreshArticlePool,
-                onCheck: { Task { await viewModel.checkForSDKUpdates() } }
-            )
-
-            SavedArticleTransferSection(
+            LibrarySettingsSection(
                 isImporting: viewModel.isImporting,
                 isPreparingExport: viewModel.isPreparingExport,
                 totalSavedArticleCount: viewModel.totalSavedArticleCount,
@@ -56,19 +49,20 @@ struct SettingsView: View {
                 }
             )
 
-            DeveloperToolsSection(
+            TroubleshootingSettingsSection(
+                didRefresh: viewModel.didRefreshPool,
+                isChecking: viewModel.isCheckingForUpdates,
+                onRefresh: viewModel.refreshArticlePool,
+                onCheck: { Task { await viewModel.checkForSDKUpdates() } },
                 viewModel: viewModel,
                 syncStatusObserver: resolvedObserver
             )
 
             AppVersionSection(sdkVersionString: viewModel.sdkVersionString)
         }
-        .listSectionSpacing(.compact)
-        .scrollContentBackground(.hidden)
-        .background(Color.regularPanelBackground)
-        .navigationTitle("Settings")
+        .formStyle(.grouped)
         .tint(Color.regularSelectionInk)
-        .appNavigationStyle(.contentLargeTitle)
+        .appNavigationStyle(.inlineTransparent)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
@@ -115,7 +109,6 @@ struct SettingsView: View {
         .task {
             await viewModel.refreshTransferCounts()
         }
-        .font(.nunito(.body))
     }
 
     private func handleFileImport(_ result: Result<URL, Error>) {
@@ -195,6 +188,7 @@ struct IOSSettingsRow<TitleAccessory: View, Trailing: View>: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(title)
+                        .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
 
                     titleAccessory
@@ -203,6 +197,7 @@ struct IOSSettingsRow<TitleAccessory: View, Trailing: View>: View {
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 12)
@@ -244,7 +239,7 @@ struct IOSDiscoverySourceRow: View {
                 title: source.displayName,
                 subtitle: source.descriptionText,
                 systemImage: "safari",
-                iconColor: .regularSelectionInk
+                showsIcon: false
             ) {
                 if let websiteURL = source.websiteURL {
                     SourceWebsiteLinkButton(url: websiteURL, openURL: openURL)
@@ -253,7 +248,7 @@ struct IOSDiscoverySourceRow: View {
                 if isSelected {
                     Image(systemName: "checkmark")
                         .foregroundStyle(Color.regularSelectionInk)
-                        .fontWeight(.semibold)
+                        .font(.body.weight(.semibold))
                 }
             }
         }
@@ -267,14 +262,15 @@ struct DiscoverySettingsSection: View {
 
     var body: some View {
         Section {
-            SettingsSubsectionLabel(title: "Discovery")
-
             DiscoverySettingsContent(
                 selectedSource: $selectedSource,
                 onSourceChanged: onSourceChanged
             )
+        } header: {
+            settingsSectionHeader("Discovery")
+        } footer: {
+            Text("Choose where new recommendations come from.")
         }
-        .listRowBackground(Color.paperCream)
     }
 }
 
@@ -305,31 +301,32 @@ struct SourceWebsiteLinkButton: View {
             openURL(url)
         } label: {
             Image(systemName: "arrow.up.right.square")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.tertiary)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Open source website")
     }
 }
 
-struct MaintenanceSettingsSection: View {
+struct TroubleshootingSettingsSection: View {
     let didRefresh: Bool
     let isChecking: Bool
     let onRefresh: () -> Void
     let onCheck: () -> Void
+    let viewModel: SettingsViewModel
+    let syncStatusObserver: SyncStatusObserver?
 
     var body: some View {
         Section {
-            SettingsSubsectionLabel(title: "Maintenance")
-
             Button(action: onRefresh) {
                 IOSSettingsRow(
-                    title: "Refresh Article Pool",
-                    subtitle: "Clears cached articles and fetches fresh results.",
+                    title: "Refresh Discovery Cache",
+                    subtitle: "Reloads discovery suggestions from the source.",
                     systemImage: "arrow.clockwise",
-                    iconColor: .regularSelectionInk
+                    showsIcon: false
                 ) {
-                    maintenanceRowAccessory(
+                    SettingsActionAccessory(
                         isLoading: false,
                         isComplete: didRefresh
                     )
@@ -340,40 +337,30 @@ struct MaintenanceSettingsSection: View {
 
             Button(action: onCheck) {
                 IOSSettingsRow(
-                    title: "Check for SDK Updates",
-                    subtitle: "Downloads the latest parser rules when available.",
+                    title: "Update Parsing Rules",
+                    subtitle: "Downloads the latest parsing rules for saved links.",
                     systemImage: "arrow.triangle.2.circlepath",
-                    iconColor: .regularSelectionInk
+                    showsIcon: false
                 ) {
-                    maintenanceRowAccessory(isLoading: isChecking)
+                    SettingsActionAccessory(isLoading: isChecking)
                 }
             }
             .buttonStyle(.plain)
             .disabled(isChecking)
-        }
-        .listRowBackground(Color.paperCream)
-    }
 
-    @ViewBuilder
-    private func maintenanceRowAccessory(
-        isLoading: Bool,
-        isComplete: Bool = false
-    ) -> some View {
-        if isLoading {
-            ProgressView()
-                .controlSize(.small)
-        } else if isComplete {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        } else {
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            CopyDiagnosticsButton(
+                viewModel: viewModel,
+                syncStatusObserver: syncStatusObserver
+            )
+        } header: {
+            settingsSectionHeader("Troubleshooting")
+        } footer: {
+            Text("Use these tools if something looks out of date or out of sync.")
         }
     }
 }
 
-struct SavedArticleTransferSection: View {
+struct LibrarySettingsSection: View {
     let isImporting: Bool
     let isPreparingExport: Bool
     let totalSavedArticleCount: Int
@@ -385,16 +372,14 @@ struct SavedArticleTransferSection: View {
 
     var body: some View {
         Section {
-            SettingsSubsectionLabel(title: "Import")
-
             Button(action: onImportFromFile) {
                 IOSSettingsRow(
-                    title: "Import Links from File",
-                    subtitle: "Use a plain-text file with one link per line.",
+                    title: "Import Links",
+                    subtitle: "Import a text file with one link per line.",
                     systemImage: "square.and.arrow.down",
-                    iconColor: .regularSelectionInk
+                    showsIcon: false
                 ) {
-                    rowAccessory(isLoading: isImporting)
+                    SettingsActionAccessory(isLoading: isImporting)
                 }
             }
             .buttonStyle(.plain)
@@ -402,27 +387,25 @@ struct SavedArticleTransferSection: View {
 
             Button(action: onPasteArticleList) {
                 IOSSettingsRow(
-                    title: "Paste Links",
-                    subtitle: "Paste any text that contains article links.",
+                    title: "Paste Links from Clipboard",
+                    subtitle: "Import links from pasted text.",
                     systemImage: "doc.on.clipboard",
-                    iconColor: .regularSelectionInk
+                    showsIcon: false
                 ) {
-                    rowAccessory(isLoading: isImporting)
+                    SettingsActionAccessory(isLoading: isImporting)
                 }
             }
             .buttonStyle(.plain)
             .disabled(isImporting || isPreparingExport)
 
-            SettingsSubsectionLabel(title: "Export")
-
             Button(action: onExportAllArticles) {
                 IOSSettingsRow(
-                    title: "Export Full Library",
-                    subtitle: "Create a text file with every saved link.",
+                    title: "Export All Saved Links",
+                    subtitle: "Export every saved link as a text file.",
                     systemImage: "square.and.arrow.up",
-                    iconColor: .regularSelectionInk
+                    showsIcon: false
                 ) {
-                    rowAccessory(
+                    SettingsActionAccessory(
                         isLoading: isPreparingExport,
                         countLabel: transferCountLabel(totalSavedArticleCount)
                     )
@@ -433,12 +416,12 @@ struct SavedArticleTransferSection: View {
 
             Button(action: onExportReadingList) {
                 IOSSettingsRow(
-                    title: "Export Reading List",
-                    subtitle: "Create a text file with links you haven't archived.",
+                    title: "Export Unread Links",
+                    subtitle: "Export links that are still in your reading list.",
                     systemImage: "text.badge.checkmark",
-                    iconColor: .regularSelectionInk
+                    showsIcon: false
                 ) {
-                    rowAccessory(
+                    SettingsActionAccessory(
                         isLoading: isPreparingExport,
                         countLabel: transferCountLabel(readingListArticleCount)
                     )
@@ -446,12 +429,35 @@ struct SavedArticleTransferSection: View {
             }
             .buttonStyle(.plain)
             .disabled(isImporting || isPreparingExport)
+        } header: {
+            settingsSectionHeader("Library")
+        } footer: {
+            Text("Import links into Luego or export what you have saved.")
         }
-        .listRowBackground(Color.paperCream)
     }
 
-    @ViewBuilder
-    private func rowAccessory(isLoading: Bool, countLabel: String? = nil) -> some View {
+    private func transferCountLabel(_ count: Int) -> String {
+        let noun = count == 1 ? "link" : "links"
+        return "\(count.formatted()) \(noun)"
+    }
+}
+
+private struct TransferCountBadge: View {
+    let label: String
+
+    var body: some View {
+        Text(label)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+    }
+}
+
+private struct SettingsActionAccessory: View {
+    let isLoading: Bool
+    var isComplete: Bool = false
+    var countLabel: String? = nil
+
+    var body: some View {
         if isLoading {
             ProgressView()
                 .controlSize(.small)
@@ -461,44 +467,16 @@ struct SavedArticleTransferSection: View {
                     TransferCountBadge(label: countLabel)
                 }
 
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                if isComplete {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
             }
         }
-    }
-
-    private func transferCountLabel(_ count: Int) -> String {
-        count.formatted()
-    }
-}
-
-private struct SettingsSubsectionLabel: View {
-    let title: String
-
-    var body: some View {
-        Text(title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .textCase(.uppercase)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16))
-    }
-}
-
-private struct TransferCountBadge: View {
-    let label: String
-
-    var body: some View {
-        Text(label)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.regularSelectionInk)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.regularSelectionInk.opacity(0.12))
-            )
     }
 }
 
@@ -522,7 +500,7 @@ struct SavedArticlePasteImportSheet: View {
                         )
 
                     if viewModel.pasteImportText.isEmpty {
-                        Text("Paste one link per line, or any text that contains article links.")
+                        Text("Paste links or any text that contains links.")
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 18)
                             .padding(.vertical, 20)
@@ -610,76 +588,40 @@ struct SyncStatusSection: View {
         if let timeText = formattedTime {
             return "Last synced at \(timeText)"
         }
-        return "Sync status is shown after your first successful update."
+        return "Your sync status will appear after the first successful update."
     }
 
     var body: some View {
         Section {
-            SettingsSubsectionLabel(title: "Sync")
-
             IOSSettingsRow(
                 title: "iCloud Sync",
                 subtitle: statusSubtitle,
                 systemImage: "icloud",
-                iconColor: .secondary
+                showsIcon: false
             ) {
                 Text(statusText)
-                    .font(.subheadline.weight(.medium))
+                    .font(.subheadline)
                     .foregroundStyle(statusColor)
-                    .lineLimit(2)
                     .multilineTextAlignment(.trailing)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("iCloud Sync")
             .accessibilityValue(accessibilityStatusValue)
 
-            if syncStatusObserver?.cloudKitNeedsAttention == true,
-               let diagnosticSummary = syncStatusObserver?.cloudKitDiagnosticSummary {
-                Text(diagnosticSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if syncStatusObserver?.cloudKitNeedsAttention == true,
-               let diagnosticHint = syncStatusObserver?.cloudKitDiagnosticHint {
-                Text(diagnosticHint)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
             ForceReSyncButton(
                 isSyncing: isSyncing,
                 didSync: didSync,
                 onSync: onSync
             )
-
-            if let repairErrorMessage {
-                Text(repairErrorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .listRowBackground(Color.paperCream)
-    }
-}
-
-struct DeveloperToolsSection: View {
-    let viewModel: SettingsViewModel
-    let syncStatusObserver: SyncStatusObserver?
-
-    var body: some View {
-        Section {
-            SettingsSubsectionLabel(title: "Developer")
-
-            CopyDiagnosticsButton(
-                viewModel: viewModel,
-                syncStatusObserver: syncStatusObserver
+        } header: {
+            settingsSectionHeader("Sync")
+        } footer: {
+            SyncSectionFooter(
+                diagnosticSummary: syncStatusObserver?.cloudKitNeedsAttention == true ? syncStatusObserver?.cloudKitDiagnosticSummary : nil,
+                diagnosticHint: syncStatusObserver?.cloudKitNeedsAttention == true ? syncStatusObserver?.cloudKitDiagnosticHint : nil,
+                repairErrorMessage: repairErrorMessage
             )
         }
-        .listRowBackground(Color.paperCream)
     }
 }
 
@@ -706,7 +648,8 @@ struct AppVersionSection: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .listRowBackground(Color.paperCream)
+        } header: {
+            settingsSectionHeader("About")
         }
     }
 }
@@ -722,21 +665,12 @@ struct CopyDiagnosticsButton: View {
             Task { await copyDiagnostics() }
         }) {
             IOSSettingsRow(
-                title: "Copy Diagnostics",
-                subtitle: "Export device info for troubleshooting sync issues.",
-                systemImage: "doc.on.doc"
+                title: "Copy Troubleshooting Details",
+                subtitle: "Copy sync and device details for support.",
+                systemImage: "doc.on.doc",
+                showsIcon: false
             ) {
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                } else if showCopiedToast {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
+                SettingsActionAccessory(isLoading: isLoading, isComplete: showCopiedToast)
             }
         }
         .buttonStyle(.plain)
@@ -770,26 +704,43 @@ struct ForceReSyncButton: View {
     var body: some View {
         Button(action: onSync) {
             IOSSettingsRow(
-                title: isSyncing ? "Repairing Sync..." : "Repair Sync",
-                subtitle: "Fetch from iCloud, resend local changes, and reconcile drift",
-                systemImage: "arrow.clockwise.icloud"
+                title: isSyncing ? "Repairing iCloud Sync..." : "Repair iCloud Sync",
+                subtitle: "Use this if items seem missing or out of sync.",
+                systemImage: "arrow.clockwise.icloud",
+                showsIcon: false
             ) {
-                if isSyncing {
-                    ProgressView()
-                        .controlSize(.small)
-                } else if didSync {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
+                SettingsActionAccessory(isLoading: isSyncing, isComplete: didSync)
             }
         }
         .buttonStyle(.plain)
         .disabled(isSyncing)
     }
+}
+
+private struct SyncSectionFooter: View {
+    let diagnosticSummary: String?
+    let diagnosticHint: String?
+    let repairErrorMessage: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let diagnosticSummary {
+                Text(diagnosticSummary)
+            }
+            if let diagnosticHint {
+                Text(diagnosticHint)
+            }
+            if let repairErrorMessage {
+                Text(repairErrorMessage)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+}
+
+private func settingsSectionHeader(_ title: String) -> some View {
+    Text(title)
+        .textCase(.uppercase)
 }
 
 struct SettingsShareSheet: UIViewControllerRepresentable {

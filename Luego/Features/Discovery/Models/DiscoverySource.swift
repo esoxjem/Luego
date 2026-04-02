@@ -35,9 +35,9 @@ enum DiscoverySource: String, CaseIterable, Sendable {
 
     var descriptionText: String {
         switch self {
-        case .kagiSmallWeb: return "Discover the \"small web\" through Kagi."
-        case .blogroll: return "A humanly curated list of fine personal & independent blogs."
-        case .surpriseMe: return "Randomly picks between sources for each discovery."
+        case .kagiSmallWeb: return "Explore independent sites recommended by Kagi."
+        case .blogroll: return "Browse a curated feed of personal and independent blogs."
+        case .surpriseMe: return "Rotate between sources each time you discover something new."
         }
     }
 

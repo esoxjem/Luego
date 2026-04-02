@@ -88,7 +88,7 @@ final class SettingsViewModel {
     var updateAlertTitle: String {
         guard let result = updateResult else { return "" }
         switch result {
-        case .updated: return "SDK Updated"
+        case .updated: return "Parsing Rules Updated"
         case .alreadyUpToDate: return "Up to Date"
         case .failed: return "Update Failed"
         }
