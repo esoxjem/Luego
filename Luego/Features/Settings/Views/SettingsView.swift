@@ -496,7 +496,7 @@ struct SavedArticlePasteImportSheet: View {
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.paperCream)
+                                .fill(Color.elevatedPanelBackground)
                         )
 
                     if viewModel.pasteImportText.isEmpty {

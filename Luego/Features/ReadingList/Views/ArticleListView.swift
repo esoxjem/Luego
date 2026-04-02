@@ -174,7 +174,7 @@ struct ArticleListContent: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.paperCream)
+        .background(Color.appBackground)
     }
 
     @ViewBuilder
@@ -341,7 +341,7 @@ struct ArticleListEmptyState: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .offset(y: verticalOffset)
-        .background(Color.paperCream)
+        .background(Color.appBackground)
         .onDisappear {
             shouldAnimateCopy = false
         }

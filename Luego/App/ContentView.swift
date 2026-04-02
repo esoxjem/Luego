@@ -26,7 +26,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color.paperCream
+            Color.appBackground
                 .ignoresSafeArea()
 
             Group {
@@ -140,7 +140,7 @@ struct ContentView: View {
 
     private func iPhoneTabBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack {
-            Color.paperCream
+            Color.appBackground
                 .ignoresSafeArea()
 
             content()
