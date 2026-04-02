@@ -1,11 +1,13 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
     var syncStatusObserver: SyncStatusObserver?
     @Environment(SyncStatusObserver.self) private var envSyncStatusObserver: SyncStatusObserver?
     @Environment(\.dismiss) private var dismiss
+    @State private var isShowingFileImporter = false
 
     private var resolvedObserver: SyncStatusObserver? {
         syncStatusObserver ?? envSyncStatusObserver
@@ -36,6 +38,23 @@ struct SettingsView: View {
             SDKUpdateSection(
                 isChecking: viewModel.isCheckingForUpdates,
                 onCheck: { Task { await viewModel.checkForSDKUpdates() } }
+            )
+
+            SavedArticleTransferSection(
+                isImporting: viewModel.isImporting,
+                isPreparingExport: viewModel.isPreparingExport,
+                onImportFromFile: {
+                    isShowingFileImporter = true
+                },
+                onPasteArticleList: {
+                    viewModel.beginPasteImport()
+                },
+                onExportAllArticles: {
+                    viewModel.prepareExport(scope: .allArticles)
+                },
+                onExportReadingList: {
+                    viewModel.prepareExport(scope: .readingList)
+                }
             )
 
             Section {
@@ -70,7 +89,92 @@ struct SettingsView: View {
         } message: {
             Text(viewModel.updateAlertMessage)
         }
+        .alert(
+            viewModel.alertContent?.title ?? "",
+            isPresented: $viewModel.showAlert
+        ) {
+            Button("OK") { }
+        } message: {
+            Text(viewModel.alertContent?.message ?? "")
+        }
+        .sheet(
+            isPresented: $viewModel.isShowingPasteImportSheet,
+            onDismiss: {
+                viewModel.dismissPasteImport()
+            }
+        ) {
+            SavedArticlePasteImportSheet(viewModel: viewModel)
+        }
+        .sheet(
+            item: $viewModel.exportPresentation,
+            onDismiss: {
+                viewModel.dismissExportPresentation()
+            }
+        ) { presentation in
+            SettingsShareSheet(activityItems: [presentation.fileURL])
+        }
+        .fileImporter(
+            isPresented: $isShowingFileImporter,
+            allowedContentTypes: [.plainText, .text]
+        ) { result in
+            handleFileImport(result)
+        }
         .font(.nunito(.body))
+    }
+
+    private func handleFileImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            Task {
+                do {
+                    let text = try readPlainTextFile(at: url)
+                    await viewModel.importArticlesFromFileText(text)
+                } catch {
+                    await MainActor.run {
+                        viewModel.presentImportReadError(error)
+                    }
+                }
+            }
+        case .failure(let error):
+            guard !isUserCancelledFileImport(error) else { return }
+            viewModel.presentImportReadError(error)
+        }
+    }
+
+    private func isUserCancelledFileImport(_ error: Error) -> Bool {
+        if let cocoaError = error as? CocoaError, cocoaError.code == .userCancelled {
+            return true
+        }
+
+        let nsError = error as NSError
+        return nsError.domain == NSCocoaErrorDomain
+            && nsError.code == CocoaError.Code.userCancelled.rawValue
+    }
+
+    private func readPlainTextFile(at url: URL) throws -> String {
+        let didStartAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccess {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        let data = try Data(contentsOf: url)
+        let encodings: [String.Encoding] = [
+            .utf8,
+            .unicode,
+            .utf16,
+            .utf16LittleEndian,
+            .utf16BigEndian
+        ]
+
+        for encoding in encodings {
+            if let string = String(data: data, encoding: encoding) {
+                return string
+            }
+        }
+
+        throw CocoaError(.fileReadInapplicableStringEncoding)
     }
 }
 
@@ -266,6 +370,146 @@ struct SDKUpdateSection: View {
             Text("Downloads the latest parsing rules and parser if available.")
         }
         .listRowBackground(Color.paperCream)
+    }
+}
+
+struct SavedArticleTransferSection: View {
+    let isImporting: Bool
+    let isPreparingExport: Bool
+    let onImportFromFile: () -> Void
+    let onPasteArticleList: () -> Void
+    let onExportAllArticles: () -> Void
+    let onExportReadingList: () -> Void
+
+    var body: some View {
+        Section {
+            Button(action: onImportFromFile) {
+                IOSSettingsRow(
+                    title: "Import from File",
+                    subtitle: "Read a plain-text list of article URLs.",
+                    systemImage: "square.and.arrow.down"
+                ) {
+                    rowAccessory(isLoading: isImporting)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(isImporting || isPreparingExport)
+
+            Button(action: onPasteArticleList) {
+                IOSSettingsRow(
+                    title: "Paste Article List",
+                    subtitle: "Import URLs directly from pasted text.",
+                    systemImage: "doc.on.clipboard"
+                ) {
+                    rowAccessory(isLoading: isImporting)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(isImporting || isPreparingExport)
+
+            Button(action: onExportAllArticles) {
+                IOSSettingsRow(
+                    title: "Export All Articles",
+                    subtitle: "Share a text file with every saved article.",
+                    systemImage: "square.and.arrow.up"
+                ) {
+                    rowAccessory(isLoading: isPreparingExport)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(isImporting || isPreparingExport)
+
+            Button(action: onExportReadingList) {
+                IOSSettingsRow(
+                    title: "Export Reading List",
+                    subtitle: "Share only active, non-archived articles.",
+                    systemImage: "text.badge.checkmark"
+                ) {
+                    rowAccessory(isLoading: isPreparingExport)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(isImporting || isPreparingExport)
+        } header: {
+            Text("Transfer")
+        } footer: {
+            Text("Import plain-text URL lists or export your saved articles for backup and migration.")
+        }
+        .listRowBackground(Color.paperCream)
+    }
+
+    @ViewBuilder
+    private func rowAccessory(isLoading: Bool) -> some View {
+        if isLoading {
+            ProgressView()
+                .controlSize(.small)
+        } else {
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+    }
+}
+
+struct SavedArticlePasteImportSheet: View {
+    @Bindable var viewModel: SettingsViewModel
+
+    private var canImport: Bool {
+        !viewModel.pasteImportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isImporting
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $viewModel.pasteImportText)
+                        .scrollContentBackground(.hidden)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Color.paperCream)
+                        )
+
+                    if viewModel.pasteImportText.isEmpty {
+                        Text("Paste one article URL per line, or any text containing article links.")
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 20)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .frame(maxHeight: .infinity)
+            }
+            .padding(20)
+            .background(Color.regularPanelBackground)
+            .navigationTitle("Paste Article List")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        viewModel.dismissPasteImport()
+                    }
+                    .disabled(viewModel.isImporting)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        Task {
+                            await viewModel.importArticlesFromPasteText()
+                        }
+                    } label: {
+                        if viewModel.isImporting {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Text("Import")
+                        }
+                    }
+                    .disabled(!canImport)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 
@@ -477,5 +721,16 @@ struct ForceReSyncButton: View {
         }
         .buttonStyle(.plain)
         .disabled(isSyncing)
+    }
+}
+
+struct SettingsShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
     }
 }

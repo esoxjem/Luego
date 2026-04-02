@@ -9,14 +9,18 @@ enum SharedTextURLExtractor {
         return scheme == "http" || scheme == "https"
     }
 
-    static func extractFirstSupportedWebURL(from text: String) -> URL? {
+    static func extractSupportedWebURLs(from text: String) -> [URL] {
         guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
-            return nil
+            return []
         }
 
         let range = NSRange(text.startIndex..., in: text)
         return detector.matches(in: text, options: [], range: range)
             .compactMap(\.url)
-            .first(where: isSupportedWebURL)
+            .filter(isSupportedWebURL)
+    }
+
+    static func extractFirstSupportedWebURL(from text: String) -> URL? {
+        extractSupportedWebURLs(from: text).first
     }
 }

@@ -114,11 +114,24 @@ final class DIContainer {
         )
     }()
 
+    private lazy var _savedArticleImportService: SavedArticleImportServiceProtocol = {
+        SavedArticleImportService(
+            articleStore: articleStore,
+            metadataDataSource: metadataDataSource
+        )
+    }()
+
+    private lazy var _savedArticleExportService: SavedArticleExportServiceProtocol = {
+        SavedArticleExportService(articleStore: articleStore)
+    }()
+
     private lazy var _syncObserver: SyncStatusObserver = {
         SyncStatusObserver()
     }()
 
     var syncObserver: SyncStatusObserver { _syncObserver }
+    var savedArticleImportService: SavedArticleImportServiceProtocol { _savedArticleImportService }
+    var savedArticleExportService: SavedArticleExportServiceProtocol { _savedArticleExportService }
 
     init(database: AppDatabase) {
         self.database = database
@@ -164,7 +177,9 @@ final class DIContainer {
             preferencesDataSource: discoveryPreferencesDataSource,
             discoveryService: discoveryService,
             sdkManager: luegoSDKManager,
-            articleService: articleService
+            articleService: articleService,
+            savedArticleImportService: savedArticleImportService,
+            savedArticleExportService: savedArticleExportService
         )
     }
 }

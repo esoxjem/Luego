@@ -1,6 +1,21 @@
-import Foundation
 import CloudKit
+import Foundation
 import UIKit
+
+enum SettingsImportSource {
+    case file
+    case pastedText
+}
+
+struct SettingsAlertContent {
+    let title: String
+    let message: String
+}
+
+struct SettingsExportPresentation: Identifiable {
+    let id = UUID()
+    let fileURL: URL
+}
 
 @Observable
 @MainActor
@@ -14,22 +29,35 @@ final class SettingsViewModel {
     var didForceSync = false
     var forceSyncCount = 0
     var forceSyncErrorMessage: String?
+    var isImporting = false
+    var isPreparingExport = false
+    var isShowingPasteImportSheet = false
+    var pasteImportText = ""
+    var alertContent: SettingsAlertContent?
+    var showAlert = false
+    var exportPresentation: SettingsExportPresentation?
 
     private let preferencesDataSource: DiscoveryPreferencesDataSourceProtocol
     private let discoveryService: DiscoveryServiceProtocol
     private let sdkManager: LuegoSDKManagerProtocol
     private let articleService: ArticleServiceProtocol
+    private let savedArticleImportService: SavedArticleImportServiceProtocol
+    private let savedArticleExportService: SavedArticleExportServiceProtocol
 
     init(
         preferencesDataSource: DiscoveryPreferencesDataSourceProtocol,
         discoveryService: DiscoveryServiceProtocol,
         sdkManager: LuegoSDKManagerProtocol,
-        articleService: ArticleServiceProtocol
+        articleService: ArticleServiceProtocol,
+        savedArticleImportService: SavedArticleImportServiceProtocol,
+        savedArticleExportService: SavedArticleExportServiceProtocol
     ) {
         self.preferencesDataSource = preferencesDataSource
         self.discoveryService = discoveryService
         self.sdkManager = sdkManager
         self.articleService = articleService
+        self.savedArticleImportService = savedArticleImportService
+        self.savedArticleExportService = savedArticleExportService
         self.selectedDiscoverySource = preferencesDataSource.getSelectedSource()
     }
 
@@ -112,6 +140,75 @@ final class SettingsViewModel {
                 didForceSync = false
             }
         }
+    }
+
+    func beginPasteImport() {
+        isShowingPasteImportSheet = true
+    }
+
+    func dismissPasteImport() {
+        isShowingPasteImportSheet = false
+    }
+
+    func importArticlesFromPasteText() async {
+        let text = pasteImportText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            presentAlert(
+                title: "Nothing to Import",
+                message: "Paste a list of article links before importing."
+            )
+            return
+        }
+
+        await importArticles(from: text, source: .pastedText)
+        if !isImporting {
+            pasteImportText = ""
+            isShowingPasteImportSheet = false
+        }
+    }
+
+    func importArticlesFromFileText(_ text: String) async {
+        await importArticles(from: text, source: .file)
+    }
+
+    func prepareExport(scope: SavedArticleExportScope) {
+        guard !isPreparingExport else { return }
+
+        isPreparingExport = true
+        defer { isPreparingExport = false }
+
+        do {
+            let export = try savedArticleExportService.makePlainTextExport(scope: scope)
+
+            guard export.articleCount > 0 else {
+                presentAlert(
+                    title: "Nothing to Export",
+                    message: exportEmptyStateMessage(for: scope)
+                )
+                return
+            }
+
+            removeExportedFileIfNeeded()
+            let fileURL = try writeExportFile(export)
+            exportPresentation = SettingsExportPresentation(fileURL: fileURL)
+        } catch {
+            presentAlert(
+                title: "Export Failed",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    func dismissExportPresentation() {
+        removeExportedFileIfNeeded()
+        exportPresentation = nil
+    }
+
+    func presentImportReadError(_ error: Error) {
+        presentAlert(
+            title: "Import Failed",
+            message: error.localizedDescription
+        )
     }
 
     func gatherDiagnostics(syncStatusObserver: SyncStatusObserver?) async -> String {
@@ -204,6 +301,33 @@ final class SettingsViewModel {
         return lines.joined(separator: "\n")
     }
 
+    private func importArticles(
+        from text: String,
+        source: SettingsImportSource
+    ) async {
+        let cleanedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedText.isEmpty else {
+            presentAlert(
+                title: "Nothing to Import",
+                message: source == .file
+                    ? "The selected file was empty."
+                    : "Paste a list of article links before importing."
+            )
+            return
+        }
+
+        guard !isImporting else { return }
+
+        isImporting = true
+        let result = await savedArticleImportService.importArticles(fromPlainText: cleanedText)
+        isImporting = false
+
+        presentAlert(
+            title: importAlertTitle(for: result),
+            message: importAlertMessage(for: result)
+        )
+    }
+
     private func fetchSubscriptions(for container: CKContainer) async -> CloudKitSubscriptionSnapshot {
         do {
             return CloudKitSubscriptionSnapshot(
@@ -236,6 +360,74 @@ final class SettingsViewModel {
     private func formattedDate(_ date: Date?, dateFormatter: DateFormatter) -> String {
         guard let date else { return "never" }
         return dateFormatter.string(from: date)
+    }
+
+    private func presentAlert(title: String, message: String) {
+        alertContent = SettingsAlertContent(title: title, message: message)
+        showAlert = true
+    }
+
+    private func importAlertTitle(for result: SavedArticleImportResult) -> String {
+        if !result.didFindURLs {
+            return "No URLs Found"
+        }
+        if result.importedCount > 0 {
+            return "Import Complete"
+        }
+        if result.skippedExistingCount > 0 && result.failedCount == 0 {
+            return "Nothing New to Import"
+        }
+        return "Import Finished"
+    }
+
+    private func importAlertMessage(for result: SavedArticleImportResult) -> String {
+        guard result.didFindURLs else {
+            return "No supported http or https URLs were found."
+        }
+
+        var lines = [
+            "Detected \(result.detectedURLCount) URL\(result.detectedURLCount == 1 ? "" : "s").",
+            "Unique \(result.uniqueURLCount).",
+            "Imported \(result.importedCount).",
+            "Already saved \(result.skippedExistingCount).",
+            "Duplicate input \(result.skippedDuplicateInputCount).",
+            "Failed \(result.failedCount)."
+        ]
+
+        if !result.failureSamples.isEmpty {
+            lines.append("")
+            lines.append("Sample failures:")
+            for failure in result.failureSamples {
+                lines.append("\(failure.urlString): \(failure.message)")
+            }
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
+    private func exportEmptyStateMessage(for scope: SavedArticleExportScope) -> String {
+        switch scope {
+        case .allArticles:
+            return "There are no saved articles to export yet."
+        case .readingList:
+            return "There are no active reading-list articles to export yet."
+        }
+    }
+
+    private func writeExportFile(_ export: SavedArticlePlainTextExport) throws -> URL {
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(export.filename)
+
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            try FileManager.default.removeItem(at: fileURL)
+        }
+
+        try export.body.write(to: fileURL, atomically: true, encoding: .utf8)
+        return fileURL
+    }
+
+    private func removeExportedFileIfNeeded() {
+        guard let fileURL = exportPresentation?.fileURL else { return }
+        try? FileManager.default.removeItem(at: fileURL)
     }
 }
 
