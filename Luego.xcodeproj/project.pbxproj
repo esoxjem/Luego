@@ -56,6 +56,7 @@
 			membershipExceptions = (
 				Features/Sharing/DataSources/SharedStorage.swift,
 				Features/Sharing/DataSources/UserDefaultsDataSource.swift,
+				Features/Sharing/Services/ArticleDeepLinkBuilder.swift,
 				Features/Sharing/Services/SharedTextURLExtractor.swift,
 			);
 			target = 608D75682EC33EA6002DD532 /* LuegoShareExtension */;

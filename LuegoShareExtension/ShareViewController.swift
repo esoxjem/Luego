@@ -6,8 +6,13 @@
 //
 
 import UIKit
+import OSLog
 
 class ShareViewController: UIViewController, UIAdaptivePresentationControllerDelegate {
+    private static let logger = os.Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.esoxjem.Luego.share-extension",
+        category: "Sharing"
+    )
 
     private enum SharedItemKind {
         case url
@@ -23,6 +28,8 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
     private var pendingCandidates: [SharedItemCandidate] = []
     private var nextCandidateIndex = 0
     private var lastProcessingError: String?
+    private var savedURL: URL?
+    private var isCompletingRequest = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,8 +50,8 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
         successView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(successView)
 
-        successView.onDismiss = { [weak self] in
-            self?.dismissExtension()
+        successView.onOpenInLuego = { [weak self] in
+            self?.openSavedArticle()
         }
 
         NSLayoutConstraint.activate([
@@ -178,6 +185,8 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
     }
 
     private func saveURL(_ url: URL) {
+        savedURL = url
+        Self.logger.info("Share extension saved article URL: \(url.absoluteString, privacy: .public)")
         SharedStorage.shared.saveSharedURL(url)
         completeWithSuccess()
     }
@@ -189,7 +198,34 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
         }
     }
 
+    private func openSavedArticle() {
+        guard let savedURL else {
+            Self.logger.error("Share extension could not open article because no saved URL was available")
+            dismissExtension()
+            return
+        }
+
+        guard let deepLinkURL = ArticleDeepLinkBuilder.makeArticleURL(for: savedURL) else {
+            Self.logger.error("Share extension could not build deep link for saved URL: \(savedURL.absoluteString, privacy: .public)")
+            dismissExtension()
+            return
+        }
+
+        Self.logger.info("Share extension attempting to open deep link: \(deepLinkURL.absoluteString, privacy: .public)")
+        extensionContext?.open(deepLinkURL) { [weak self] success in
+            Task { @MainActor [weak self] in
+                Self.logger.info("Share extension deep link open completed with success=\(success, privacy: .public)")
+                self?.dismissExtension()
+            }
+        }
+    }
+
     private func dismissExtension() {
+        guard !isCompletingRequest else {
+            return
+        }
+
+        isCompletingRequest = true
         extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }
 
@@ -202,7 +238,7 @@ class ShareViewController: UIViewController, UIAdaptivePresentationControllerDel
     }
 
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
+        dismissExtension()
     }
 }
 
@@ -211,9 +247,9 @@ class SuccessView: UIView {
     private let checkmarkView = CheckmarkView()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
-    private let dismissButton = UIButton(type: .system)
+    private let actionButton = UIButton(type: .system)
 
-    var onDismiss: (() -> Void)?
+    var onOpenInLuego: (() -> Void)?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -243,14 +279,14 @@ class SuccessView: UIView {
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(subtitleLabel)
 
-        dismissButton.setTitle("Done", for: .normal)
-        dismissButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
-        dismissButton.backgroundColor = .systemBlue
-        dismissButton.setTitleColor(.white, for: .normal)
-        dismissButton.layer.cornerRadius = 12
-        dismissButton.translatesAutoresizingMaskIntoConstraints = false
-        dismissButton.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
-        addSubview(dismissButton)
+        actionButton.setTitle("Open in Luego", for: .normal)
+        actionButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        actionButton.backgroundColor = .systemBlue
+        actionButton.setTitleColor(.white, for: .normal)
+        actionButton.layer.cornerRadius = 12
+        actionButton.translatesAutoresizingMaskIntoConstraints = false
+        actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
+        addSubview(actionButton)
 
         NSLayoutConstraint.activate([
             checkmarkView.centerXAnchor.constraint(equalTo: centerXAnchor),
@@ -266,15 +302,15 @@ class SuccessView: UIView {
             subtitleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             subtitleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
 
-            dismissButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 32),
-            dismissButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            dismissButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            dismissButton.heightAnchor.constraint(equalToConstant: 50)
+            actionButton.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 32),
+            actionButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            actionButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            actionButton.heightAnchor.constraint(equalToConstant: 50)
         ])
     }
 
-    @objc private func dismissTapped() {
-        onDismiss?()
+    @objc private func actionTapped() {
+        onOpenInLuego?()
     }
 }
 

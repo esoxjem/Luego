@@ -240,21 +240,26 @@ struct ContentView: View {
     }
 
     private func handleIncomingURL(_ url: URL) async {
+        Logger.sharing.info("Received incoming URL: \(url.absoluteString)")
         do {
             let deepLink = try ArticleDeepLink(url: url)
+            Logger.sharing.info("Parsed incoming article deep link")
             if articleListViewModel == nil {
+                Logger.sharing.info("Article list view model not ready; storing pending deep link")
                 pendingDeepLink = deepLink
                 initializeArticleListViewModelIfNeeded()
                 return
             }
             await handleDeepLink(deepLink)
         } catch {
+            Logger.sharing.error("Failed to parse incoming URL \(url.absoluteString): \(error.localizedDescription)")
             presentDeepLinkError(error)
         }
     }
 
     private func handleDeepLink(_ deepLink: ArticleDeepLink) async {
         guard let articleListViewModel else {
+            Logger.sharing.warning("Article list view model missing while handling deep link; leaving it pending")
             pendingDeepLink = deepLink
             return
         }
@@ -264,16 +269,20 @@ struct ContentView: View {
         do {
             switch deepLink {
             case .article(let url):
+                Logger.sharing.info("Handling article deep link for URL: \(url.absoluteString)")
                 let article = try await articleListViewModel.openOrImportArticle(from: url)
+                Logger.sharing.info("Deep link resolved article: \(article.url.absoluteString)")
                 openArticle(article)
             }
         } catch {
+            Logger.sharing.error("Failed to handle deep link: \(error.localizedDescription)")
             presentDeepLinkError(error)
         }
     }
 
     private func openArticle(_ article: Article) {
         let filter = preferredFilter(for: article)
+        Logger.sharing.info("Opening article in UI: \(article.url.absoluteString) with filter \(filter.navigationTitle)")
 
         selectedFilter = filter
         selectedArticle = article
@@ -300,6 +309,7 @@ struct ContentView: View {
     }
 
     private func presentDeepLinkError(_ error: Error) {
+        Logger.sharing.error("Presenting deep link error: \(error.localizedDescription)")
         deepLinkAlert = DeepLinkAlert(message: error.localizedDescription)
     }
 

@@ -4,18 +4,18 @@ enum ArticleDeepLink {
     case article(URL)
 
     init(url: URL) throws {
-        guard url.scheme?.lowercased() == "luegoreader" else {
+        guard url.scheme?.lowercased() == ArticleDeepLinkBuilder.scheme else {
             throw ArticleDeepLinkError.unsupportedLink
         }
 
         let route = ArticleDeepLink.routeComponent(from: url)
 
-        guard route == "article" else {
+        guard route == ArticleDeepLinkBuilder.articleRoute else {
             throw ArticleDeepLinkError.unsupportedLink
         }
 
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let articleURLValue = components.queryItems?.first(where: { $0.name == "url" })?.value,
+              let articleURLValue = components.queryItems?.first(where: { $0.name == ArticleDeepLinkBuilder.articleURLQueryItemName })?.value,
               !articleURLValue.isEmpty else {
             throw ArticleDeepLinkError.missingArticleURL
         }
