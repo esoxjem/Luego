@@ -270,10 +270,16 @@ struct ArticleListEmptyState: View {
     @ViewBuilder
     private var artwork: some View {
         if filter == .readingList {
-            Image("Kike")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 180, height: 180)
+            ZStack {
+                Circle()
+                    .fill(Color.paperCream)
+
+                Image("Kike")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 152, height: 152)
+            }
+            .frame(width: 180, height: 180)
         } else {
             Image(systemName: filter.emptyStateIcon)
                 .font(.system(size: 64))
